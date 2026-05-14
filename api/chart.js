@@ -11,6 +11,13 @@ module.exports = function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
+  // ── API Key 驗證 ───────────────────────────────────────────
+  const secret = process.env.API_SECRET;
+  const provided = req.headers["x-api-key"];
+  if (!secret || !provided || provided !== secret) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   const { date, time, gender } = req.query;
 
   // ── 驗證必填參數 ──────────────────────────────────────────
