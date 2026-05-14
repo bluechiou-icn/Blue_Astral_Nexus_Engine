@@ -8,6 +8,35 @@ astro.config({ language: "zh-TW" });
 
 const MUTAGEN_KEYS = ["祿", "權", "科", "忌"];
 
+// iztro zh-TW 輸出仍夾雜簡體字，以字元級對照表補正
+const SIMP_TO_TRAD = {
+  '阴': '陰', '阳': '陽',
+  '机': '機',
+  '贞': '貞',
+  '贪': '貪',
+  '门': '門',
+  '杀': '殺',
+  '军': '軍',
+  '禄': '祿',
+  '仆': '僕',
+  '迁': '遷',
+  '财': '財',
+  '宫': '宮',
+};
+
+function toTrad(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[阴阳机贞贪门杀军禄仆迁财宫]/g, ch => SIMP_TO_TRAD[ch]);
+}
+
+function deepToTrad(val) {
+  if (typeof val === 'string') return toTrad(val);
+  if (Array.isArray(val)) return val.map(deepToTrad);
+  if (val && typeof val === 'object')
+    return Object.fromEntries(Object.entries(val).map(([k, v]) => [k, deepToTrad(v)]));
+  return val;
+}
+
 /**
  * 產生紫微斗數命盤 JSON
  *
@@ -51,7 +80,7 @@ function generateChart(solarDate, birthTime, gender) {
     majorStars: p.majorStars.map(s => s.name),
   }));
 
-  return {
+  const result = {
     input: { solarDate, birthTime, gender },
     lunarDate: r.lunarDate,
     chineseDate: r.chineseDate,
@@ -66,6 +95,8 @@ function generateChart(solarDate, birthTime, gender) {
     yearMutagens,
     palaces,
   };
+
+  return deepToTrad(result);
 }
 
 module.exports = { generateChart };
