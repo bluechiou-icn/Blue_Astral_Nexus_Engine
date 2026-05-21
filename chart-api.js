@@ -73,6 +73,18 @@ const STAR_META = {
   '破軍': { element: '水', nature: '凶星',     keywords: '開創·變動·破壞' },
 };
 
+// ── 八等級亮度排名（Blue's Version） ─────────────────────────
+const BRIGHTNESS_RANK = {
+  '廟':   1,
+  '旺':   2,
+  '得':   3,
+  '利':   4,
+  '平':   5,
+  '不利': 6,
+  '陷':   7,
+  '不':   8,
+};
+
 // ── 星名分類 ─────────────────────────────────────────────────
 const STAR_CATEGORY = {
   // 四煞
@@ -102,9 +114,9 @@ const OPPOSITE_BRANCH = {
   '巳':'亥', '亥':'巳',
 };
 
-// ── 四化對照表（覆蓋 iztro，採 Blue 確認版） ──────────────────
-// 庚干修正：天同科 / 天相忌（iztro 原版為太陰科 / 天同忌，有誤）
-const SIHUA_TABLE = {
+// ── Blue's Version 四化對照表（ÆTHNOUS 唯一採用版本） ────────
+// 庚干：天同科 / 天相忌（iztro 原版太陰科/天同忌有誤，已修正）
+const BLUE_SI_HUA_TABLE = {
   '甲': ['廉貞', '破軍', '武曲', '太陽'],
   '乙': ['天機', '天梁', '紫微', '太陰'],
   '丙': ['天同', '天機', '文昌', '廉貞'],
@@ -119,10 +131,12 @@ const SIHUA_TABLE = {
 
 // ── 四化相關工具 ─────────────────────────────────────────────
 
-// 根據天干取得四化星（優先使用 SIHUA_TABLE，不依賴 iztro）
+// 根據天干取得四化星（完全使用 BLUE_SI_HUA_TABLE，不依賴 iztro）
 function getMutagenStars(stem) {
   const tradStem = toTrad(stem);
-  return SIHUA_TABLE[tradStem] ?? util.getMutagensByHeavenlyStem(stem).map(toTrad);
+  const stars = BLUE_SI_HUA_TABLE[tradStem];
+  if (!stars) return ['', '', '', ''];
+  return stars;
 }
 
 // 在宮位陣列中找某顆星所在的宮位
@@ -252,9 +266,11 @@ function generateChart(solarDate, birthTime, gender) {
       const incomingToStar = incoming.filter(inc => inc.star === sName);
 
       const meta = STAR_META[sName] ?? null;
+      const brightness = toTrad(s.brightness) || null;
       return {
         name:                sName,
-        brightness:          toTrad(s.brightness) || null,
+        brightness,
+        brightnessRank:      BRIGHTNESS_RANK[brightness] ?? null,
         yearMutagen,
         element:             meta?.element  ?? null,
         nature:              meta?.nature   ?? null,
@@ -272,11 +288,15 @@ function generateChart(solarDate, birthTime, gender) {
     const borrowedStars = oppRaw ? oppRaw.majorStars.map(s => toTrad(s.name)) : null;
 
     // 輔星
-    const minorStars = p.minorStars.map(s => ({
-      name:       toTrad(s.name),
-      brightness: toTrad(s.brightness) || null,
-      category:   starCategory(toTrad(s.name)),
-    }));
+    const minorStars = p.minorStars.map(s => {
+      const mBri = toTrad(s.brightness) || null;
+      return {
+        name:           toTrad(s.name),
+        brightness:     mBri,
+        brightnessRank: BRIGHTNESS_RANK[mBri] ?? null,
+        category:       starCategory(toTrad(s.name)),
+      };
+    });
 
     // 小星（雜曜）
     const smallStars = p.adjectiveStars.map(s => ({
