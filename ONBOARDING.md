@@ -1,10 +1,10 @@
 # Astral Nexus Engine — Agent Onboarding
-**Latest knowledge doc: `CLAUDE_Code_20260521.md` (in this directory)**
+**Latest knowledge doc: `CLAUDE_Code_20260521_2.md` (in this directory)**
 
 This file is the ShareOnboardingGuide entry point.  
 For full project context, architecture decisions, References analysis, and pending tasks, read:
 
-→ `CLAUDE_Code_20260521.md`
+→ `CLAUDE_Code_20260521_2.md`
 
 ## Quick orientation
 
@@ -21,5 +21,6 @@ For full project context, architecture decisions, References analysis, and pendi
 
 | Date | File | Summary |
 |------|------|---------|
+| 2026-05-21 (2) | `CLAUDE_Code_20260521_2.md` | BLUE_SI_HUA_TABLE、八等級亮度、庚干Bug修正、STAR_META、UI deploy |
 | 2026-05-21 | `CLAUDE_Code_20260521.md` | 借對宮欄位、14/14 assertion tests、GitHub sync、Claude Code 2.1.145 |
 | 2026-05-20 | `CLAUDE_Code_20260520.md` | Initial full doc: API upgrade, image generator V1-V3, References analysis |
