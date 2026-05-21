@@ -102,11 +102,27 @@ const OPPOSITE_BRANCH = {
   '巳':'亥', '亥':'巳',
 };
 
+// ── 四化對照表（覆蓋 iztro，採 Blue 確認版） ──────────────────
+// 庚干修正：天同科 / 天相忌（iztro 原版為太陰科 / 天同忌，有誤）
+const SIHUA_TABLE = {
+  '甲': ['廉貞', '破軍', '武曲', '太陽'],
+  '乙': ['天機', '天梁', '紫微', '太陰'],
+  '丙': ['天同', '天機', '文昌', '廉貞'],
+  '丁': ['太陰', '天同', '天機', '巨門'],
+  '戊': ['貪狼', '太陰', '右弼', '天機'],
+  '己': ['武曲', '貪狼', '天梁', '文曲'],
+  '庚': ['太陽', '武曲', '天同', '天相'],
+  '辛': ['巨門', '太陽', '文曲', '文昌'],
+  '壬': ['天梁', '紫微', '左輔', '武曲'],
+  '癸': ['破軍', '巨門', '太陰', '貪狼'],
+};
+
 // ── 四化相關工具 ─────────────────────────────────────────────
 
-// 根據天干取得四化星（簡繁處理後）
+// 根據天干取得四化星（優先使用 SIHUA_TABLE，不依賴 iztro）
 function getMutagenStars(stem) {
-  return util.getMutagensByHeavenlyStem(stem).map(toTrad);
+  const tradStem = toTrad(stem);
+  return SIHUA_TABLE[tradStem] ?? util.getMutagensByHeavenlyStem(stem).map(toTrad);
 }
 
 // 在宮位陣列中找某顆星所在的宮位
