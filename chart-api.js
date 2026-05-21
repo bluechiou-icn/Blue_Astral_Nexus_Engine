@@ -74,6 +74,16 @@ function starCategory(name) {
   return STAR_CATEGORY[name] ?? '雜曜';
 }
 
+// ── 對宮地支對照 ─────────────────────────────────────────────
+const OPPOSITE_BRANCH = {
+  '子':'午', '午':'子',
+  '丑':'未', '未':'丑',
+  '寅':'申', '申':'寅',
+  '卯':'酉', '酉':'卯',
+  '辰':'戌', '戌':'辰',
+  '巳':'亥', '亥':'巳',
+};
+
 // ── 四化相關工具 ─────────────────────────────────────────────
 
 // 根據天干取得四化星（簡繁處理後）
@@ -216,6 +226,13 @@ function generateChart(solarDate, birthTime, gender) {
       };
     });
 
+    // 借對宮（空宮借星）
+    const isEmpty = majorStars.length === 0;
+    const oppBranch = OPPOSITE_BRANCH[branch];
+    const oppRaw = isEmpty ? r.palaces.find(q => q.earthlyBranch === oppBranch) : null;
+    const borrowedFromPalace = oppRaw ? modernizePalaceName(toTrad(oppRaw.name)) : null;
+    const borrowedStars = oppRaw ? oppRaw.majorStars.map(s => toTrad(s.name)) : null;
+
     // 輔星
     const minorStars = p.minorStars.map(s => ({
       name:       toTrad(s.name),
@@ -235,6 +252,9 @@ function generateChart(solarDate, birthTime, gender) {
       stemBranch:      stem + branch,
       stem:            palStem,
       branch,
+      isEmpty,
+      borrowedFromPalace,
+      borrowedStars,
       isBodyPalace:    p.isBodyPalace,
       isOriginalPalace: p.isOriginalPalace,
       decadeRange:     p.decadal.range,
