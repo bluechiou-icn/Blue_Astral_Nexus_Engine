@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ÆTHNOUS · Astral Nexus Engine</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #1a1a2e;
+      --bg2:      #16213e;
+      --bg3:      #0f3460;
+      --gold:     #d4af37;
+      --gold-dim: #a07d1c;
+      --white:    #e8e8f0;
+      --dim:      #8888aa;
+      --red:      #c0392b;
+      --green:    #27ae60;
+      --blue:     #2980b9;
+      --radius:   8px;
+      --font:     "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 2.5rem 0 2rem;
+      border-bottom: 1px solid rgba(212,175,55,.2);
+      margin-bottom: 2.5rem;
+    }
+    .brand-title {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 300;
+      letter-spacing: .6em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: .5rem;
+    }
+    .brand-sub {
+      font-size: .85rem;
+      letter-spacing: .3em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 760px; margin: 0 auto; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid rgba(212,175,55,.15);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .card-title {
+      font-size: .75rem;
+      letter-spacing: .2em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      padding-bottom: .5rem;
+      border-bottom: 1px solid rgba(212,175,55,.15);
+    }
+
+    /* ── Form ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+    @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+
+    .form-group { display: flex; flex-direction: column; gap: .4rem; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: .75rem;
+      letter-spacing: .1em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+    input[type="text"], input[type="date"], input[type="time"] {
+      background: var(--bg);
+      border: 1px solid rgba(212,175,55,.25);
+      border-radius: 4px;
+      color: var(--white);
+      font-family: var(--font);
+      font-size: .95rem;
+      padding: .6rem .8rem;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+      color-scheme: dark;
+    }
+    input:focus { border-color: var(--gold); }
+
+    .radio-group { display: flex; gap: 2rem; align-items: center; padding-top: .2rem; }
+    .radio-group label {
+      display: flex; align-items: center; gap: .5rem;
+      color: var(--white); font-size: .95rem;
+      letter-spacing: 0; text-transform: none;
+      cursor: pointer;
+    }
+    input[type="radio"] { accent-color: var(--gold); width: 1rem; height: 1rem; cursor: pointer; }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: .8rem;
+      background: transparent;
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      color: var(--gold);
+      font-family: var(--font);
+      font-size: 1rem;
+      letter-spacing: .3em;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .btn-submit:hover { background: var(--gold); color: var(--bg); }
+    .btn-submit:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Loading ── */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+      color: var(--gold);
+      font-size: .85rem;
+      letter-spacing: .2em;
+    }
+    .spinner {
+      display: inline-block;
+      width: 28px; height: 28px;
+      border: 2px solid rgba(212,175,55,.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin-bottom: .8rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ── */
+    .error {
+      display: none;
+      background: rgba(192,57,43,.15);
+      border: 1px solid rgba(192,57,43,.4);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      color: #e74c3c;
+      font-size: .9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Result sections ── */
+    #result { display: none; }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: .8rem;
+      margin-bottom: 1rem;
+    }
+    .info-item { display: flex; flex-direction: column; gap: .2rem; }
+    .info-label { font-size: .7rem; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
+    .info-value { font-size: 1rem; color: var(--white); }
+
+    /* ── Mutagens ── */
+    .mutagen-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: .5rem; }
+    .badge {
+      display: inline-block;
+      padding: .15rem .5rem;
+      border-radius: 3px;
+      font-size: .8rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .badge-lu  { background: #27ae60; }
+    .badge-quan { background: #e67e22; }
+    .badge-ke  { background: #2980b9; }
+    .badge-ji  { background: #c0392b; }
+
+    /* ── Palace list ── */
+    .palace-list { display: flex; flex-direction: column; gap: .6rem; }
+    .palace-row {
+      display: flex;
+      align-items: baseline;
+      gap: .8rem;
+      padding: .5rem .8rem;
+      border-radius: 4px;
+      background: rgba(255,255,255,.03);
+      border-left: 2px solid transparent;
+      font-size: .88rem;
+    }
+    .palace-row.has-body { border-left-color: var(--gold); }
+    .palace-row.is-empty { opacity: .65; }
+    .pal-name { min-width: 3.5em; color: var(--gold); font-size: .85rem; }
+    .pal-sb   { min-width: 2.5em; color: var(--dim); font-size: .75rem; }
+    .pal-stars { flex: 1; color: var(--white); }
+    .pal-tag  { font-size: .7rem; color: var(--dim); margin-left: .3rem; }
+    .bri-bright { color: #f1c40f; }
+    .bri-dim    { color: #888; }
+
+    /* ── Major limits table ── */
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th {
+      text-align: left;
+      padding: .4rem .6rem;
+      color: var(--gold);
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(212,175,55,.2);
+    }
+    td { padding: .45rem .6rem; border-bottom: 1px solid rgba(255,255,255,.05); }
+    tr.current-limit { background: rgba(212,175,55,.08); }
+    tr.current-limit td { color: var(--gold); font-weight: 600; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--dim);
+      font-size: .72rem;
+      letter-spacing: .15em;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand-title">Æ T H N O U S</div>
+  <div class="brand-sub">Astral Nexus Engine</div>
+</header>
+
+<div class="container">
+
+  <!-- Input form -->
+  <div class="card">
+    <div class="card-title">起 盤 資 料</div>
+    <form id="chartForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="name">命主姓名（選填）</label>
+          <input type="text" id="name" placeholder="命主姓名">
+        </div>
+        <div class="form-group">
+          <label for="date">西曆生日</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label for="time">出生時間</label>
+          <input type="time" id="time" required>
+        </div>
+        <div class="form-group">
+          <label>性別</label>
+          <div class="radio-group">
+            <label><input type="radio" name="gender" value="男" checked> 男</label>
+            <label><input type="radio" name="gender" value="女"> 女</label>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit" id="submitBtn">起 盤</button>
+    </form>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div><br>排 盤 中
+  </div>
+
+  <!-- Error -->
+  <div class="error" id="errorBox"></div>
+
+  <!-- Result -->
+  <div id="result">
+
+    <!-- Basic info -->
+    <div class="card" id="cardBasic">
+      <div class="card-title">命 盤 資 訊</div>
+      <div class="info-grid" id="basicInfo"></div>
+    </div>
+
+    <!-- Year mutagens -->
+    <div class="card">
+      <div class="card-title">生 年 四 化</div>
+      <div id="yearMutagens"></div>
+    </div>
+
+    <!-- Palaces -->
+    <div class="card">
+      <div class="card-title">十 二 宮 位</div>
+      <div class="palace-list" id="palaceList"></div>
+    </div>
+
+    <!-- Major limits -->
+    <div class="card">
+      <div class="card-title">十 年 大 限</div>
+      <table>
+        <thead>
+          <tr>
+            <th>限序</th>
+            <th>宮位</th>
+            <th>宮干</th>
+            <th>年份</th>
+            <th>年齡</th>
+          </tr>
+        </thead>
+        <tbody id="majorLimits"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /#result -->
+
+</div><!-- /.container -->
+
+<footer>© ÆTHNOUS · Internal Research Tool · Not for Distribution</footer>
+
+<script>
+const BADGE = { '化祿':'badge-lu', '化權':'badge-quan', '化科':'badge-ke', '化忌':'badge-ji' };
+const BRI_LABEL = { '廟':'廟', '旺':'旺', '得':'得', '利':'利', '平':'平', '不':'不', '陷':'陷' };
+const BRI_CLASS = { '廟':'bri-bright','旺':'bri-bright','得':'','利':'','平':'','不':'bri-dim','陷':'bri-dim' };
+
+function badgeHTML(type) {
+  const cls = BADGE[type] || '';
+  return `<span class="badge ${cls}">${type}</span>`;
+}
+
+function renderBasicInfo(data, name) {
+  const items = [
+    name ? ['命主', name] : null,
+    ['農曆', data.lunarDate],
+    ['五行局', data.fiveElementsClass],
+    ['陰陽', data.yinYang],
+    ['身宮', data.bodyPalace?.name + '　' + data.bodyPalace?.stemBranch],
+    ['來因宮', data.originalPalace?.name + '　' + data.originalPalace?.stemBranch],
+    ['命主星', data.lifeStars?.mingZhu],
+    ['身主星', data.lifeStars?.shenZhu],
+  ].filter(Boolean);
+
+  return items.map(([label, val]) => `
+    <div class="info-item">
+      <span class="info-label">${label}</span>
+      <span class="info-value">${val ?? '—'}</span>
+    </div>`).join('');
+}
+
+function renderYearMutagens(ym) {
+  return ym.map(m => `
+    <div class="mutagen-row">
+      ${badgeHTML(m.type)}
+      <span>${m.star}</span>
+      <span style="color:var(--dim);font-size:.82rem">→ ${m.palace ?? '—'}</span>
+    </div>`).join('');
+}
+
+function renderPalaces(palaces) {
+  const ORDER = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','官祿','田宅','福德','父母'];
+  const sorted = [...palaces].sort((a, b) => ORDER.indexOf(a.name) - ORDER.indexOf(b.name));
+
+  return sorted.map(p => {
+    const isBody = p.isBodyPalace;
+    const isEmpty = p.isEmpty;
+
+    let starsHTML = '';
+    if (isEmpty) {
+      const borrowed = p.borrowedStars?.join('、') ?? '';
+      starsHTML = `<span style="color:var(--dim)">空宮 借${p.borrowedFromPalace}：${borrowed}</span>`;
+    } else {
+      starsHTML = p.majorStars.map(s => {
+        const bri = s.brightness ? `<span class="${BRI_CLASS[s.brightness] || ''}" style="font-size:.75rem;margin-left:.2rem">${s.brightness}</span>` : '';
+        const mut = s.yearMutagen ? badgeHTML(s.yearMutagen) : '';
+        return `<span>${s.name}${bri}${mut ? ' ' + mut : ''}</span>`;
+      }).join('　');
+    }
+
+    const bodyTag = isBody ? `<span class="pal-tag">身宮</span>` : '';
+    const origTag = p.isOriginalPalace ? `<span class="pal-tag">來因</span>` : '';
+
+    return `
+      <div class="palace-row ${isBody ? 'has-body' : ''} ${isEmpty ? 'is-empty' : ''}">
+        <span class="pal-name">${p.name}</span>
+        <span class="pal-sb">${p.stemBranch}</span>
+        <span class="pal-stars">${starsHTML}</span>
+        ${bodyTag}${origTag}
+      </div>`;
+  }).join('');
+}
+
+function renderMajorLimits(limits) {
+  const currentYear = new Date().getFullYear();
+  return limits.map(l => {
+    const isCurrent = currentYear >= l.startYear && currentYear <= l.endYear;
+    return `
+      <tr class="${isCurrent ? 'current-limit' : ''}">
+        <td>第 ${l.order} 限</td>
+        <td>${l.palace}</td>
+        <td>${l.stem}</td>
+        <td>${l.startYear}—${l.endYear}</td>
+        <td>${l.startAge}—${l.endAge} 歲</td>
+      </tr>`;
+  }).join('');
+}
+
+document.getElementById('chartForm').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const date   = document.getElementById('date').value;
+  const time   = document.getElementById('time').value;
+  const gender = document.querySelector('input[name="gender"]:checked').value;
+  const name   = document.getElementById('name').value.trim();
+
+  const loading  = document.getElementById('loading');
+  const errorBox = document.getElementById('errorBox');
+  const result   = document.getElementById('result');
+  const btn      = document.getElementById('submitBtn');
+
+  // Reset
+  errorBox.style.display = 'none';
+  result.style.display   = 'none';
+  loading.style.display  = 'block';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/chart?date=${date}&time=${time}&gender=${encodeURIComponent(gender)}`);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    document.getElementById('basicInfo').innerHTML    = renderBasicInfo(data, name);
+    document.getElementById('yearMutagens').innerHTML = renderYearMutagens(data.yearMutagens);
+    document.getElementById('palaceList').innerHTML   = renderPalaces(data.palaces);
+    document.getElementById('majorLimits').innerHTML  = renderMajorLimits(data.majorLimits);
+
+    result.style.display = 'block';
+    result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    errorBox.textContent = '起盤失敗：' + err.message;
+    errorBox.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
