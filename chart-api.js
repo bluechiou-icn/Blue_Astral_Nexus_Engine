@@ -55,6 +55,24 @@ function deepToTrad(val) {
   return val;
 }
 
+// ── 主星 Metadata ────────────────────────────────────────────
+const STAR_META = {
+  '紫微': { element: '土', nature: '中性偏吉', keywords: '尊貴·領導·孤高' },
+  '天機': { element: '木', nature: '吉星',     keywords: '智慧·機變·善良' },
+  '太陽': { element: '火', nature: '吉星',     keywords: '光明·博愛·陽剛' },
+  '武曲': { element: '金', nature: '中性',     keywords: '財富·剛毅·果斷' },
+  '天同': { element: '水', nature: '吉星',     keywords: '溫和·享福·隨緣' },
+  '廉貞': { element: '火', nature: '凶中帶吉', keywords: '才藝·刑囚·桃花' },
+  '天府': { element: '土', nature: '吉星',     keywords: '財庫·穩重·保守' },
+  '太陰': { element: '水', nature: '吉星',     keywords: '柔美·財富·陰柔' },
+  '貪狼': { element: '木', nature: '中性',     keywords: '欲望·桃花·多才' },
+  '巨門': { element: '水', nature: '凶中帶吉', keywords: '口舌·是非·善辯' },
+  '天相': { element: '水', nature: '吉星',     keywords: '輔佐·行政·印綬' },
+  '天梁': { element: '土', nature: '吉星',     keywords: '蔭護·醫藥·長輩' },
+  '七殺': { element: '金', nature: '凶星',     keywords: '將星·果決·孤克' },
+  '破軍': { element: '水', nature: '凶星',     keywords: '開創·變動·破壞' },
+};
+
 // ── 星名分類 ─────────────────────────────────────────────────
 const STAR_CATEGORY = {
   // 四煞
@@ -217,10 +235,14 @@ function generateChart(solarDate, birthTime, gender) {
       // 飛入（其他宮干觸發此星，飛入本宮）
       const incomingToStar = incoming.filter(inc => inc.star === sName);
 
+      const meta = STAR_META[sName] ?? null;
       return {
         name:                sName,
         brightness:          toTrad(s.brightness) || null,
         yearMutagen,
+        element:             meta?.element  ?? null,
+        nature:              meta?.nature   ?? null,
+        keywords:            meta?.keywords ?? null,
         selfTransformation,
         incomingMutations:   incomingToStar,
       };
