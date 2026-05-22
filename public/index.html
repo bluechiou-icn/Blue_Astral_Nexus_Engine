@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,47 +8,80 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:    #1a1a2e;
-      --bg2:   #16213e;
-      --gold:  #d4af37;
-      --dim:   #8888aa;
-      --white: #e8e8f0;
-      --r:     8px;
-      --font:  "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+      --bg:   #1a1a2e;
+      --bg2:  #16213e;
+      --gold: #d4af37;
+      --dim:  #8888aa;
+      --wht:  #e8e8f0;
+      --r:    8px;
+      --font: "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
     }
 
-    body { background:var(--bg); color:var(--white); font-family:var(--font); min-height:100vh; padding:2rem 1rem 5rem; }
+    body { background:var(--bg); color:var(--wht); font-family:var(--font); min-height:100vh; padding:2rem 1rem 5rem; }
 
     /* ── Header ── */
-    header { text-align:center; padding:2.5rem 0 2rem; border-bottom:1px solid rgba(212,175,55,.2); margin-bottom:2.5rem; }
-    .brand-title { font-size:clamp(1.8rem,5vw,3rem); font-weight:300; letter-spacing:.6em; color:var(--gold); margin-bottom:.5rem; }
-    .brand-sub   { font-size:.85rem; letter-spacing:.3em; color:var(--dim); text-transform:uppercase; }
+    header { text-align:center; padding:2.5rem 0 2rem; border-bottom:1px solid rgba(212,175,55,.18); margin-bottom:2.5rem; }
+    .brand-title { font-size:clamp(1.8rem,5vw,3rem); font-weight:300; letter-spacing:.6em; color:var(--gold); margin-bottom:.4rem; }
+    .brand-sub   { font-size:.82rem; letter-spacing:.3em; color:var(--dim); text-transform:uppercase; margin-bottom:1.4rem; }
+
+    /* ── Language selector ── */
+    .lang-bar { display:flex; justify-content:center; gap:.6rem; }
+    .lang-btn {
+      background:transparent;
+      border:1px solid var(--dim);
+      border-radius:20px;
+      color:var(--dim);
+      font-family:var(--font);
+      font-size:.78rem;
+      letter-spacing:.08em;
+      padding:.3rem 1rem;
+      cursor:pointer;
+      transition:border-color .2s, color .2s;
+      position:relative;
+    }
+    .lang-btn:hover:not([disabled]) { border-color:var(--gold); color:var(--gold); }
+    .lang-btn.active { border-color:var(--gold); color:var(--gold); }
+    .lang-btn[disabled] { opacity:.35; cursor:not-allowed; }
+    /* Coming Soon tooltip */
+    .lang-btn[disabled]::after {
+      content:'Coming soon';
+      position:absolute;
+      bottom:calc(100% + 8px);
+      left:50%;
+      transform:translateX(-50%);
+      background:#222;
+      color:#ccc;
+      font-size:.7rem;
+      padding:.25rem .65rem;
+      border-radius:4px;
+      white-space:nowrap;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s;
+    }
+    .lang-btn[disabled]:hover::after { opacity:1; }
 
     /* ── Layout ── */
     .container { max-width:760px; margin:0 auto; }
 
     /* ── Card ── */
-    .card { background:var(--bg2); border:1px solid rgba(212,175,55,.15); border-radius:var(--r); padding:2rem; margin-bottom:2rem; }
-    .card-title { font-size:.72rem; letter-spacing:.2em; color:var(--gold); text-transform:uppercase; margin-bottom:1.5rem; padding-bottom:.5rem; border-bottom:1px solid rgba(212,175,55,.15); }
+    .card { background:var(--bg2); border:1px solid rgba(212,175,55,.14); border-radius:var(--r); padding:2rem; margin-bottom:2rem; }
+    .card-title { font-size:.72rem; letter-spacing:.2em; color:var(--gold); text-transform:uppercase; margin-bottom:1.5rem; padding-bottom:.5rem; border-bottom:1px solid rgba(212,175,55,.14); }
 
     /* ── Form ── */
     .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
     @media(max-width:480px){ .form-grid{ grid-template-columns:1fr; } }
     .form-group { display:flex; flex-direction:column; gap:.4rem; }
-    .form-group.full { grid-column:1/-1; }
-    label { font-size:.75rem; letter-spacing:.1em; color:var(--dim); text-transform:uppercase; }
-
+    label.field-label { font-size:.75rem; letter-spacing:.1em; color:var(--dim); text-transform:uppercase; }
     input[type="text"], input[type="date"], input[type="time"] {
-      background:var(--bg); border:1px solid rgba(212,175,55,.25); border-radius:4px;
-      color:var(--white); font-family:var(--font); font-size:.95rem;
+      background:var(--bg); border:1px solid rgba(212,175,55,.22); border-radius:4px;
+      color:var(--wht); font-family:var(--font); font-size:.95rem;
       padding:.6rem .8rem; outline:none; transition:border-color .2s; width:100%; color-scheme:dark;
     }
     input:focus { border-color:var(--gold); }
-
     .radio-group { display:flex; gap:2rem; align-items:center; padding-top:.2rem; }
-    .radio-group label { display:flex; align-items:center; gap:.5rem; color:var(--white); font-size:.95rem; letter-spacing:0; text-transform:none; cursor:pointer; }
+    .radio-label { display:flex; align-items:center; gap:.5rem; color:var(--wht); font-size:.95rem; cursor:pointer; }
     input[type="radio"] { accent-color:var(--gold); width:1rem; height:1rem; cursor:pointer; }
-
     .btn-submit { width:100%; margin-top:1.5rem; padding:.8rem; background:transparent; border:1px solid var(--gold); border-radius:var(--r); color:var(--gold); font-family:var(--font); font-size:1rem; letter-spacing:.3em; cursor:pointer; transition:background .2s,color .2s; }
     .btn-submit:hover { background:var(--gold); color:var(--bg); }
     .btn-submit:disabled { opacity:.4; cursor:not-allowed; }
@@ -63,45 +96,40 @@
 
     /* ── Result ── */
     #result { display:none; }
-    .info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:.8rem; margin-bottom:1rem; }
+    .info-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:.8rem; }
     .info-item { display:flex; flex-direction:column; gap:.2rem; }
     .info-label { font-size:.7rem; letter-spacing:.1em; color:var(--dim); text-transform:uppercase; }
-    .info-value { font-size:1rem; color:var(--white); }
+    .info-value { font-size:1rem; color:var(--wht); }
 
-    /* ── Badges ── */
-    .mutagen-row { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:.5rem; align-items:center; }
-    .badge { display:inline-block; padding:.15rem .5rem; border-radius:3px; font-size:.78rem; font-weight:600; color:#fff; }
-    .badge-lu   { background:#27ae60; }
-    .badge-quan { background:#e67e22; }
-    .badge-ke   { background:#2980b9; }
-    .badge-ji   { background:#c0392b; }
+    /* ── Mutagen badges ── */
+    .mutagen-row { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:.55rem; align-items:center; }
+    .badge { display:inline-block; padding:.15rem .55rem; border-radius:3px; font-size:.78rem; font-weight:600; color:#fff; white-space:nowrap; }
+    .lu   { background:#27ae60; }
+    .quan { background:#e67e22; }
+    .ke   { background:#2980b9; }
+    .ji   { background:#c0392b; }
 
     /* ── Palace list ── */
-    .palace-list { display:flex; flex-direction:column; gap:.6rem; }
-    .palace-row { display:flex; align-items:baseline; gap:.8rem; padding:.5rem .8rem; border-radius:4px; background:rgba(255,255,255,.03); border-left:2px solid transparent; font-size:.88rem; }
+    .palace-list { display:flex; flex-direction:column; gap:.55rem; }
+    .palace-row { display:flex; align-items:baseline; gap:.8rem; padding:.5rem .8rem; border-radius:4px; background:rgba(255,255,255,.03); border-left:2px solid transparent; font-size:.88rem; flex-wrap:wrap; }
     .palace-row.has-body { border-left-color:var(--gold); }
-    .palace-row.is-empty { opacity:.65; }
-    .pal-name { min-width:3.5em; color:var(--gold); font-size:.85rem; }
-    .pal-sb   { min-width:2.5em; color:var(--dim); font-size:.75rem; }
-    .pal-stars { flex:1; color:var(--white); }
-    .pal-tag  { font-size:.7rem; color:var(--dim); margin-left:.3rem; border:1px solid rgba(212,175,55,.35); padding:.05rem .3rem; border-radius:2px; }
-    .bri-bright { color:#f1c40f; }
-    .bri-dim    { color:#888; }
+    .palace-row.is-empty { opacity:.6; }
+    .pal-name  { min-width:5em; color:var(--gold); font-size:.85rem; font-weight:500; }
+    .pal-sb    { min-width:2.5em; color:var(--dim); font-size:.75rem; flex-shrink:0; }
+    .pal-stars { flex:1; color:var(--wht); }
+    .pal-tag   { font-size:.68rem; color:var(--dim); border:1px solid rgba(212,175,55,.3); padding:.05rem .35rem; border-radius:2px; flex-shrink:0; }
+    .bri-hi  { color:#f1c40f; font-size:.75rem; margin-left:.15rem; }
+    .bri-lo  { color:#666; font-size:.75rem; margin-left:.15rem; }
+    .bri-mid { font-size:.75rem; margin-left:.15rem; color:var(--dim); }
 
     /* ── Table ── */
     table { width:100%; border-collapse:collapse; font-size:.85rem; }
-    th { text-align:left; padding:.4rem .6rem; color:var(--gold); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; border-bottom:1px solid rgba(212,175,55,.2); }
+    th { text-align:left; padding:.4rem .6rem; color:var(--gold); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; border-bottom:1px solid rgba(212,175,55,.18); }
     td { padding:.45rem .6rem; border-bottom:1px solid rgba(255,255,255,.05); }
-    tr.current-limit { background:rgba(212,175,55,.08); }
-    tr.current-limit td { color:var(--gold); font-weight:600; }
-
-    /* ── Lang toggle ── */
-    .lang-bar { text-align:center; margin-top:3rem; margin-bottom:1rem; }
-    .lang-btn { background:transparent; border:1px solid rgba(212,175,55,.35); border-radius:20px; color:var(--dim); font-family:var(--font); font-size:.78rem; letter-spacing:.1em; padding:.35rem 1.2rem; cursor:pointer; transition:border-color .2s, color .2s; }
-    .lang-btn:hover { border-color:var(--gold); color:var(--gold); }
+    tr.cur td { color:var(--gold); font-weight:600; background:rgba(212,175,55,.07); }
 
     /* ── Footer ── */
-    footer { text-align:center; margin-top:1.5rem; color:var(--dim); font-size:.72rem; letter-spacing:.15em; }
+    footer { text-align:center; margin-top:2.5rem; color:var(--dim); font-size:.7rem; letter-spacing:.15em; }
   </style>
 </head>
 <body>
@@ -109,89 +137,74 @@
 <header>
   <div class="brand-title">Æ T H N O U S</div>
   <div class="brand-sub">Astral Nexus Engine</div>
+  <div class="lang-bar">
+    <button class="lang-btn active" data-lang="zh" onclick="setLang('zh')">中文</button>
+    <button class="lang-btn"        data-lang="en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" disabled title="Coming soon">한국어</button>
+  </div>
 </header>
 
 <div class="container">
 
-  <!-- Input form -->
   <div class="card">
-    <div class="card-title" data-i18n="form_title">Chart Input</div>
+    <div class="card-title" data-i18n="form_title"></div>
     <form id="chartForm">
       <div class="form-grid">
         <div class="form-group">
-          <label for="name" data-i18n="label_name">Name (Optional)</label>
-          <input type="text" id="name" data-i18n-ph="ph_name" placeholder="Chart Subject Name">
+          <label class="field-label" for="name" data-i18n="label_name"></label>
+          <input type="text" id="name" data-i18n-ph="ph_name">
         </div>
         <div class="form-group">
-          <label for="date" data-i18n="label_date">Solar Date</label>
+          <label class="field-label" for="date" data-i18n="label_date"></label>
           <input type="date" id="date" required>
         </div>
         <div class="form-group">
-          <label for="time" data-i18n="label_time">Birth Time</label>
+          <label class="field-label" for="time" data-i18n="label_time"></label>
           <input type="time" id="time" required>
         </div>
         <div class="form-group">
-          <label data-i18n="label_gender">Gender</label>
+          <label class="field-label" data-i18n="label_gender"></label>
           <div class="radio-group">
-            <label><input type="radio" name="gender" value="男" checked> <span data-i18n="gender_male">Male</span></label>
-            <label><input type="radio" name="gender" value="女"> <span data-i18n="gender_female">Female</span></label>
+            <label class="radio-label"><input type="radio" name="gender" value="男" checked><span data-i18n="gender_m"></span></label>
+            <label class="radio-label"><input type="radio" name="gender" value="女"><span data-i18n="gender_f"></span></label>
           </div>
         </div>
       </div>
-      <button type="submit" class="btn-submit" id="submitBtn" data-i18n="btn_cast">C A S T &nbsp; C H A R T</button>
+      <button type="submit" class="btn-submit" id="submitBtn" data-i18n="btn_cast"></button>
     </form>
   </div>
 
-  <!-- Loading -->
-  <div class="loading" id="loading">
-    <div class="spinner"></div><br>
-    <span data-i18n="loading">Casting chart...</span>
-  </div>
+  <div class="loading" id="loading"><div class="spinner"></div><br><span data-i18n="loading"></span></div>
+  <div class="error"   id="errorBox"></div>
 
-  <!-- Error -->
-  <div class="error" id="errorBox"></div>
-
-  <!-- Result -->
   <div id="result">
-
     <div class="card">
-      <div class="card-title" data-i18n="sec_info">Chart Information</div>
+      <div class="card-title" data-i18n="sec_info"></div>
       <div class="info-grid" id="basicInfo"></div>
     </div>
-
     <div class="card">
-      <div class="card-title" data-i18n="sec_mutagen">Year Four Transformations</div>
+      <div class="card-title" data-i18n="sec_mutagen"></div>
       <div id="yearMutagens"></div>
     </div>
-
     <div class="card">
-      <div class="card-title" data-i18n="sec_palaces">Twelve Palaces</div>
+      <div class="card-title" data-i18n="sec_palaces"></div>
       <div class="palace-list" id="palaceList"></div>
     </div>
-
     <div class="card">
-      <div class="card-title" data-i18n="sec_limits">Major Limits</div>
+      <div class="card-title" data-i18n="sec_limits"></div>
       <table>
-        <thead>
-          <tr>
-            <th data-i18n="th_order">Order</th>
-            <th data-i18n="th_palace">Palace</th>
-            <th data-i18n="th_stem">Stem</th>
-            <th data-i18n="th_year">Year Range</th>
-            <th data-i18n="th_age">Age</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th data-i18n="th_order"></th>
+          <th data-i18n="th_palace"></th>
+          <th data-i18n="th_stem"></th>
+          <th data-i18n="th_year"></th>
+          <th data-i18n="th_age"></th>
+        </tr></thead>
         <tbody id="majorLimits"></tbody>
       </table>
     </div>
+  </div>
 
-  </div><!-- /#result -->
-
-</div><!-- /.container -->
-
-<!-- Language toggle -->
-<div class="lang-bar">
-  <button class="lang-btn" id="langBtn" onclick="toggleLang()">切換繁體中文</button>
 </div>
 
 <footer>© ÆTHNOUS &nbsp;·&nbsp; Internal Research Tool &nbsp;·&nbsp; Not for Distribution</footer>
@@ -199,155 +212,188 @@
 <script>
 // ── i18n ─────────────────────────────────────────────────────
 const I18N = {
-  en: {
-    form_title:   'Chart Input',
-    label_name:   'Name (Optional)',
-    ph_name:      'Chart Subject Name',
-    label_date:   'Solar Date',
-    label_time:   'Birth Time',
-    label_gender: 'Gender',
-    gender_male:  'Male',
-    gender_female:'Female',
-    btn_cast:     'C A S T   C H A R T',
-    loading:      'Casting chart...',
-    sec_info:     'Chart Information',
-    sec_mutagen:  'Year Four Transformations',
-    sec_palaces:  'Twelve Palaces',
-    sec_limits:   'Major Limits',
-    th_order:     'Order',
-    th_palace:    'Palace',
-    th_stem:      'Stem',
-    th_year:      'Year Range',
-    th_age:       'Age',
-    info_name:    'Name',
-    info_lunar:   'Lunar Date',
-    info_five:    'Five Elements',
-    info_yinyang: 'Yin Yang',
-    info_body:    'Body Palace',
-    info_origin:  'Origin Palace',
-    info_ming:    'Life Star',
-    info_shen:    'Body Star',
-    tag_body:     'Body',
-    tag_origin:   'Origin',
-    borrowed_lbl: 'Empty · Borrows',
-    limit_order:  (n) => `Limit ${n}`,
-    lang_toggle:  '切換繁體中文',
-  },
   zh: {
-    form_title:   '起 盤 資 料',
-    label_name:   '命主姓名（選填）',
-    ph_name:      '命主姓名',
-    label_date:   '西曆生日',
-    label_time:   '出生時間',
-    label_gender: '性別',
-    gender_male:  '男',
-    gender_female:'女',
-    btn_cast:     '起 盤',
-    loading:      '排 盤 中',
-    sec_info:     '命 盤 資 訊',
-    sec_mutagen:  '生 年 四 化',
-    sec_palaces:  '十 二 宮 位',
-    sec_limits:   '十 年 大 限',
-    th_order:     '限序',
-    th_palace:    '宮位',
-    th_stem:      '宮干',
-    th_year:      '年份',
-    th_age:       '年齡',
-    info_name:    '命主',
-    info_lunar:   '農曆',
-    info_five:    '五行局',
-    info_yinyang: '陰陽',
-    info_body:    '身宮',
-    info_origin:  '來因宮',
-    info_ming:    '命主星',
-    info_shen:    '身主星',
-    tag_body:     '身宮',
-    tag_origin:   '來因',
-    borrowed_lbl: '空宮 借',
-    limit_order:  (n) => `第 ${n} 限`,
-    lang_toggle:  'Switch to English',
+    form_title:  '起 盤 資 料',
+    label_name:  '命主姓名（選填）',
+    ph_name:     '命主姓名',
+    label_date:  '西曆生日',
+    label_time:  '出生時間',
+    label_gender:'性別',
+    gender_m:    '男',
+    gender_f:    '女',
+    btn_cast:    '起 盤',
+    loading:     '排 盤 中',
+    sec_info:    '命 盤 資 訊',
+    sec_mutagen: '生 年 四 化',
+    sec_palaces: '十 二 宮 位',
+    sec_limits:  '大 限 序 列',
+    th_order:    '限序',
+    th_palace:   '宮位',
+    th_stem:     '宮干',
+    th_year:     '年份',
+    th_age:      '年齡',
+    info_name:   '命主',
+    info_lunar:  '農曆生日',
+    info_five:   '五行局',
+    info_yy:     '陰陽',
+    info_body:   '身宮',
+    info_origin: '來因宮',
+    info_ming:   '命主星',
+    info_shen:   '身主星',
+    tag_body:    '身宮',
+    tag_origin:  '來因',
+    empty_prefix:'空宮 借',
+    err_prefix:  '起盤失敗：',
+    limit_fn:    n => `第 ${n} 大限`,
+    age_suffix:  '歲',
+  },
+  en: {
+    form_title:  'Chart Input',
+    label_name:  'Name (Optional)',
+    ph_name:     'Chart Subject Name',
+    label_date:  'Date of Birth',
+    label_time:  'Time of Birth',
+    label_gender:'Gender',
+    gender_m:    'Male',
+    gender_f:    'Female',
+    btn_cast:    'Generate Chart',
+    loading:     'Generating chart...',
+    sec_info:    'Chart Information',
+    sec_mutagen: 'Year Transformations',
+    sec_palaces: 'Twelve Palaces',
+    sec_limits:  'Major Limits',
+    th_order:    'Limit',
+    th_palace:   'Palace',
+    th_stem:     'Stem',
+    th_year:     'Year Range',
+    th_age:      'Age',
+    info_name:   'Name',
+    info_lunar:  'Lunar Date',
+    info_five:   'Five Elements Class',
+    info_yy:     'Yin Yang',
+    info_body:   'Soul Palace',
+    info_origin: 'Origin Palace',
+    info_ming:   'Life Star',
+    info_shen:   'Body Star',
+    tag_body:    'Soul',
+    tag_origin:  'Origin',
+    empty_prefix:'Empty · Borrows',
+    err_prefix:  'Error: ',
+    limit_fn:    n => `Limit ${n}`,
+    age_suffix:  'yrs',
   },
 };
 
-let lang = 'en';
+// ── Translation lookup tables ─────────────────────────────────
+const PALACE_EN = {
+  '命宮':'Life Palace','父母':'Parents','福德':'Virtue',
+  '田宅':'Property','官祿':'Career','交友':'Friends',
+  '遷移':'Travel','疾厄':'Health','財帛':'Wealth',
+  '子女':'Children','夫妻':'Spouse','兄弟':'Siblings',
+};
 
-function t(key, ...args) {
-  const val = I18N[lang][key];
-  return typeof val === 'function' ? val(...args) : (val ?? key);
-}
+const MUTAGEN_EN = {
+  '化祿':'Fortune (祿)','化權':'Power (權)',
+  '化科':'Merit (科)','化忌':'Restriction (忌)',
+};
 
-function applyLang() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    const val = I18N[lang][key];
-    if (val !== undefined && typeof val !== 'function') el.textContent = val;
-  });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-    const key = el.getAttribute('data-i18n-ph');
-    const val = I18N[lang][key];
-    if (val) el.placeholder = val;
-  });
-  document.getElementById('langBtn').textContent = t('lang_toggle');
-  document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
-  // Re-render result if visible
-  if (document.getElementById('result').style.display !== 'none' && lastData) {
-    renderAll(lastData, lastName);
-  }
-}
+const BRI_EN = {
+  '廟':'Dominant','旺':'Flourishing','得':'Comfortable',
+  '利':'Favorable','平':'Neutral','不利':'Unfavorable',
+  '陷':'Fallen','不':'Depleted',
+};
 
-function toggleLang() {
-  lang = lang === 'en' ? 'zh' : 'en';
-  applyLang();
-}
+const BRI_CLS = {
+  '廟':'bri-hi','旺':'bri-hi','得':'bri-mid','利':'bri-mid',
+  '平':'bri-mid','不利':'bri-lo','陷':'bri-lo','不':'bri-lo',
+};
 
-// ── Render helpers ────────────────────────────────────────────
-const BADGE_CLS = { '化祿':'badge-lu','化權':'badge-quan','化科':'badge-ke','化忌':'badge-ji' };
-const BRI_CLS   = { '廟':'bri-bright','旺':'bri-bright','得':'','利':'','平':'','不':'bri-dim','陷':'bri-dim','不利':'bri-dim' };
+const BADGE_CLS = {'化祿':'lu','化權':'quan','化科':'ke','化忌':'ji'};
+
+// ── State ─────────────────────────────────────────────────────
+let lang = 'zh';
+let lastData = null, lastName = '';
+
+// ── Helpers ──────────────────────────────────────────────────
+function t(key)          { return I18N[lang][key] ?? key; }
+function palName(zh)     { return lang === 'en' ? (PALACE_EN[zh] ?? zh) : zh; }
+function mutagenLabel(m) { return lang === 'en' ? (MUTAGEN_EN[m] ?? m) : m; }
+function briLabel(b)     { return lang === 'en' ? (BRI_EN[b] ?? b) : b; }
 
 function badge(type) {
-  return `<span class="badge ${BADGE_CLS[type]||''}">${type}</span>`;
+  return `<span class="badge ${BADGE_CLS[type]||''}">${mutagenLabel(type)}</span>`;
 }
 
+// ── Lang switch ───────────────────────────────────────────────
+function setLang(l) {
+  lang = l;
+  document.documentElement.lang = l === 'zh' ? 'zh-TW' : 'en';
+  document.querySelectorAll('.lang-btn[data-lang]').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.lang === l)
+  );
+  applyStaticI18n();
+  if (lastData) renderAll(lastData, lastName);
+}
+
+function applyStaticI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = I18N[lang][el.dataset.i18n];
+    if (v !== undefined) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = I18N[lang][el.dataset.i18nPh];
+    if (v) el.placeholder = v;
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────
 function renderAll(data, name) {
   // Basic info
-  const items = [
-    name ? [t('info_name'), name] : null,
-    [t('info_lunar'),   data.lunarDate],
-    [t('info_five'),    data.fiveElementsClass],
-    [t('info_yinyang'), data.yinYang],
-    [t('info_body'),    data.bodyPalace   ? data.bodyPalace.name   + '　' + data.bodyPalace.stemBranch   : '—'],
-    [t('info_origin'),  data.originalPalace ? data.originalPalace.name + '　' + data.originalPalace.stemBranch : '—'],
-    [t('info_ming'),    data.lifeStars?.mingZhu],
-    [t('info_shen'),    data.lifeStars?.shenZhu],
+  const rows = [
+    name                  ? [t('info_name'),   name]                                          : null,
+    [t('info_lunar'),  data.lunarDate],
+    [t('info_five'),   data.fiveElementsClass],
+    [t('info_yy'),     data.yinYang],
+    data.bodyPalace       ? [t('info_body'),   palName(data.bodyPalace.name)   + '　' + data.bodyPalace.stemBranch]   : null,
+    data.originalPalace   ? [t('info_origin'), palName(data.originalPalace.name) + '　' + data.originalPalace.stemBranch] : null,
+    [t('info_ming'),   data.lifeStars?.mingZhu],
+    [t('info_shen'),   data.lifeStars?.shenZhu],
   ].filter(Boolean);
-  document.getElementById('basicInfo').innerHTML = items.map(([lbl,val]) =>
-    `<div class="info-item"><span class="info-label">${lbl}</span><span class="info-value">${val ?? '—'}</span></div>`
-  ).join('');
+
+  document.getElementById('basicInfo').innerHTML = rows.map(([lbl, val]) =>
+    `<div class="info-item">
+      <span class="info-label">${lbl}</span>
+      <span class="info-value">${val ?? '—'}</span>
+    </div>`).join('');
 
   // Year mutagens
   document.getElementById('yearMutagens').innerHTML = data.yearMutagens.map(m =>
-    `<div class="mutagen-row">${badge(m.type)}<span>${m.star}</span><span style="color:var(--dim);font-size:.82rem">→ ${m.palace ?? '—'}</span></div>`
-  ).join('');
+    `<div class="mutagen-row">
+      ${badge(m.type)}
+      <span>${m.star}</span>
+      <span style="color:var(--dim);font-size:.82rem">→ ${m.palace ? palName(m.palace) : '—'}</span>
+    </div>`).join('');
 
-  // Palaces
+  // Twelve palaces
   const ORDER = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','官祿','田宅','福德','父母'];
   document.getElementById('palaceList').innerHTML = [...data.palaces]
-    .sort((a,b) => ORDER.indexOf(a.name)-ORDER.indexOf(b.name))
+    .sort((a, b) => ORDER.indexOf(a.name) - ORDER.indexOf(b.name))
     .map(p => {
       let starsHTML;
       if (p.isEmpty) {
-        starsHTML = `<span style="color:var(--dim)">${t('borrowed_lbl')} ${p.borrowedFromPalace}：${p.borrowedStars?.join('、')}</span>`;
+        starsHTML = `<span style="color:var(--dim)">${t('empty_prefix')} ${palName(p.borrowedFromPalace)}：${p.borrowedStars?.join('、')}</span>`;
       } else {
         starsHTML = p.majorStars.map(s => {
-          const bri = s.brightness ? `<span class="${BRI_CLS[s.brightness]||''}" style="font-size:.75rem;margin-left:.2rem">${s.brightness}</span>` : '';
-          const mut = s.yearMutagen ? ' '+badge(s.yearMutagen) : '';
+          const bc  = BRI_CLS[s.brightness] || 'bri-mid';
+          const bri = s.brightness ? `<span class="${bc}">${briLabel(s.brightness)}</span>` : '';
+          const mut = s.yearMutagen ? ' ' + badge(s.yearMutagen) : '';
           return `<span>${s.name}${bri}${mut}</span>`;
         }).join('　');
       }
       const bodyTag   = p.isBodyPalace     ? `<span class="pal-tag">${t('tag_body')}</span>`   : '';
       const origTag   = p.isOriginalPalace ? `<span class="pal-tag">${t('tag_origin')}</span>` : '';
       return `<div class="palace-row ${p.isBodyPalace?'has-body':''} ${p.isEmpty?'is-empty':''}">
-        <span class="pal-name">${p.name}</span>
+        <span class="pal-name">${palName(p.name)}</span>
         <span class="pal-sb">${p.stemBranch}</span>
         <span class="pal-stars">${starsHTML}</span>
         ${bodyTag}${origTag}
@@ -355,22 +401,20 @@ function renderAll(data, name) {
     }).join('');
 
   // Major limits
-  const currentYear = new Date().getFullYear();
+  const now = new Date().getFullYear();
   document.getElementById('majorLimits').innerHTML = data.majorLimits.map(l => {
-    const cur = currentYear >= l.startYear && currentYear <= l.endYear;
-    return `<tr class="${cur?'current-limit':''}">
-      <td>${t('limit_order', l.order)}</td>
-      <td>${l.palace}</td>
+    const cur = now >= l.startYear && now <= l.endYear;
+    return `<tr class="${cur ? 'cur' : ''}">
+      <td>${I18N[lang].limit_fn(l.order)}</td>
+      <td>${palName(l.palace)}</td>
       <td>${l.stem}</td>
       <td>${l.startYear}–${l.endYear}</td>
-      <td>${l.startAge}–${l.endAge}</td>
+      <td>${l.startAge}–${l.endAge} ${t('age_suffix')}</td>
     </tr>`;
   }).join('');
 }
 
 // ── Form submit ───────────────────────────────────────────────
-let lastData = null, lastName = '';
-
 document.getElementById('chartForm').addEventListener('submit', async e => {
   e.preventDefault();
   const date   = document.getElementById('date').value;
@@ -397,13 +441,16 @@ document.getElementById('chartForm').addEventListener('submit', async e => {
     result.style.display = 'block';
     result.scrollIntoView({ behavior:'smooth', block:'start' });
   } catch(err) {
-    errorBox.textContent = (lang==='zh'?'起盤失敗：':'Error: ') + err.message;
+    errorBox.textContent = t('err_prefix') + err.message;
     errorBox.style.display = 'block';
   } finally {
     loading.style.display = 'none';
     btn.disabled = false;
   }
 });
+
+// ── Init ─────────────────────────────────────────────────────
+applyStaticI18n();
 </script>
 </body>
 </html>
