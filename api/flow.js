@@ -182,6 +182,12 @@ module.exports = function handler(req, res) {
       hasLuJiConflict: luJiConflicts.length > 0,
 
       birthYearMutagens: chart.yearMutagens,
+
+      allPalaceMinorLimitAges: chart.palaces.map(p => ({
+        name:           p.name,
+        stemBranch:     p.stemBranch,
+        minorLimitAges: p.minorLimitAges || null,
+      })),
     });
 
   } catch (err) {
