@@ -43,7 +43,7 @@ module.exports = function handler(req, res) {
 
   try {
     const chart = generateChart(date, time, gender);
-    res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
+    res.setHeader("Cache-Control", "no-store");
     return res.status(200).json(chart);
   } catch (err) {
     return res.status(500).json({ error: "命盤計算失敗", message: err.message });
