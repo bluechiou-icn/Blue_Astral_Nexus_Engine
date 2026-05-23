@@ -1,10 +1,8 @@
 {
   "version": 2,
   "functions": {
-    "api/chart.js": {
-      "memory": 256,
-      "maxDuration": 10
-    }
+    "api/chart.js": { "maxDuration": 10 },
+    "api/flow.js":  { "maxDuration": 10 }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
