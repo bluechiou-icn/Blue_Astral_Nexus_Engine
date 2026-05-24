@@ -85,6 +85,54 @@ const BRIGHTNESS_RANK = {
   '不':   8,
 };
 
+// ── 輔星安置對照表（Blue's Version）────────────────────────────
+
+const TIANKUI_POSITIONS = {
+  '甲':'丑','乙':'子','丙':'亥','丁':'亥',
+  '戊':'丑','己':'子','庚':'丑','辛':'午',
+  '壬':'卯','癸':'卯'
+};
+const TIANYUE_POSITIONS = {
+  '甲':'未','乙':'申','丙':'酉','丁':'酉',
+  '戊':'未','己':'申','庚':'未','辛':'寅',
+  '壬':'巳','癸':'巳'
+};
+const LUCUN_POSITIONS = {
+  '甲':'寅','乙':'卯','丙':'巳','丁':'午',
+  '戊':'巳','己':'午','庚':'申','辛':'酉',
+  '壬':'亥','癸':'子'
+};
+const TIANMA_RULES = {
+  '寅':'申','午':'申','戌':'申',
+  '申':'寅','子':'寅','辰':'寅',
+  '巳':'亥','酉':'亥','丑':'亥',
+  '亥':'巳','卯':'巳','未':'巳'
+};
+const ZUOFU_POSITIONS = {
+  '寅':'辰','卯':'巳','辰':'午','巳':'未',
+  '午':'申','未':'酉','申':'戌','酉':'亥',
+  '戌':'子','亥':'丑','子':'寅','丑':'卯'
+};
+const YOUBI_POSITIONS = {
+  '寅':'戌','卯':'酉','辰':'申','巳':'未',
+  '午':'午','未':'巳','申':'辰','酉':'卯',
+  '戌':'寅','亥':'丑','子':'子','丑':'亥'
+};
+const DIKONG_POSITIONS = {
+  '子':'亥','丑':'子','寅':'丑','卯':'寅',
+  '辰':'卯','巳':'辰','午':'巳','未':'午',
+  '申':'未','酉':'申','戌':'酉','亥':'戌'
+};
+const DIJIE_POSITIONS = {
+  '子':'子','丑':'亥','寅':'戌','卯':'酉',
+  '辰':'申','巳':'未','午':'午','未':'巳',
+  '申':'辰','酉':'卯','戌':'寅','亥':'丑'
+};
+const TIME_INDEX_TO_BRANCH = [
+  '子','丑','寅','卯','辰','巳',
+  '午','未','申','酉','戌','亥','子'
+];
+
 // ── 星名分類 ─────────────────────────────────────────────────
 const STAR_CATEGORY = {
   // 四煞
@@ -137,6 +185,22 @@ function getMutagenStars(stem) {
   const stars = BLUE_SI_HUA_TABLE[tradStem];
   if (!stars) return ['', '', '', ''];
   return stars;
+}
+
+// ── 輔星亮度計算（Blue's Version）────────────────────────────
+function calcMinorStarBrightness(starName, palaceBranch, birthData) {
+  const { yearStem, yearBranch, monthBranch, hourBranch } = birthData;
+  switch (starName) {
+    case '天魁': { const pos = TIANKUI_POSITIONS[yearStem];  return pos === palaceBranch ? '廟' : null; }
+    case '天鉞': { const pos = TIANYUE_POSITIONS[yearStem];  return pos === palaceBranch ? '廟' : null; }
+    case '祿存': { const pos = LUCUN_POSITIONS[yearStem];    return pos === palaceBranch ? '廟' : null; }
+    case '天馬': { const pos = TIANMA_RULES[yearBranch];     return pos === palaceBranch ? '廟' : '平'; }
+    case '左輔': { const pos = ZUOFU_POSITIONS[monthBranch]; return pos === palaceBranch ? '廟' : null; }
+    case '右弼': { const pos = YOUBI_POSITIONS[monthBranch]; return pos === palaceBranch ? '廟' : null; }
+    case '地空': { const pos = DIKONG_POSITIONS[hourBranch]; return pos === palaceBranch ? '廟' : '平'; }
+    case '地劫': { const pos = DIJIE_POSITIONS[hourBranch];  return pos === palaceBranch ? '廟' : '平'; }
+    default: return null;
+  }
 }
 
 // 在宮位陣列中找某顆星所在的宮位
@@ -198,8 +262,16 @@ function generateChart(solarDate, birthTime, gender) {
   const r = astro.bySolar(solarDate, timeIndex, gender, true);
 
   // ── 生年干、陰陽 ──────────────────────────────────────────
-  const yearStem  = r.rawDates.chineseDate.yearly[0];
+  const yearStem   = r.rawDates.chineseDate.yearly[0];
   const yearBranch = r.rawDates.chineseDate.yearly[1];
+
+  // ── 提取生辰干支供輔星亮度計算 ──
+  const birthData = {
+    yearStem:    toTrad(yearStem),
+    yearBranch:  toTrad(yearBranch),
+    monthBranch: toTrad(r.rawDates.chineseDate.monthly[1]),
+    hourBranch:  toTrad(TIME_INDEX_TO_BRANCH[timeIndex]),
+  };
   const yangStems = ["甲", "丙", "戊", "庚", "壬"];
   const isYang    = yangStems.includes(yearStem);
   const yinYang   = (isYang ? "陽" : "陰") + gender;
@@ -289,12 +361,15 @@ function generateChart(solarDate, birthTime, gender) {
 
     // 輔星
     const minorStars = p.minorStars.map(s => {
-      const mBri = toTrad(s.brightness) || null;
+      const sName       = toTrad(s.name);
+      const iztroBright = toTrad(s.brightness) || null;
+      const calcBright  = iztroBright ?? calcMinorStarBrightness(sName, branch, birthData);
       return {
-        name:           toTrad(s.name),
-        brightness:     mBri,
-        brightnessRank: BRIGHTNESS_RANK[mBri] ?? null,
-        category:       starCategory(toTrad(s.name)),
+        name:             sName,
+        brightness:       calcBright,
+        brightnessRank:   calcBright ? (BRIGHTNESS_RANK[calcBright] ?? null) : null,
+        brightnessSource: iztroBright ? 'iztro' : (calcBright ? 'BlueVersion' : null),
+        category:         starCategory(sName),
       };
     });
 

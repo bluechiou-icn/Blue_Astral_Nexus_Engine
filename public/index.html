@@ -16,10 +16,7 @@
   }
 
   /* ── 頂部品牌 ── */
-  .brand {
-    text-align: center;
-    margin-bottom: 40px;
-  }
+  .brand { text-align: center; margin-bottom: 40px; }
   .brand-title {
     font-size: clamp(22px, 5vw, 36px);
     letter-spacing: 0.35em;
@@ -32,7 +29,43 @@
     letter-spacing: 0.2em;
     color: #7a6a4a;
     text-transform: uppercase;
+    margin-bottom: 14px;
   }
+
+  /* ── 語言切換 ── */
+  .lang-bar { display: flex; justify-content: center; gap: 8px; }
+  .lang-btn {
+    position: relative;
+    border: 1px solid #3a3a5a;
+    border-radius: 20px;
+    color: #5a5a7a;
+    padding: 4px 14px;
+    font-size: 11px;
+    cursor: pointer;
+    background: transparent;
+    font-family: inherit;
+    letter-spacing: 0.05em;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .lang-btn.active  { border-color: #d4af37; color: #d4af37; }
+  .lang-btn[disabled] { opacity: 0.35; cursor: not-allowed; }
+  .lang-btn[disabled]::after {
+    content: 'Coming soon';
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    color: #ccc;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s;
+  }
+  .lang-btn[disabled]:hover::after { opacity: 1; }
 
   /* ── 卡片 ── */
   .card {
@@ -74,83 +107,39 @@
     font-family: inherit;
     transition: border-color 0.2s;
   }
-  .field input:focus, .field select:focus {
-    border-color: #d4af37;
-  }
+  .field input:focus, .field select:focus { border-color: #d4af37; }
   .field input::placeholder { color: #3a3a5a; }
-
-  /* 兩欄排版 */
   .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-  /* Radio / Checkbox 群組 */
-  .radio-group {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+  .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
   .radio-group label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #c8b890;
-    cursor: pointer;
-    padding: 7px 12px;
-    border: 1px solid #2a2550;
-    border-radius: 2px;
-    transition: border-color 0.2s;
-    margin-bottom: 0;
-    letter-spacing: 0;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: #c8b890; cursor: pointer;
+    padding: 7px 12px; border: 1px solid #2a2550; border-radius: 2px;
+    transition: border-color 0.2s; margin-bottom: 0; letter-spacing: 0;
   }
   .radio-group input[type=radio] { width: auto; accent-color: #d4af37; }
   .radio-group label:has(input:checked) { border-color: #d4af37; color: #d4af37; }
 
-  /* 選填標記 */
-  .optional {
-    font-size: 10px;
-    color: #4a4a6a;
-    margin-left: 6px;
-    letter-spacing: 0;
-  }
+  .optional { font-size: 10px; color: #4a4a6a; margin-left: 6px; letter-spacing: 0; }
+  .mode-note { font-size: 11px; color: #6a5a3a; margin-top: 6px; line-height: 1.5; }
 
-  /* Mode 說明 */
-  .mode-note {
-    font-size: 11px;
-    color: #6a5a3a;
-    margin-top: 6px;
-    line-height: 1.5;
-  }
-
-  /* 提交按鈕 */
   .btn-submit {
-    width: 100%;
-    padding: 13px;
-    background: transparent;
-    border: 1px solid #d4af37;
-    color: #d4af37;
-    font-size: 13px;
-    letter-spacing: 0.3em;
-    cursor: pointer;
-    border-radius: 2px;
-    margin-top: 6px;
-    transition: background 0.2s, color 0.2s;
-    font-family: inherit;
+    width: 100%; padding: 13px;
+    background: transparent; border: 1px solid #d4af37;
+    color: #d4af37; font-size: 13px; letter-spacing: 0.3em;
+    cursor: pointer; border-radius: 2px; margin-top: 6px;
+    transition: background 0.2s, color 0.2s; font-family: inherit;
   }
   .btn-submit:hover { background: #d4af37; color: #0d0d1a; }
   .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* ── Loading ── */
-  .loading {
-    text-align: center;
-    padding: 40px;
-    display: none;
-  }
+  .loading { text-align: center; padding: 40px; display: none; }
   .spinner {
     width: 32px; height: 32px;
-    border: 2px solid #2a2550;
-    border-top-color: #d4af37;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    border: 2px solid #2a2550; border-top-color: #d4af37;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
     margin: 0 auto 16px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -158,298 +147,276 @@
   /* ── 結果區 ── */
   #result { display: none; }
 
-  /* Mode Badge */
   .mode-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 2px;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    margin-bottom: 20px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 2px;
+    font-size: 11px; letter-spacing: 0.15em; margin-bottom: 20px;
   }
-  .mode-badge.analysis {
-    background: rgba(212, 175, 55, 0.1);
-    border: 1px solid #d4af37;
-    color: #d4af37;
-  }
-  .mode-badge.preview {
-    background: rgba(80, 80, 120, 0.2);
-    border: 1px solid #3a3a6a;
-    color: #7a7aaa;
-  }
+  .mode-badge.analysis { background: rgba(212,175,55,0.1); border: 1px solid #d4af37; color: #d4af37; }
+  .mode-badge.preview  { background: rgba(80,80,120,0.2);  border: 1px solid #3a3a6a;  color: #7a7aaa; }
 
-  /* 命盤基本資訊 */
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .info-item {
-    background: #0d0d1a;
-    border: 1px solid #1e1e3a;
-    padding: 10px 14px;
-    border-radius: 2px;
-  }
-  .info-label {
-    font-size: 10px;
-    color: #6a5a3a;
-    letter-spacing: 0.15em;
-    margin-bottom: 4px;
-  }
-  .info-value {
-    font-size: 15px;
-    color: #e8dcc8;
-  }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .info-item { background: #0d0d1a; border: 1px solid #1e1e3a; padding: 10px 14px; border-radius: 2px; }
+  .info-label { font-size: 10px; color: #6a5a3a; letter-spacing: 0.15em; margin-bottom: 4px; }
+  .info-value { font-size: 15px; color: #e8dcc8; }
   .info-value.gold { color: #d4af37; }
 
-  /* 定盤警示 */
   .rectification-notice {
-    background: rgba(180, 100, 50, 0.1);
-    border: 1px solid #6a3a1a;
-    border-radius: 2px;
-    padding: 10px 14px;
-    font-size: 12px;
-    color: #c08050;
-    margin-bottom: 16px;
+    background: rgba(180,100,50,0.1); border: 1px solid #6a3a1a;
+    border-radius: 2px; padding: 10px 14px;
+    font-size: 12px; color: #c08050; margin-bottom: 16px;
   }
 
-  /* Section 標題 */
   .section-title {
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    color: #7a6a4a;
-    text-transform: uppercase;
-    margin: 20px 0 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #1e1e3a;
+    font-size: 10px; letter-spacing: 0.25em; color: #7a6a4a;
+    text-transform: uppercase; margin: 20px 0 10px;
+    padding-bottom: 8px; border-bottom: 1px solid #1e1e3a;
   }
 
-  /* 四化表格 */
-  .mutagen-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 7px 0;
-    border-bottom: 1px solid #1a1a2e;
-    font-size: 13px;
-  }
+  .mutagen-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #1a1a2e; font-size: 13px; }
   .mutagen-row:last-child { border-bottom: none; }
-  .mutagen-type {
-    width: 44px;
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 2px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .t-luk  { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid #1a5a30; }
-  .t-kuen { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid #5a4a10; }
-  .t-sci  { background: rgba(147, 197, 253, 0.15); color: #93c5fd; border: 1px solid #1a3a5a; }
-  .t-chi  { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid #5a1a1a; }
+  .mutagen-type { width: 44px; font-size: 11px; padding: 2px 6px; border-radius: 2px; text-align: center; flex-shrink: 0; }
+  .t-luk  { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid #1a5a30; }
+  .t-kuen { background: rgba(251,191,36,0.15);  color: #fbbf24; border: 1px solid #5a4a10; }
+  .t-sci  { background: rgba(147,197,253,0.15); color: #93c5fd; border: 1px solid #1a3a5a; }
+  .t-chi  { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid #5a1a1a; }
   .mutagen-star { color: #e8dcc8; font-weight: 500; }
   .mutagen-palace { color: #9a8a6a; font-size: 12px; }
   .mutagen-arrow { color: #3a3a5a; }
 
-  /* 宮位列表 */
-  .palace-item {
-    display: grid;
-    grid-template-columns: 90px 1fr;
-    gap: 10px;
-    padding: 9px 0;
-    border-bottom: 1px solid #1a1a2e;
-    align-items: start;
-    font-size: 13px;
-  }
+  .palace-item { display: grid; grid-template-columns: 90px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1a1a2e; align-items: start; font-size: 13px; }
   .palace-item:last-child { border-bottom: none; }
-  .palace-name {
-    color: #c8a860;
-    font-size: 12px;
-  }
-  .palace-sb {
-    font-size: 10px;
-    color: #4a4a6a;
-    margin-top: 2px;
-  }
-  .palace-badge {
-    display: inline-block;
-    font-size: 9px;
-    padding: 1px 5px;
-    border-radius: 1px;
-    margin-left: 4px;
-    vertical-align: middle;
-  }
+  .palace-name { color: #c8a860; font-size: 12px; }
+  .palace-sb { font-size: 10px; color: #4a4a6a; margin-top: 2px; }
+  .palace-badge { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 1px; margin-left: 4px; vertical-align: middle; }
   .badge-body     { border: 1px solid #f59e0b; color: #f59e0b; }
   .badge-original { border: 1px solid #60a5fa; color: #60a5fa; }
   .palace-stars { color: #e8dcc8; line-height: 1.7; }
-  .star-bright {
-    font-size: 10px;
-    color: #5a7a9a;
-    margin-left: 2px;
-  }
+  .star-bright { font-size: 10px; color: #5a7a9a; margin-left: 2px; }
   .star-empty { color: #3a3a5a; font-style: italic; font-size: 12px; }
   .borrowed-note { font-size: 11px; color: #6a5a3a; margin-top: 2px; }
 
-  /* 大限表格 */
-  .limit-row {
-    display: grid;
-    grid-template-columns: 26px 70px 80px 1fr;
-    gap: 8px;
-    align-items: center;
-    padding: 7px 0;
-    border-bottom: 1px solid #1a1a2e;
-    font-size: 12px;
-  }
+  .limit-row { display: grid; grid-template-columns: 26px 70px 80px 1fr; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid #1a1a2e; font-size: 12px; }
   .limit-row:last-child { border-bottom: none; }
-  .limit-row.current {
-    background: rgba(212, 175, 55, 0.05);
-    padding: 7px 8px;
-    border-radius: 2px;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    margin: 4px -8px;
-  }
+  .limit-row.current { background: rgba(212,175,55,0.05); padding: 7px 8px; border-radius: 2px; border: 1px solid rgba(212,175,55,0.2); margin: 4px -8px; }
   .limit-order { color: #4a4a6a; text-align: center; }
   .limit-palace { color: #c8a860; }
   .limit-years { color: #7a6a4a; }
   .limit-range { color: #6a5a3a; }
-  .current-marker {
-    font-size: 9px;
-    color: #d4af37;
-    letter-spacing: 0.1em;
-    margin-left: 4px;
-  }
+  .current-marker { font-size: 9px; color: #d4af37; letter-spacing: 0.1em; margin-left: 4px; }
 
-  /* Preview 提示 */
-  .preview-cta {
-    text-align: center;
-    padding: 20px;
-    border: 1px dashed #2a2550;
-    border-radius: 2px;
-    margin-top: 20px;
-  }
+  .preview-cta { text-align: center; padding: 20px; border: 1px dashed #2a2550; border-radius: 2px; margin-top: 20px; }
   .preview-cta p { font-size: 12px; color: #6a5a3a; line-height: 1.8; }
 
-  /* Error */
-  .error-box {
-    background: rgba(180, 50, 50, 0.1);
-    border: 1px solid #5a1a1a;
-    border-radius: 2px;
-    padding: 14px;
-    color: #f87171;
-    font-size: 13px;
-    display: none;
-  }
+  .error-box { background: rgba(180,50,50,0.1); border: 1px solid #5a1a1a; border-radius: 2px; padding: 14px; color: #f87171; font-size: 13px; display: none; }
 </style>
 </head>
 
 <body>
 
-<!-- 品牌標題 -->
 <div class="brand">
   <div class="brand-title">Æ &thinsp; T &thinsp; H &thinsp; N &thinsp; O &thinsp; U &thinsp; S</div>
   <div class="brand-sub">Astral Nexus Engine · Internal Research Tool</div>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+    <button class="lang-btn"        onclick="setLang('en')">EN</button>
+    <button class="lang-btn" disabled title="Coming soon">한국어</button>
+  </div>
 </div>
 
-<!-- 輸入表單 -->
 <div class="card" id="form-card">
-  <div class="card-title">命主資料</div>
+  <div class="card-title" data-i18n="form_title">命主資料</div>
 
   <div class="field">
-    <label>命主姓名 <span class="optional">選填</span></label>
-    <input type="text" id="f-name" placeholder="姓名或代稱">
+    <label data-i18n="name_label">命主姓名 <span class="optional" data-i18n="optional">選填</span></label>
+    <input type="text" id="f-name" data-i18n-ph="name_ph">
   </div>
 
   <div class="row-2">
     <div class="field">
-      <label>西曆生日</label>
+      <label data-i18n="date_label">西曆生日</label>
       <input type="date" id="f-date" required>
     </div>
     <div class="field">
-      <label>出生時間</label>
+      <label data-i18n="time_label">出生時間</label>
       <input type="time" id="f-time" required>
     </div>
   </div>
 
   <div class="field">
-    <label>性別</label>
+    <label data-i18n="gender_label">性別</label>
     <div class="radio-group">
-      <label><input type="radio" name="gender" value="男" checked> 男</label>
-      <label><input type="radio" name="gender" value="女"> 女</label>
+      <label><input type="radio" name="gender" value="男" checked> <span data-i18n="male">男</span></label>
+      <label><input type="radio" name="gender" value="女"> <span data-i18n="female">女</span></label>
     </div>
   </div>
 
   <div class="field">
-    <label>出生城市 <span class="optional">選填，供真太陽時校正參考</span></label>
-    <input type="text" id="f-city" placeholder="例：台北、香港、首爾">
+    <label data-i18n="city_label">出生城市 <span class="optional" data-i18n="optional">選填</span></label>
+    <input type="text" id="f-city" data-i18n-ph="city_ph">
   </div>
 
   <div class="field">
-    <label>出生時間確定度</label>
+    <label data-i18n="timecert_label">出生時間確定度</label>
     <select id="f-timecert">
-      <option value="certain">確定（出生記錄、戶籍等）</option>
-      <option value="approx">大約（±30分鐘以內）</option>
-      <option value="unknown">不清楚（需定盤）</option>
+      <option value="certain"  data-i18n="tc_certain">確定（出生記錄、戶籍等）</option>
+      <option value="approx"   data-i18n="tc_approx">大約（±30分鐘以內）</option>
+      <option value="unknown"  data-i18n="tc_unknown">不清楚（需定盤）</option>
     </select>
   </div>
 
   <div class="field">
-    <label>目前關係狀態 <span class="optional">選填</span></label>
+    <label data-i18n="relation_label">目前關係狀態 <span class="optional" data-i18n="optional">選填</span></label>
     <div class="radio-group">
-      <label><input type="radio" name="relation" value="single"> 單身</label>
-      <label><input type="radio" name="relation" value="dating"> 穩定交往</label>
-      <label><input type="radio" name="relation" value="married"> 已婚</label>
-      <label><input type="radio" name="relation" value="divorced"> 離婚</label>
-      <label><input type="radio" name="relation" value="widowed"> 喪偶</label>
-      <label><input type="radio" name="relation" value="undisclosed"> 不透露</label>
+      <label><input type="radio" name="relation" value="single">      <span data-i18n="rel_single">單身</span></label>
+      <label><input type="radio" name="relation" value="dating">      <span data-i18n="rel_dating">穩定交往</span></label>
+      <label><input type="radio" name="relation" value="married">     <span data-i18n="rel_married">已婚</span></label>
+      <label><input type="radio" name="relation" value="divorced">    <span data-i18n="rel_divorced">離婚</span></label>
+      <label><input type="radio" name="relation" value="widowed">     <span data-i18n="rel_widowed">喪偶</span></label>
+      <label><input type="radio" name="relation" value="undisclosed"> <span data-i18n="rel_undisclosed">不透露</span></label>
     </div>
   </div>
 
   <div class="field">
-    <label>訂單編號 <span class="optional">選填</span></label>
-    <input type="text" id="f-order" placeholder="例：GUM-20260523-001">
-    <div class="mode-note">填入訂單編號 → Analysis Mode（標記為正式分析案例）<br>未填 → Preview Mode（僅供參考，資料不進入系統）</div>
+    <label data-i18n="order_label">訂單編號 <span class="optional" data-i18n="optional">選填</span></label>
+    <input type="text" id="f-order" data-i18n-ph="order_ph">
+    <div class="mode-note" data-i18n="mode_note">填入訂單編號 → Analysis Mode（標記為正式分析案例）<br>未填 → Preview Mode（僅供參考，資料不進入系統）</div>
   </div>
 
   <div class="error-box" id="form-error"></div>
 
-  <button class="btn-submit" onclick="submit()">起 盤</button>
+  <button class="btn-submit" onclick="submit()" data-i18n="btn_submit">起 盤</button>
 </div>
 
-<!-- Loading -->
 <div class="loading" id="loading">
   <div class="spinner"></div>
-  <div style="font-size:12px;color:#6a5a3a;letter-spacing:0.2em;">命盤計算中</div>
+  <div style="font-size:12px;color:#6a5a3a;letter-spacing:0.2em;" data-i18n="loading_text">命盤計算中</div>
 </div>
 
-<!-- 結果 -->
 <div id="result">
   <div class="card">
     <div id="mode-badge-container"></div>
     <div id="rectification-notice"></div>
-
-    <div class="section-title">命盤基本資訊</div>
+    <div class="section-title" data-i18n="sec_info">命盤基本資訊</div>
     <div class="info-grid" id="basic-info"></div>
-
-    <div class="section-title">生年四化</div>
+    <div class="section-title" data-i18n="sec_mutagens">生年四化</div>
     <div id="mutagens"></div>
-
-    <div class="section-title">十二宮位主星</div>
+    <div class="section-title" data-i18n="sec_palaces">十二宮位主星</div>
     <div id="palaces"></div>
-
-    <div class="section-title">十年大限</div>
+    <div class="section-title" data-i18n="sec_limits">十年大限</div>
     <div id="limits"></div>
-
     <div id="preview-cta"></div>
   </div>
 </div>
 
 <script>
-// ── 狀態 ────────────────────────────────────────────────────────
-let clientData = {};
+// ── i18n ─────────────────────────────────────────────────────
+let lang = 'zh';
 
-// ── 提交 ────────────────────────────────────────────────────────
+const I18N = {
+  zh: {
+    form_title:'命主資料', name_label:'命主姓名', optional:'選填',
+    name_ph:'姓名或代稱', date_label:'西曆生日', time_label:'出生時間',
+    gender_label:'性別', male:'男', female:'女',
+    city_label:'出生城市', city_ph:'例：台北、香港、首爾',
+    timecert_label:'出生時間確定度',
+    tc_certain:'確定（出生記錄、戶籍等）', tc_approx:'大約（±30分鐘以內）', tc_unknown:'不清楚（需定盤）',
+    relation_label:'目前關係狀態',
+    rel_single:'單身', rel_dating:'穩定交往', rel_married:'已婚',
+    rel_divorced:'離婚', rel_widowed:'喪偶', rel_undisclosed:'不透露',
+    order_label:'訂單編號', order_ph:'例：GUM-20260523-001',
+    mode_note:'填入訂單編號 → Analysis Mode（標記為正式分析案例）<br>未填 → Preview Mode（僅供參考，資料不進入系統）',
+    btn_submit:'起 盤', loading_text:'命盤計算中',
+    sec_info:'命盤基本資訊', sec_mutagens:'生年四化', sec_palaces:'十二宮位主星', sec_limits:'十年大限',
+    info_name:'命主', info_wuxing:'五行局', info_lunar:'農曆生日', info_shichen:'時辰',
+    info_body:'身宮', info_origin:'來因宮', info_city:'出生城市', info_relation:'關係狀態',
+    badge_body:'身', badge_origin:'來',
+    rect_approx:'出生時間為估計值（±30分鐘），建議進行定盤確認後再論斷。',
+    rect_unknown:'出生時間不確定，需定盤後方可進行完整論斷。',
+    preview_p1:'這是預覽結果，資料不會進入分析系統。',
+    preview_p2:'如需完整命盤解析報告，請透過 ÆTHNOUS 預約諮詢服務。',
+    now_marker:'▶ 現在',
+    age_suffix:'歲',
+    limit_fn: n => `第 ${n} 大限`,
+    empty_palace:'（空宮）', no_star:'（無主星）',
+    borrowed_prefix:'借對宮 ',
+  },
+  en: {
+    form_title:'SUBJECT DATA', name_label:'Name', optional:'Optional',
+    name_ph:'Name or alias', date_label:'Date of Birth', time_label:'Time of Birth',
+    gender_label:'Gender', male:'Male', female:'Female',
+    city_label:'Birth City', city_ph:'e.g. Taipei, Hong Kong, Seoul',
+    timecert_label:'Time Certainty',
+    tc_certain:'Certain (birth record, registry)', tc_approx:'Approximate (±30 min)', tc_unknown:'Unknown (rectification needed)',
+    relation_label:'Current Relationship',
+    rel_single:'Single', rel_dating:'In a relationship', rel_married:'Married',
+    rel_divorced:'Divorced', rel_widowed:'Widowed', rel_undisclosed:'Undisclosed',
+    order_label:'Order Number', order_ph:'e.g. GUM-20260523-001',
+    mode_note:'With order number → Analysis Mode (formal case)<br>Without → Preview Mode (reference only, data not saved)',
+    btn_submit:'Generate', loading_text:'Calculating...',
+    sec_info:'Chart Information', sec_mutagens:'Year Transformations', sec_palaces:'Twelve Palaces', sec_limits:'Major Limits',
+    info_name:'Name', info_wuxing:'Five Elements', info_lunar:'Lunar Date', info_shichen:'Birth Hour',
+    info_body:'Soul Palace', info_origin:'Origin Palace', info_city:'Birth City', info_relation:'Relationship',
+    badge_body:'Soul', badge_origin:'Origin',
+    rect_approx:'Birth time is approximate (±30 min). Rectification recommended before analysis.',
+    rect_unknown:'Birth time is unknown. Rectification required for full analysis.',
+    preview_p1:'Preview only — data not entered into the system.',
+    preview_p2:'For a full chart reading, book a consultation via ÆTHNOUS.',
+    now_marker:'▶ Now',
+    age_suffix:'yrs',
+    limit_fn: n => `Limit ${n}`,
+    empty_palace:'(Empty)', no_star:'(No major stars)',
+    borrowed_prefix:'Borrows · ',
+  },
+};
+
+const PALACE_EN = {
+  '命宮':'Life','父母':'Parents','福德':'Virtue','田宅':'Property',
+  '官祿':'Career','交友':'Friends','遷移':'Travel','疾厄':'Health',
+  '財帛':'Wealth','子女':'Children','夫妻':'Spouse','兄弟':'Siblings',
+};
+const MUTAGEN_EN = { '化祿':'Fortune','化權':'Power','化科':'Merit','化忌':'Restrict' };
+const BRI_EN = { '廟':'Dominant','旺':'Flourishing','得':'Comfortable','利':'Favorable','平':'Neutral','不利':'Unfavorable','陷':'Fallen','不':'Depleted' };
+
+function t(key)        { return I18N[lang][key] ?? I18N['zh'][key] ?? key; }
+function palName(zh)   { return lang === 'en' ? (PALACE_EN[zh] ?? zh) : zh; }
+function muLabel(m)    { return lang === 'en' ? (MUTAGEN_EN[m] ?? m) : m; }
+function briLabel(b)   { return lang === 'en' ? (BRI_EN[b] ?? b) : b; }
+
+function applyStaticI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if (v !== undefined) el.innerHTML = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh);
+    if (v) el.placeholder = v;
+  });
+  // select options
+  document.querySelectorAll('select option[data-i18n]').forEach(opt => {
+    const v = t(opt.dataset.i18n);
+    if (v) opt.textContent = v;
+  });
+  // lang-btn active state
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.onclick?.toString().includes(`'${lang}'`));
+  });
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn:not([disabled])').forEach(b => {
+    b.classList.toggle('active', b.onclick?.toString().includes(`'${l}'`));
+  });
+  applyStaticI18n();
+  if (lastData) renderResult(lastData);
+}
+
+// ── 狀態 ─────────────────────────────────────────────────────
+let clientData = {};
+let lastData   = null;
+
+// ── 提交 ─────────────────────────────────────────────────────
 async function submit() {
   const date     = document.getElementById('f-date').value;
   const time     = document.getElementById('f-time').value;
@@ -462,149 +429,125 @@ async function submit() {
   const errBox   = document.getElementById('form-error');
 
   errBox.style.display = 'none';
-
   if (!date || !time || !gender) {
-    errBox.textContent = '請填寫生日、時間和性別。';
+    errBox.textContent = lang === 'en' ? 'Please fill in date, time and gender.' : '請填寫生日、時間和性別。';
     errBox.style.display = 'block';
     return;
   }
 
   clientData = { name, city, timecert, relation, order };
-
   document.getElementById('form-card').style.display = 'none';
   document.getElementById('loading').style.display = 'block';
   document.getElementById('result').style.display = 'none';
 
   try {
-    const url = `/api/chart?date=${date}&time=${time}&gender=${encodeURIComponent(gender)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`API 錯誤：${res.status}`);
-    const data = await res.json();
-    renderResult(data);
+    const res  = await fetch(`/api/chart?date=${date}&time=${time}&gender=${encodeURIComponent(gender)}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    lastData = await res.json();
+    renderResult(lastData);
   } catch (e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('form-card').style.display = 'block';
-    errBox.textContent = '命盤計算失敗，請稍後再試。（' + e.message + '）';
+    errBox.textContent = (lang === 'en' ? 'Chart calculation failed. ' : '命盤計算失敗，請稍後再試。（') + e.message + (lang === 'en' ? '' : '）');
     errBox.style.display = 'block';
   }
 }
 
-// ── 渲染結果 ────────────────────────────────────────────────────
+// ── 渲染結果 ─────────────────────────────────────────────────
 function renderResult(d) {
   const isAnalysis = !!clientData.order;
   const needRect   = clientData.timecert !== 'certain';
 
   // Mode Badge
-  const badgeEl = document.getElementById('mode-badge-container');
-  badgeEl.innerHTML = isAnalysis
+  document.getElementById('mode-badge-container').innerHTML = isAnalysis
     ? `<div class="mode-badge analysis">▸ ANALYSIS MODE &nbsp;·&nbsp; ${clientData.order}</div>`
-    : `<div class="mode-badge preview">▸ PREVIEW MODE &nbsp;·&nbsp; 僅供參考</div>`;
+    : `<div class="mode-badge preview">▸ PREVIEW MODE &nbsp;·&nbsp; ${lang === 'en' ? 'Reference only' : '僅供參考'}</div>`;
 
   // 定盤警示
   const rectEl = document.getElementById('rectification-notice');
-  if (needRect) {
-    const msg = clientData.timecert === 'approx'
-      ? '出生時間為估計值（±30分鐘），建議進行定盤確認後再論斷。'
-      : '出生時間不確定，需定盤後方可進行完整論斷。';
-    rectEl.innerHTML = `<div class="rectification-notice">⚠ ${msg}</div>`;
-  } else {
-    rectEl.innerHTML = '';
-  }
+  rectEl.innerHTML = needRect
+    ? `<div class="rectification-notice">⚠ ${t(clientData.timecert === 'approx' ? 'rect_approx' : 'rect_unknown')}</div>`
+    : '';
 
   // 基本資訊
-  const now = new Date().getFullYear();
-  const age = now - parseInt(d.input?.solarDate?.split('-')[0] || d.meta?.solarDate?.split('-')[0]) + 1;
-  const nameDisplay = clientData.name || '（未填）';
-  const cityDisplay = clientData.city || '—';
-  const relMap = { single:'單身', dating:'穩定交往', married:'已婚', divorced:'離婚', widowed:'喪偶', undisclosed:'未填' };
-
+  const relKey = 'rel_' + (clientData.relation || 'undisclosed');
   document.getElementById('basic-info').innerHTML = `
-    <div class="info-item"><div class="info-label">命主</div><div class="info-value">${nameDisplay}</div></div>
-    <div class="info-item"><div class="info-label">五行局</div><div class="info-value gold">${d.fiveElementsClass}</div></div>
-    <div class="info-item"><div class="info-label">農曆生日</div><div class="info-value">${d.lunarDate}</div></div>
-    <div class="info-item"><div class="info-label">時辰</div><div class="info-value">${d.shichen}</div></div>
-    <div class="info-item"><div class="info-label">身宮</div><div class="info-value">${d.bodyPalace?.name ?? '—'}（${d.bodyPalace?.stemBranch ?? ''}）</div></div>
-    <div class="info-item"><div class="info-label">來因宮</div><div class="info-value">${d.originalPalace?.name ?? '—'}（${d.originalPalace?.stemBranch ?? ''}）</div></div>
-    <div class="info-item"><div class="info-label">出生城市</div><div class="info-value">${cityDisplay}</div></div>
-    <div class="info-item"><div class="info-label">關係狀態</div><div class="info-value">${relMap[clientData.relation] ?? '—'}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_name')}</div><div class="info-value">${clientData.name || (lang==='en'?'(not filled)':'（未填）')}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_wuxing')}</div><div class="info-value gold">${d.fiveElementsClass}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_lunar')}</div><div class="info-value">${d.lunarDate}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_shichen')}</div><div class="info-value">${d.shichen}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_body')}</div><div class="info-value">${palName(d.bodyPalace?.name ?? '—')}（${d.bodyPalace?.stemBranch ?? ''}）</div></div>
+    <div class="info-item"><div class="info-label">${t('info_origin')}</div><div class="info-value">${palName(d.originalPalace?.name ?? '—')}（${d.originalPalace?.stemBranch ?? ''}）</div></div>
+    <div class="info-item"><div class="info-label">${t('info_city')}</div><div class="info-value">${clientData.city || '—'}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_relation')}</div><div class="info-value">${t(relKey)}</div></div>
   `;
 
   // 生年四化
-  const mutagenEl = document.getElementById('mutagens');
   const typeClass = { '化祿':'t-luk','化權':'t-kuen','化科':'t-sci','化忌':'t-chi' };
-  mutagenEl.innerHTML = (d.yearMutagens || []).map(m => `
+  document.getElementById('mutagens').innerHTML = (d.yearMutagens||[]).map(m => `
     <div class="mutagen-row">
-      <span class="mutagen-type ${typeClass[m.type] || ''}">${m.type}</span>
+      <span class="mutagen-type ${typeClass[m.type]||''}">${muLabel(m.type)}</span>
       <span class="mutagen-star">${m.star}</span>
       <span class="mutagen-arrow">→</span>
-      <span class="mutagen-palace">${m.palace ?? m.targetPalace ?? '—'}</span>
-    </div>
-  `).join('');
+      <span class="mutagen-palace">${palName(m.palace ?? m.targetPalace ?? '—')}</span>
+    </div>`).join('');
 
   // 十二宮位
-  const palacesEl = document.getElementById('palaces');
-  palacesEl.innerHTML = (d.palaces || []).map(p => {
+  document.getElementById('palaces').innerHTML = (d.palaces||[]).map(p => {
     const badges = [
-      p.isBodyPalace     ? '<span class="palace-badge badge-body">身</span>' : '',
-      p.isOriginalPalace ? '<span class="palace-badge badge-original">來</span>' : '',
+      p.isBodyPalace     ? `<span class="palace-badge badge-body">${t('badge_body')}</span>` : '',
+      p.isOriginalPalace ? `<span class="palace-badge badge-original">${t('badge_origin')}</span>` : '',
     ].join('');
 
-    let starsHtml = '';
-    if (p.majorStars && p.majorStars.length > 0) {
+    let starsHtml;
+    if (p.majorStars?.length > 0) {
       starsHtml = p.majorStars.map(s => {
-        const bright = s.brightness ? `<span class="star-bright">${s.brightness}</span>` : '';
-        const mut    = s.yearMutagen ? ` <span class="mutagen-type ${typeClass[s.yearMutagen] || ''}" style="font-size:9px;padding:1px 4px;">${s.yearMutagen.replace('化','')}</span>` : '';
+        const bright = s.brightness ? `<span class="star-bright">${briLabel(s.brightness)}</span>` : '';
+        const mut    = s.yearMutagen ? ` <span class="mutagen-type ${typeClass[s.yearMutagen]||''}" style="font-size:9px;padding:1px 4px;">${muLabel(s.yearMutagen).replace('化','').replace('Fortune','祿').replace('Power','權').replace('Merit','科').replace('Restrict','忌')}</span>` : '';
         return `${s.name}${bright}${mut}`;
       }).join('　');
     } else if (p.isEmpty && p.borrowedFromPalace) {
-      starsHtml = `<span class="star-empty">（空宮）</span>
-        <div class="borrowed-note">借對宮 ${p.borrowedFromPalace}：${(p.borrowedStars || []).join('、')}</div>`;
+      starsHtml = `<span class="star-empty">${t('empty_palace')}</span>
+        <div class="borrowed-note">${t('borrowed_prefix')}${palName(p.borrowedFromPalace)}：${(p.borrowedStars||[]).join('、')}</div>`;
     } else {
-      starsHtml = '<span class="star-empty">（無主星）</span>';
+      starsHtml = `<span class="star-empty">${t('no_star')}</span>`;
     }
 
     return `
       <div class="palace-item">
         <div>
-          <div class="palace-name">${p.name}${badges}</div>
+          <div class="palace-name">${palName(p.name)}${badges}</div>
           <div class="palace-sb">${p.stemBranch}</div>
         </div>
         <div class="palace-stars">${starsHtml}</div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 
   // 大限
-  const limitsEl = document.getElementById('limits');
-  const nowYear  = new Date().getFullYear();
-  limitsEl.innerHTML = (d.majorLimits || []).map(l => {
-    const isCur = nowYear >= l.startYear && nowYear <= l.endYear;
-    const cls   = isCur ? 'limit-row current' : 'limit-row';
-    const marker = isCur ? '<span class="current-marker">▶ 現在</span>' : '';
+  const nowYear = new Date().getFullYear();
+  document.getElementById('limits').innerHTML = (d.majorLimits||[]).map(l => {
+    const isCur  = nowYear >= l.startYear && nowYear <= l.endYear;
+    const marker = isCur ? `<span class="current-marker">${t('now_marker')}</span>` : '';
     return `
-      <div class="${cls}">
+      <div class="${isCur ? 'limit-row current' : 'limit-row'}">
         <div class="limit-order">${l.order}</div>
-        <div class="limit-palace">${l.palace}${marker}</div>
-        <div class="limit-years">${l.startAge}–${l.endAge} 歲</div>
+        <div class="limit-palace">${palName(l.palace)}${marker}</div>
+        <div class="limit-years">${l.startAge}–${l.endAge} ${t('age_suffix')}</div>
         <div class="limit-range">${l.startYear}–${l.endYear}</div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 
   // Preview CTA
-  if (!isAnalysis) {
-    document.getElementById('preview-cta').innerHTML = `
-      <div class="preview-cta">
-        <p>這是預覽結果，資料不會進入分析系統。<br>如需完整命盤解析報告，請透過 ÆTHNOUS 預約諮詢服務。</p>
-      </div>
-    `;
-  } else {
-    document.getElementById('preview-cta').innerHTML = '';
-  }
+  document.getElementById('preview-cta').innerHTML = !isAnalysis
+    ? `<div class="preview-cta"><p>${t('preview_p1')}<br>${t('preview_p2')}</p></div>`
+    : '';
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('result').style.display = 'block';
 }
+
+// 初始化靜態 i18n
+applyStaticI18n();
 </script>
 </body>
 </html>
