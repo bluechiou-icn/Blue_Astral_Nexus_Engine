@@ -43,7 +43,8 @@ module.exports = function handler(req, res) {
 
   try {
     const chart = generateChart(date, time, gender);
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Surrogate-Control", "no-store");
     return res.status(200).json(chart);
   } catch (err) {
     return res.status(500).json({ error: "命盤計算失敗", message: err.message });
