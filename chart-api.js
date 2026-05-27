@@ -256,6 +256,51 @@ function computeIncoming(thisPalaceName, allOutgoing) {
   return result;
 }
 
+// ── 歲前星序列（Blue's Version） ─────────────────────────────
+// 正確序列：歲建→晦氣→喪門→貫索→官符→小耗→歲破→龍德→白虎→天德→弔客→病符
+// 修正說明：iztro 部分版本在位置6使用「大耗」，Blue's Version 採用「小耗」
+const BRANCHES_ORDERED = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const SUIQIAN_SEQUENCE = ['歲建','晦氣','喪門','貫索','官符','小耗','歲破','龍德','白虎','天德','弔客','病符'];
+
+function calcSuiqianStar(palaceBranch, yearBranch) {
+  const yearIdx   = BRANCHES_ORDERED.indexOf(yearBranch);
+  const palaceIdx = BRANCHES_ORDERED.indexOf(palaceBranch);
+  const offset    = (palaceIdx - yearIdx + 12) % 12;
+  return SUIQIAN_SEQUENCE[offset];
+}
+
+// ── 小限年齡計算（Blue's Version） ───────────────────────────
+// 確認依據（2026-05-27）：Blue（金四局陰男，命宮=寅）1歲小限=丑，文墨天機圖驗算：
+//   丑：1,13,25,37,49 ✓  卯/父母：3,15,27,39,51 ✓  子/夫妻：12,24,36,48,60 ✓
+//   → 陰男 = 順行（index 遞增）
+// config = [順行起點（陰男陽女）, 逆行起點（陽男陰女）]
+const MINOR_LIMIT_START = {
+  '水二局': ['午', '子'],   // TODO: 待 Blue 確認
+  '木三局': ['巳', '亥'],   // TODO: 待 Blue 確認
+  '金四局': ['丑', '申'],   // ✓ 陰男丑位順行 Blue 確認 + 文墨天機驗算
+  '土五局': ['未', '辰'],   // TODO: 待 Blue 確認
+  '火六局': ['申', '寅'],   // TODO: 待 Blue 確認
+};
+
+function calcFlowYearAges(palaceBranch, fiveElements, yinYang, maxAge = 110) {
+  const config = MINOR_LIMIT_START[fiveElements];
+  if (!config) return null;
+  // 陰男陽女 = 順行（index 遞增）; 陽男陰女 = 逆行（index 遞減）
+  const isForward  = yinYang === '陰男' || yinYang === '陽女';
+  const startBranch = isForward ? config[0] : config[1];
+  const startIdx   = BRANCHES_ORDERED.indexOf(startBranch);
+  const branchIdx  = BRANCHES_ORDERED.indexOf(palaceBranch);
+  if (startIdx === -1 || branchIdx === -1) return null;
+  const ages = [];
+  for (let age = 1; age <= maxAge; age++) {
+    const idx = isForward
+      ? (startIdx + age - 1) % 12
+      : ((startIdx - (age - 1)) % 12 + 12) % 12;
+    if (idx === branchIdx) ages.push(age);
+  }
+  return ages.length > 0 ? ages : null;
+}
+
 // ── 主函式 ───────────────────────────────────────────────────
 function generateChart(solarDate, birthTime, gender) {
   const timeIndex = timeToIndex(birthTime);
@@ -391,7 +436,7 @@ function generateChart(solarDate, birthTime, gender) {
       isBodyPalace:    p.isBodyPalace,
       isOriginalPalace: p.isOriginalPalace,
       decadeRange:     p.decadal.range,
-      flowYearAges:    null,   // iztro 未提供流年年齡資料
+      flowYearAges:    calcFlowYearAges(branch, toTrad(r.fiveElementsClass), yinYang),
       minorLimitAges:  p.ages,
 
       majorStars,
@@ -405,7 +450,7 @@ function generateChart(solarDate, birthTime, gender) {
 
       shenshaSystem: {
         twelvePhasesOfLife: toTrad(p.changsheng12) || null,
-        suiqianStar:        toTrad(p.suiqian12)    || null,
+        suiqianStar:        calcSuiqianStar(branch, birthData.yearBranch),
         jiangqianStar:      toTrad(p.jiangqian12)  || null,
         boshiStar:          toTrad(p.boshi12)       || null,
       },
