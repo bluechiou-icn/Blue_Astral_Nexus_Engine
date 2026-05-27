@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Blue.X. All Rights Reserved.
+// Unauthorized copying, modification, or distribution is strictly prohibited.
+
 /**
  * 將 24 小時制時間字串換算為 iztro timeIndex（0~12）
  *
