@@ -14,7 +14,6 @@ For full project context, architecture decisions, References analysis, and pendi
 - **API endpoint:** `GET /api/chart?date=YYYY-MM-DD&time=HH:MM&gender=男|女`
 - **Production:** https://blue-astral-nexus-engine.vercel.app
 - **GitHub:** https://github.com/bluechiou-icn/Blue_Astral_Nexus_Engine
-- **Test subject:** Blue, YYYY-MM-DD 05:17 男
 - **Deploy:** `npx vercel --prod` → `git push origin main`
 
 ## Knowledge doc version history

@@ -25,7 +25,7 @@ module.exports = function handler(req, res) {
     return res.status(400).json({
       error: "缺少必填參數",
       required: { date: "YYYY-MM-DD", time: "HH:MM", gender: "男|女" },
-      example: "/api/chart?date=YYYY-MM-DD&time=05:17&gender=男",
+      example: "/api/chart?date=2000-01-01&time=06:00&gender=男",
     });
   }
 

@@ -23,8 +23,5 @@ function printChart(label, solarDate, birthTime, gender) {
   });
 }
 
-// ── Blue：YYYY-MM-DD 05:17 男，預期金四局 ──
-printChart("Blue", "YYYY-MM-DD", "05:17", "男");
-
-// ── Sean：YYYY-MM-DD 05:30 男，預期水二局，命宮廉貞天相在子宮 ──
-printChart("Sean", "YYYY-MM-DD", "05:30", "男");
+// 請將以下生日替換為實際測試資料（不提交真實生日至版本控制）
+// printChart("Label", "YYYY-MM-DD", "HH:MM", "男");

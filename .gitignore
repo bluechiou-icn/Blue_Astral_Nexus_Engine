@@ -4,3 +4,11 @@ node_modules/
 .env.local
 *.log
 .vercel
+
+# 知識文件（含個人資料，僅存 Google Drive）
+ClaudeCode_*.md
+CLAUDE_Code_*.md
+*.rtf
+
+# 本地測試腳本
+test-chart.mjs.rtf
