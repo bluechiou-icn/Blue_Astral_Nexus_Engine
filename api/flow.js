@@ -47,7 +47,10 @@ function getCurrentMajorLimit(majorLimits, queryYear) {
 }
 
 function getMinorLimitPalace(palaces, age) {
+  // 優先使用 Blue's Version flowYearAges（更精確），fallback 到 iztro minorLimitAges
   return palaces.find(p =>
+    Array.isArray(p.flowYearAges) && p.flowYearAges.includes(age)
+  ) || palaces.find(p =>
     Array.isArray(p.minorLimitAges) && p.minorLimitAges.includes(age)
   ) || null;
 }
@@ -141,7 +144,8 @@ module.exports = function handler(req, res) {
       chart.yearMutagens || []
     );
 
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Surrogate-Control', 'no-store');
     return res.status(200).json({
       query: { solarDate: date, birthTime: time, gender, queryYear },
 
@@ -184,9 +188,10 @@ module.exports = function handler(req, res) {
       birthYearMutagens: chart.yearMutagens,
 
       allPalaceMinorLimitAges: chart.palaces.map(p => ({
-        name:           p.name,
-        stemBranch:     p.stemBranch,
-        minorLimitAges: p.minorLimitAges || null,
+        name:              p.name,
+        stemBranch:        p.stemBranch,
+        flowYearAges:      p.flowYearAges      || null,  // Blue's Version（優先）
+        minorLimitAges:    p.minorLimitAges    || null,  // iztro 原始值（參考）
       })),
     });
 
