@@ -491,6 +491,11 @@ function generateChart(solarDate, birthTime, gender) {
       };
     });
 
+  // ── 格局檢測 ──────────────────────────────────────────────
+  const _bodyPalName = bodyPalace ? modernizePalaceName(toTrad(bodyPalace.name)) : null;
+  const _origPalName = originalPalace ? modernizePalaceName(toTrad(originalPalace.name)) : null;
+  const classicalFormations = detectClassicalFormations(palaces, _bodyPalName, _origPalName, yearMutagens);
+
   // ── 組合最終輸出 ───────────────────────────────────────────
   const result = {
     // ── 修改二：meta ────────────────────────────────────────
@@ -539,6 +544,7 @@ function generateChart(solarDate, birthTime, gender) {
       stemBranch: originalPalace.heavenlyStem + originalPalace.earthlyBranch,
     } : null,
 
+    classicalFormations,
     yearMutagens,
     palaces,
     majorLimits,
@@ -546,6 +552,163 @@ function generateChart(solarDate, birthTime, gender) {
 
   // deepToTrad 只掃字串欄位，數字/null/boolean 直接通過
   return deepToTrad(result);
+}
+
+// ── 格局檢測（Classical Formation Detection）────────────────
+const BRANCH_SEQUENCE = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+
+function detectClassicalFormations(palaces, bodyPalName, origPalName, yearMutagens) {
+  const result = [];
+
+  const byName   = n  => palaces.find(p => p.name === n) ?? null;
+  const hasMaj   = (pal, name) => pal?.majorStars?.some(s => s.name === name) ?? false;
+  const hasMin   = (pal, name) => pal?.minorStars?.some(s => s.name === name) ?? false;
+  const hasStar  = (pal, name) => hasMaj(pal, name) || hasMin(pal, name);
+  const isSunk   = b  => ['陷','不','不利'].includes(b);
+  const branchIdx = b => BRANCH_SEQUENCE.indexOf(b);
+  const isAdjBranch = (b1, b2) => {
+    const i1 = branchIdx(b1), i2 = branchIdx(b2);
+    if (i1 < 0 || i2 < 0) return false;
+    const d = Math.abs(i1 - i2);
+    return d === 1 || d === 11;
+  };
+
+  const bodyPal  = bodyPalName ? byName(bodyPalName)  : null;
+  const origPal  = origPalName ? byName(origPalName)  : null;
+  const mingPal  = byName('命宮');
+  const caiBoPal = byName('財帛');
+  const qianPal  = byName('遷移');
+
+  // ① 命宮空宮借星格
+  if (mingPal?.isEmpty && mingPal.borrowedFromPalace) {
+    result.push({
+      name: '命宮空宮借星格',
+      type: 'neutral',
+      palaces: ['命宮'],
+      stars: (mingPal.borrowedStars || []).map(s => s + '（借）'),
+      note: '命宮空宮，人生定向取決借星宮位方向，有外地成就或飄泊特質',
+      confidence: 88,
+    });
+  }
+
+  // ② 身宮星組格
+  if (bodyPal) {
+    const hasJi  = hasMaj(bodyPal, '天機');
+    const hasYin = hasMaj(bodyPal, '太陰');
+    const hasZi  = hasMaj(bodyPal, '紫微');
+    const hasWu  = hasMaj(bodyPal, '武曲');
+    const hasFu  = hasMaj(bodyPal, '天府');
+
+    if (hasJi && hasYin) {
+      result.push({ name:'天機太陰守身宮格', type:'auspicious',
+        palaces:[bodyPalName], stars:['天機','太陰'],
+        note:'身宮機月同宮，智慧流動兼具，適合外向跨域、異地發展', confidence:90 });
+    } else if (hasZi) {
+      result.push({ name:'紫微守身格', type:'auspicious',
+        palaces:[bodyPalName], stars:['紫微'],
+        note:'紫微守身宮，尊貴格局，統御領導特質強', confidence:85 });
+    } else if (hasWu && hasFu) {
+      result.push({ name:'武府守身格', type:'auspicious',
+        palaces:[bodyPalName], stars:['武曲','天府'],
+        note:'武曲天府同守身宮，財富格局，善理財積累', confidence:83 });
+    }
+  }
+
+  // ③ 文星群聚格（≥2 顆文星同宮）
+  const LIT_STARS = ['文昌','文曲','左輔','右弼'];
+  for (const pal of palaces) {
+    const found = LIT_STARS.filter(s => hasStar(pal, s));
+    if (found.length >= 2) {
+      const isOrig = pal.name === origPalName;
+      const isBody = pal.name === bodyPalName;
+      const isMing = pal.name === '命宮';
+      result.push({
+        name: `文星群聚${pal.name}格`, type: 'auspicious',
+        palaces: [pal.name], stars: found,
+        note: `${found.join('+')}聚${pal.name}，學術文才格` +
+          (isOrig ? '，來因宮貴人助力持續' : '') +
+          (isBody ? '，身宮文氣加持' : '') +
+          (isMing ? '，命宮文星聰慧博學' : ''),
+        confidence: 75 + found.length * 5 + (isOrig ? 5 : 0),
+      });
+    }
+  }
+
+  // ④ 財宮化忌格
+  if (caiBoPal) {
+    for (const star of caiBoPal.majorStars || []) {
+      if (star.yearMutagen !== '化忌') continue;
+      result.push({
+        name: `財宮${star.name}化忌${isSunk(star.brightness) ? '陷' : ''}格`,
+        type: 'challenge', palaces: ['財帛'], stars: [star.name],
+        note: `${star.name}${isSunk(star.brightness) ? '陷' : ''}坐財帛+生年化忌，主動財路受阻，宜轉型知識服務或被動收入`,
+        confidence: isSunk(star.brightness) ? 92 : 80,
+      });
+    }
+  }
+
+  // ⑤ 紫府朝垣格（命遷同照）
+  if ((hasMaj(mingPal,'紫微') && hasMaj(qianPal,'天府')) ||
+      (hasMaj(mingPal,'天府') && hasMaj(qianPal,'紫微'))) {
+    result.push({ name:'紫府朝垣格', type:'auspicious',
+      palaces:['命宮','遷移'], stars:['紫微','天府'],
+      note:'紫微天府分踞命遷，尊貴格局，有統御領導之象，宜政商界發展', confidence:90 });
+  }
+
+  // ⑥ 羊陀夾忌格
+  const jiM = yearMutagens?.find(m => m.type === '化忌');
+  if (jiM?.palace) {
+    const jiPal = byName(jiM.palace);
+    if (jiPal) {
+      const qyPal = palaces.find(p => hasStar(p, '擎羊'));
+      const tlPal = palaces.find(p => hasStar(p, '陀羅'));
+      const qyAdj = qyPal && isAdjBranch(jiPal.branch, qyPal.branch);
+      const tlAdj = tlPal && isAdjBranch(jiPal.branch, tlPal.branch);
+      if (qyAdj || tlAdj) {
+        result.push({
+          name: '羊陀夾忌格', type: 'challenge',
+          palaces: [jiM.palace], stars: ['擎羊','陀羅', jiM.star].filter(Boolean),
+          note: '生年忌星遭羊陀夾擊，相關宮位磁場動盪，需謹慎趨避',
+          confidence: (qyAdj && tlAdj) ? 93 : 76,
+        });
+      }
+    }
+  }
+
+  // ⑦ 空劫坐命格
+  if (mingPal && !mingPal.isEmpty) {
+    const kk = ['地空','地劫'].filter(s => hasStar(mingPal, s));
+    if (kk.length) {
+      result.push({ name:'空劫坐命格', type:'challenge',
+        palaces:['命宮'], stars: kk,
+        note:'空劫坐命，破耗格，思路易走偏鋒，財務變動大，宜修心養性', confidence:82 });
+    }
+  }
+
+  // ⑧ 祿馬同宮/交馳格
+  const lucPal  = palaces.find(p => hasStar(p, '祿存'));
+  const maPal   = palaces.find(p => hasStar(p, '天馬'));
+  if (lucPal && maPal) {
+    if (lucPal.name === maPal.name) {
+      result.push({ name:'祿馬同宮格', type:'auspicious',
+        palaces:[lucPal.name], stars:['祿存','天馬'],
+        note:'祿存天馬同宮，流動積財格，出外求財有利，適合跨地域事業', confidence:88 });
+    } else {
+      const finAxis = new Set(['命宮','財帛','遷移','官祿']);
+      if (finAxis.has(lucPal.name) && finAxis.has(maPal.name)) {
+        result.push({ name:'祿馬交馳格', type:'auspicious',
+          palaces:[lucPal.name, maPal.name], stars:['祿存','天馬'],
+          note:'祿馬分踞財官遷命，奔波求財格，外地或異鄉發展有利', confidence:80 });
+      }
+    }
+  }
+
+  result.sort((a, b) =>
+    b.confidence - a.confidence ||
+    (['auspicious','neutral','challenge'].indexOf(a.type) -
+     ['auspicious','neutral','challenge'].indexOf(b.type))
+  );
+  return result;
 }
 
 module.exports = { generateChart };
