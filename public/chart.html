@@ -315,22 +315,86 @@ function drawGrid(ctx) {
 // PALACE CELL
 // ════════════════════════════════════════════════════════
 
+// Draw one star as a vertical column (name chars stacked + brightness + mutagen badges)
+// Returns the column width used (so next star can be placed)
+function drawStarColumn(ctx, x, top, bottom, name, brightness, mutagens, color) {
+  const FS = 14;
+  const COL_W = FS + 4;             // column width per star
+  const lineH = FS + 1;             // tight stacking
+  let y = top;
+
+  ctx.textAlign = 'center';
+  const centerX = x + FS / 2;
+
+  // Star name (vertical char-by-char)
+  ctx.font = `${FS}px ${FONT}`;
+  ctx.fillStyle = color;
+  for (const ch of name) {
+    if (y + FS > bottom) { ctx.textAlign='left'; return COL_W; }
+    ctx.fillText(ch, centerX, y + FS);
+    y += lineH;
+  }
+
+  // Brightness (slight gap, color by brightness)
+  if (brightness) {
+    y += 2;
+    ctx.font = `${FS}px ${FONT}`;
+    ctx.fillStyle = BRIGHT_CLR[brightness] || '#666';
+    for (const ch of brightness) {
+      if (y + FS > bottom) { ctx.textAlign='left'; return COL_W; }
+      ctx.fillText(ch, centerX, y + FS);
+      y += lineH;
+    }
+  }
+
+  // Mutagen badges (small square below)
+  for (const mu of mutagens) {
+    if (y + FS + 2 > bottom) break;
+    y += 2;
+    const info = MU_LIGHT[mu.type]; if (!info) continue;
+    const bw = FS, bh = FS;
+
+    if (mu.src === 'year') {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x, y, bw, bh);
+      ctx.strokeStyle = info.border; ctx.lineWidth = 1;
+      ctx.strokeRect(x+0.5, y+0.5, bw-1, bh-1);
+      ctx.fillStyle = info.border;
+    } else if (mu.src === 'decade') {
+      ctx.fillStyle = info.light;
+      ctx.fillRect(x, y, bw, bh);
+      ctx.strokeStyle = info.border; ctx.lineWidth = 0.7;
+      ctx.strokeRect(x+0.5, y+0.5, bw-1, bh-1);
+      ctx.fillStyle = info.textL;
+    } else { // flow
+      ctx.fillStyle = info.solid;
+      ctx.fillRect(x, y, bw, bh);
+      ctx.fillStyle = '#fff';
+    }
+    ctx.font = `bold 10px ${FONT}`;
+    ctx.fillText(info.key, x + bw/2, y + bh - 3);
+    y += bh + 1;
+  }
+
+  ctx.textAlign = 'left';
+  return COL_W;
+}
+
 function drawPalace(ctx, palace, row, col, opts) {
   const { muMap, decadeMing, flowMing, minorLimPalace,
           origPalace, bodyPalace, birthYear } = opts;
   const cx = col * CELL, cy = row * CELL;
   const hasFlow = !!(flowMing);
 
-  // Detect small limit (限 marker) and flow/limit coincidence
-  const isMinorLim = hasFlow && palace.name === minorLimPalace;
+  const isMinorLim    = hasFlow && palace.name === minorLimPalace;
   const isFlowLimSame = hasFlow && flowMing === minorLimPalace;
-  const isHot = isMinorLim && isFlowLimSame; // true 流限同宮
+  const isHot         = isMinorLim && isFlowLimSame;
 
-  // ── Background (white) ────────────────────────────────
+  // ── Background ──
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
 
-  // ── 流限同宮 amber double border ──────────────────────
+  // ── 流限同宮 amber double border ──
   if (isHot) {
     ctx.strokeStyle = '#d4960a'; ctx.lineWidth = 2;
     ctx.strokeRect(cx+2, cy+2, CELL-4, CELL-4);
@@ -338,30 +402,21 @@ function drawPalace(ctx, palace, row, col, opts) {
     ctx.strokeRect(cx+5, cy+5, CELL-10, CELL-10);
   }
 
-  // ── Corner markers (top-right) ────────────────────────
+  // ── Corner markers (top-right) ──
   let my = cy + 14;
-  ctx.textAlign = 'right'; ctx.font = `bold 10px ${FONT}`;
-  if (palace.name === origPalace)   { ctx.fillStyle='#2563eb'; ctx.fillText('來', cx+CELL-PAD, my); my+=13; }
-  if (palace.name === bodyPalace)   { ctx.fillStyle='#d97706'; ctx.fillText('身', cx+CELL-PAD, my); my+=13; }
-  if (isMinorLim)                   { ctx.fillStyle='#dc2626'; ctx.fillText('限', cx+CELL-PAD, my); }
+  ctx.textAlign = 'right'; ctx.font = `bold 11px ${FONT}`;
+  if (palace.name === origPalace) { ctx.fillStyle='#2563eb'; ctx.fillText('來', cx+CELL-PAD, my); my+=14; }
+  if (palace.name === bodyPalace) { ctx.fillStyle='#d97706'; ctx.fillText('身', cx+CELL-PAD, my); my+=14; }
+  if (isMinorLim)                 { ctx.fillStyle='#dc2626'; ctx.fillText('限', cx+CELL-PAD, my); }
   ctx.textAlign = 'left';
 
-  // ── TOP-LEFT: Decade year range ───────────────────────
-  let topY = cy + 13;
-  if (palace.decadeRange && birthYear) {
-    const sy0 = birthYear + palace.decadeRange[0];
-    const ey0 = birthYear + palace.decadeRange[1];
-    ctx.font = `9px ${FONT}`; ctx.fillStyle = '#bbbbbb';
-    ctx.fillText(`${sy0}~${ey0}`, cx+PAD, topY);
-    topY += 14;
-  }
-
-  // ── TOP-LEFT: Three-layer names 流X｜大X｜本命 ────────
+  // ── TOP-LEFT: Three-layer names 流X｜大X｜本命名 ──
+  let topY = cy + 14;
   if (hasFlow) {
     const FS = 11;
     ctx.font = `${FS}px ${FONT}`;
     let tx = cx + PAD;
-    const ty = topY + FS - 2;
+    const ty = topY + FS - 1;
 
     const segments = [];
     if (flowMing) {
@@ -370,13 +425,13 @@ function drawPalace(ctx, palace, row, col, opts) {
     }
     if (decadeMing) {
       const dp = palOffset(palace.name, decadeMing);
-      if (dp) segments.push({ text:'大'+dp.charAt(0), color:'#444444' });
+      if (dp) segments.push({ text:'大'+dp.charAt(0), color:'#555' });
     }
-    segments.push({ text: palace.name, color:'#aaaaaa' });
+    segments.push({ text: palace.name, color:'#888' });
 
     for (let i = 0; i < segments.length; i++) {
       if (i > 0) {
-        ctx.fillStyle = '#dddddd';
+        ctx.fillStyle = '#ddd';
         ctx.fillText('｜', tx, ty);
         tx += ctx.measureText('｜').width;
       }
@@ -385,138 +440,96 @@ function drawPalace(ctx, palace, row, col, opts) {
       ctx.fillText(segments[i].text, tx, ty);
       tx += ctx.measureText(segments[i].text).width;
     }
-    topY = ty + 5;
+    topY = ty + 4;
   }
 
-  // ── Decorative large dim branch glyph (background) ───
-  ctx.font = `bold 48px ${FONT}`; ctx.fillStyle = '#f0eeea';
+  // ── Decorative large dim branch glyph (background) ──
+  ctx.font = `bold 56px ${FONT}`; ctx.fillStyle = '#f3f1ed';
   ctx.textAlign = 'right';
-  ctx.fillText(palace.branch, cx+CELL-6, cy+58);
+  ctx.fillText(palace.branch, cx+CELL-6, cy+60);
   ctx.textAlign = 'left';
 
-  // ── STARS START ────────────────────────────────────────
-  const starsTop = Math.max(topY + 4, cy + (hasFlow ? 52 : 16));
-  let sy = starsTop;
+  // ── STARS (vertical columns) ──
+  const starsTop = Math.max(topY + 4, cy + (hasFlow ? 36 : 16));
+  const botStarLim = cy + CELL - BOT - 4;  // leave room for decade year + palace name
   const palMu = muMap[palace.name] || [];
-  const botLim = cy + CELL - BOT;
 
-  // Helper: draw one major star line
-  function majorLine(name, brightness) {
-    if (sy > botLim) return;
-    const bc = BRIGHT_CLR[brightness] || '#999';
+  // Collect all stars in priority order with categorical color
+  const stars = [];
 
-    ctx.font = `14px ${FONT}`; ctx.fillStyle = CLR_MAJOR;
-    ctx.fillText(name, cx+PAD, sy);
-    let sx = cx + PAD + ctx.measureText(name).width + 2;
-
-    if (brightness) {
-      ctx.font = `12px ${FONT}`; ctx.fillStyle = bc;
-      ctx.fillText(brightness, sx, sy);
-      sx += ctx.measureText(brightness).width + 3;
-    }
-
-    // Inline mutagen badges
-    const starMu = palMu.filter(m => m.star === name);
-    for (const mu of starMu) {
-      if (sx > cx + CELL - 16) break;
-      const info = MU_LIGHT[mu.type]; if (!info) continue;
-      const pfx = mu.src==='year'?'生': mu.src==='decade'?'大':'流';
-      sx = badgeL(ctx, pfx+info.key, mu.type, mu.src, sx, sy, 9);
-    }
-    sy += 22;  // generous line height for major stars
-  }
-
-  // Layer 1: Major stars
+  // Empty palace special case
   if (palace.isEmpty && palace.borrowedFromPalace) {
-    if (sy <= botLim) {
-      ctx.font = `11px ${FONT}`; ctx.fillStyle = '#aaaaaa';
-      ctx.fillText('空宮', cx+PAD, sy+11); sy += 16;
-      if (sy <= botLim) {
-        ctx.font = `11px ${FONT}`; ctx.fillStyle = '#888888';
-        ctx.fillText('借 ' + palace.borrowedFromPalace, cx+PAD, sy+11); sy += 16;
-        if (palace.borrowedStars?.length && sy <= botLim) {
-          ctx.font = `13px ${FONT}`; ctx.fillStyle = '#555555';
-          ctx.fillText(palace.borrowedStars.join('　'), cx+PAD, sy+13); sy += 18;
-        }
-      }
+    ctx.font = `12px ${FONT}`; ctx.fillStyle = '#999';
+    ctx.fillText('空宮', cx+PAD, starsTop + 12);
+    ctx.fillStyle = '#888';
+    ctx.fillText('借 ' + palace.borrowedFromPalace, cx+PAD, starsTop + 28);
+    // Treat borrowed stars as major (gray-ish to indicate borrow)
+    for (const sname of (palace.borrowedStars || [])) {
+      stars.push({ name: sname, brightness: '', color: '#666666' });
     }
   } else {
-    for (const s of palace.majorStars||[]) majorLine(s.name, s.brightness);
-  }
-  if (sy > starsTop) sy += 6;  // gap after major stars
-
-  // Helper: draw compact star token (name + brightness abbrev)
-  function compactToken(st, color, x, y, fs) {
-    ctx.font = `${fs}px ${FONT}`; ctx.fillStyle = color;
-    const bright = st.brightness || '';
-    const tok = st.name.slice(0,2) + bright;
-    ctx.fillText(tok, x, y + fs);
-    return x + ctx.measureText(tok).width + 5;
-  }
-
-  // Layer 2: Auxiliary stars (deep blue)
-  const auxSt = (palace.minorStars||[]).filter(s => AUX_STARS.has(s.name));
-  if (auxSt.length > 0 && sy <= botLim) {
-    const afs = 11; let ax = cx+PAD, ay = sy, rows = 0;
-    ctx.font = `${afs}px ${FONT}`;
-    for (const st of auxSt) {
-      const tok = st.name.slice(0,2)+(st.brightness||'');
-      const aw = ctx.measureText(tok).width + 5;
-      if (ax + aw > cx+CELL-PAD) {
-        if (rows >= 1) break;
-        ay += afs+4; ax = cx+PAD; rows++;
-        if (ay > botLim) break;
-      }
-      ctx.fillStyle = BRIGHT_CLR[st.brightness] ? CLR_AUX : CLR_AUX;
-      ctx.fillText(tok, ax, ay+afs);
-      ax += aw;
-      // Badges for aux stars
-      const sMu = palMu.filter(m => m.star === st.name);
-      for (const mu of sMu) {
-        if (ax > cx+CELL-PAD) break;
-        const info = MU_LIGHT[mu.type]; if (!info) continue;
-        const pfx = mu.src==='year'?'生': mu.src==='decade'?'大':'流';
-        ax = badgeL(ctx, pfx+info.key, mu.type, mu.src, ax, ay+afs, 8);
-      }
+    for (const s of (palace.majorStars||[])) {
+      stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_MAJOR });
     }
-    sy = ay + afs + 8;
   }
 
-  // Layer 3: Killing stars (red)
-  const killSt = (palace.minorStars||[]).filter(s => KILL_STARS.has(s.name));
-  if (killSt.length > 0 && sy <= botLim) {
-    const kfs = 11; let kx = cx+PAD;
-    ctx.font = `${kfs}px ${FONT}`;
-    for (const st of killSt) {
-      if (kx > cx+CELL-PAD) break;
-      const tok = st.name.slice(0,2)+(st.brightness?.charAt(0)||'');
-      ctx.fillStyle = CLR_KILL;
-      ctx.fillText(tok, kx, sy+kfs);
-      kx += ctx.measureText(tok).width + 5;
-    }
-    sy += kfs + 7;
+  // Aux stars (deep blue)
+  for (const s of (palace.minorStars||[]).filter(s => AUX_STARS.has(s.name))) {
+    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_AUX });
+  }
+  // Killing stars (red)
+  for (const s of (palace.minorStars||[]).filter(s => KILL_STARS.has(s.name))) {
+    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_KILL });
   }
 
-  // Layer 4: Small/misc stars (gray)
+  // Layout stars as columns. If empty-palace top text was drawn, shift starsX right.
+  const startX = palace.isEmpty && palace.borrowedFromPalace
+    ? cx + PAD + 70   // give room for "空宮 / 借 X" text
+    : cx + PAD;
+  let starX = startX;
+  const rightLimit = cx + CELL - PAD;
+
+  for (const star of stars) {
+    if (starX + 18 > rightLimit) break;  // no more space
+    const mu = palMu.filter(m => m.star === star.name);
+    const colW = drawStarColumn(ctx, starX, starsTop, botStarLim, star.name, star.brightness, mu, star.color);
+    starX += colW;
+  }
+
+  // Small/misc stars (gray, compact horizontal row at the bottom of star area)
   const otherMin = (palace.minorStars||[]).filter(
     s => !AUX_STARS.has(s.name) && !KILL_STARS.has(s.name)
   );
   const smSt = [...otherMin, ...(palace.smallStars||[])];
-  if (smSt.length > 0 && sy <= botLim - 4) {
-    ctx.font = `10px ${FONT}`; ctx.fillStyle = CLR_SMALL;
-    ctx.fillText(smSt.map(s=>s.name.charAt(0)).join(' '), cx+PAD, sy+10);
+  if (smSt.length > 0) {
+    // Render small stars vertically too if space remains
+    for (const s of smSt) {
+      if (starX + 18 > rightLimit) break;
+      const colW = drawStarColumn(ctx, starX, starsTop, botStarLim, s.name, '', [], CLR_SMALL);
+      starX += colW;
+    }
   }
 
-  // ── BOTTOM: Palace name ────────────────────────────────
-  ctx.font = `bold 16px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  // ── BOTTOM: Decade year range (above palace name) ──
+  if (palace.decadeRange && birthYear) {
+    const sy0 = birthYear + palace.decadeRange[0] - 1;
+    const ey0 = birthYear + palace.decadeRange[1] - 1;
+    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${sy0} ~ ${ey0}`, cx + CELL/2 - 10, cy + CELL - 32);
+    ctx.textAlign = 'left';
+  }
+
+  // ── BOTTOM: Palace name (centered, bold) ──
+  ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   ctx.textAlign = 'center';
-  ctx.fillText(palace.name, cx + CELL/2 - 10, cy + CELL - 16);
+  ctx.fillText(palace.name, cx + CELL/2 - 10, cy + CELL - 13);
   ctx.textAlign = 'left';
 
-  // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ ─────────────────────
-  ctx.font = `10px ${FONT}`; ctx.fillStyle = '#888888';
+  // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ ──
+  ctx.font = `11px ${FONT}`; ctx.fillStyle = '#666';
   ctx.textAlign = 'right';
-  ctx.fillText(palace.stem,   cx+CELL-PAD, cy+CELL-24);
+  ctx.fillText(palace.stem,   cx+CELL-PAD, cy+CELL-26);
   ctx.fillText(palace.branch, cx+CELL-PAD, cy+CELL-12);
   ctx.textAlign = 'left';
 }

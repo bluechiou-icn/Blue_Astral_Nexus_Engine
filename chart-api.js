@@ -485,8 +485,10 @@ function generateChart(solarDate, birthTime, gender) {
         stem:       dStem,
         startAge,
         endAge,
-        startYear:  birthYear + startAge,
-        endYear:    birthYear + endAge,
+        // 虛歲對齊：第 N 歲所在西元年 = birthYear + N - 1
+        // 例：1987 生 + 34 歲 → 1987 + 34 - 1 = 2020
+        startYear:  birthYear + startAge - 1,
+        endYear:    birthYear + endAge   - 1,
         mutagens,
       };
     });
