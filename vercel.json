@@ -6,6 +6,7 @@
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/chart.html", "dest": "/public/chart.html" },
     { "src": "/(.*)", "dest": "/public/index.html" }
   ],
   "headers": [

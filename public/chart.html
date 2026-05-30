@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ÆTHNOUS · 命盤圖</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0d0d1a;
+  color: #e8dcc8;
+  font-family: "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+  min-height: 100vh;
+  padding: 20px 16px 60px;
+}
+.brand { text-align: center; margin-bottom: 20px; }
+.brand-title {
+  font-size: clamp(16px, 4vw, 26px);
+  letter-spacing: 0.3em;
+  color: #d4af37;
+  font-weight: 300;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+.brand-sub { font-size: 10px; letter-spacing: 0.2em; color: #7a6a4a; text-transform: uppercase; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; letter-spacing: 0.1em; color: #4a4a6a;
+  text-decoration: none; margin-bottom: 16px;
+  transition: color 0.2s;
+}
+.back-link:hover { color: #d4af37; }
+.panel {
+  background: #13132a; border: 1px solid #2a2550;
+  border-radius: 4px; padding: 18px 18px;
+  max-width: 680px; margin: 0 auto 16px;
+}
+.panel-title {
+  font-size: 10px; letter-spacing: 0.25em; color: #7a6a4a;
+  text-transform: uppercase; margin-bottom: 14px;
+  padding-bottom: 8px; border-bottom: 1px solid #1e1e3a;
+}
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; color: #9a8a6a; letter-spacing: 0.08em; margin-bottom: 4px; }
+.field input, .field select {
+  width: 100%; background: #0d0d1a; border: 1px solid #2a2550;
+  color: #e8dcc8; padding: 8px 10px; font-size: 14px;
+  border-radius: 2px; outline: none; font-family: inherit;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus { border-color: #d4af37; }
+.field input::placeholder { color: #2a2a4a; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.radio-grp { display: flex; gap: 8px; padding-top: 2px; }
+.radio-grp label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13px; color: #c8b890; cursor: pointer;
+  padding: 6px 12px; border: 1px solid #2a2550; border-radius: 2px;
+  transition: border-color 0.2s; white-space: nowrap;
+}
+.radio-grp input[type=radio] { width: auto; accent-color: #d4af37; }
+.radio-grp label:has(input:checked) { border-color: #d4af37; color: #d4af37; }
+.btn-primary {
+  width: 100%; padding: 11px; background: transparent;
+  border: 1px solid #d4af37; color: #d4af37;
+  font-size: 12px; letter-spacing: 0.3em; cursor: pointer;
+  border-radius: 2px; margin-top: 4px; transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+.btn-primary:hover { background: #d4af37; color: #0d0d1a; }
+.err-box {
+  background: rgba(180,50,50,0.1); border: 1px solid #5a1a1a;
+  border-radius: 2px; padding: 9px 12px; color: #f87171;
+  font-size: 12px; display: none; margin-top: 8px;
+}
+.loading { text-align: center; padding: 40px; display: none; }
+.spinner {
+  width: 28px; height: 28px; border: 2px solid #2a2550;
+  border-top-color: #d4af37; border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Chart Area ─────────────────────────────── */
+#chart-area { display: none; max-width: 900px; margin: 0 auto; }
+.meta-bar {
+  background: #13132a; border: 1px solid #2a2550; border-radius: 4px;
+  padding: 10px 14px; margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
+  font-size: 11px;
+}
+.mi { display: flex; gap: 4px; }
+.ml { color: #4a3a1a; letter-spacing: 0.1em; }
+.mv { color: #c8a860; }
+.msep { color: #2a2550; }
+
+.flow-bar {
+  background: #13132a; border: 1px solid #2a2550; border-radius: 4px;
+  padding: 9px 14px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.fy-year { font-size: 20px; font-weight: 300; color: #d4af37; letter-spacing: 0.08em; }
+.fy-gz   { font-size: 12px; color: #9a8a6a; }
+.fy-age  { font-size: 11px; color: #7a6a4a; }
+.flow-btn {
+  background: transparent; border: 1px solid #3a3a5a; color: #7a7a9a;
+  padding: 5px 12px; border-radius: 2px; cursor: pointer;
+  font-size: 12px; font-family: inherit; transition: border-color 0.2s, color 0.2s;
+}
+.flow-btn:hover { border-color: #d4af37; color: #d4af37; }
+.fy-limit { font-size: 11px; color: #5a4a2a; margin-left: auto; }
+
+.canvas-wrap { display: flex; justify-content: center; margin-bottom: 10px; overflow-x: auto; }
+canvas { display: block; border-radius: 2px; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.actions button {
+  background: transparent; border: 1px solid #3a3a5a; color: #7a7a9a;
+  padding: 7px 14px; border-radius: 2px; cursor: pointer;
+  font-size: 11px; letter-spacing: 0.12em; font-family: inherit;
+  transition: border-color 0.2s, color 0.2s;
+}
+.actions button:hover { border-color: #d4af37; color: #d4af37; }
+.chart-note { font-size: 10px; color: #2a2a3a; text-align: center; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <div class="brand-title">Æ&thinsp;T&thinsp;H&thinsp;N&thinsp;O&thinsp;U&thinsp;S</div>
+  <div class="brand-sub">Astral Nexus Engine · Chart View</div>
+</div>
+
+<div style="max-width:900px;margin:0 auto 10px;">
+  <a href="/" class="back-link">← 返回首頁</a>
+</div>
+
+<!-- Input panel -->
+<div class="panel" id="input-panel">
+  <div class="panel-title">命主資料</div>
+  <div class="row-3">
+    <div class="field"><label>西曆生日</label><input type="date" id="f-date"></div>
+    <div class="field"><label>出生時間</label><input type="time" id="f-time"></div>
+    <div class="field">
+      <label>性別</label>
+      <div class="radio-grp">
+        <label><input type="radio" name="g" value="男" checked> 男</label>
+        <label><input type="radio" name="g" value="女"> 女</label>
+      </div>
+    </div>
+  </div>
+  <div class="row-2">
+    <div class="field">
+      <label>流年（西元，留空=本年）</label>
+      <input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100">
+    </div>
+    <div class="field">
+      <label>命主姓名（選填）</label>
+      <input type="text" id="f-name" placeholder="姓名或代稱">
+    </div>
+  </div>
+  <div class="err-box" id="form-err"></div>
+  <button class="btn-primary" onclick="handleSubmit()">起　盤</button>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div style="font-size:11px;color:#6a5a3a;letter-spacing:0.2em;">命盤計算中</div>
+</div>
+
+<!-- Chart area -->
+<div id="chart-area">
+  <div class="meta-bar" id="meta-bar"></div>
+  <div class="flow-bar">
+    <span style="font-size:10px;letter-spacing:0.15em;color:#5a4a2a;">流年</span>
+    <span class="fy-year" id="fc-year">—</span>
+    <span class="fy-gz" id="fc-gz"></span>
+    <span class="fy-age" id="fc-age"></span>
+    <button class="flow-btn" onclick="changeYear(-1)">← 上一年</button>
+    <button class="flow-btn" onclick="changeYear(+1)">下一年 →</button>
+    <span class="fy-limit" id="fc-limit"></span>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="chart-canvas"></canvas>
+  </div>
+  <div class="actions">
+    <button onclick="exportPNG()">匯出 PNG</button>
+    <button onclick="resetChart()">重新輸入</button>
+  </div>
+  <div class="chart-note">ÆTHNOUS Astral Nexus Engine · Blue's Version · © 2026 Blue.X</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════════
+
+// Palace sequence (counter-clockwise order on the board)
+const PAL_SEQ = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','官祿','田宅','福德','父母'];
+
+// Branch → [row, col] in the 4×4 grid
+const BRANCH_POS = {
+  '巳':[0,0],'午':[0,1],'未':[0,2],'申':[0,3],
+  '辰':[1,0],                        '酉':[1,3],
+  '卯':[2,0],                        '戌':[2,3],
+  '寅':[3,0],'丑':[3,1],'子':[3,2],'亥':[3,3],
+};
+
+const MU = {
+  '化祿':{ fg:'#4ade80', key:'祿' },
+  '化權':{ fg:'#fbbf24', key:'權' },
+  '化科':{ fg:'#93c5fd', key:'科' },
+  '化忌':{ fg:'#f87171', key:'忌' },
+};
+
+const BRIGHT_CLR = {
+  '廟':'#d4af37','旺':'#c8a830',
+  '得':'#8a7a50','利':'#7a6a40',
+  '平':'#4a4a6a',
+  '不利':'#5a3a5a',
+  '陷':'#7a3030',
+  '不':'#6a3a5a',
+};
+
+const KEY_MINOR = new Set(['擎羊','陀羅','火星','鈴星','地空','地劫',
+  '左輔','右弼','文昌','文曲','天魁','天鉞','祿存','天馬']);
+
+const CELL = 210;
+const BASE = 840;
+const PAD  = 8;
+const DPR  = window.devicePixelRatio || 1;
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+const S = {
+  chartData: null,
+  flowData:  null,
+  birthDate: '',
+  birthTime: '',
+  gender:    '',
+  name:      '',
+  currentYear: new Date().getFullYear(),
+};
+
+// ════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════
+
+// For a palace with natal name `n`, given the reference 命宮 natal name `ref`,
+// returns the equivalent position in PAL_SEQ (used for decade/flow labeling).
+function palOffset(n, ref) {
+  const i = PAL_SEQ.indexOf(n);
+  const j = PAL_SEQ.indexOf(ref);
+  if (i < 0 || j < 0) return null;
+  return PAL_SEQ[(i - j + 12) % 12];
+}
+
+// Build { palaceName → [{type, star, source}] } for mutagen overlays
+function buildMuMap(yearM, decadeM, flowM) {
+  const map = {};
+  const add = (arr, src) => {
+    for (const m of arr || []) {
+      const pal = m.palace ?? m.targetPalace;
+      if (!pal) continue;
+      (map[pal] = map[pal] || []).push({ type: m.type, star: m.star, src });
+    }
+  };
+  add(yearM,   'year');
+  add(decadeM, 'decade');
+  add(flowM,   'flow');
+  return map;
+}
+
+function ts() {
+  return new Date().toISOString().replace(/\D/g,'').slice(0,8);
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS: SETUP
+// ════════════════════════════════════════════════════════
+
+function setupCanvas(canvas) {
+  canvas.width  = BASE * DPR;
+  canvas.height = BASE * DPR;
+  const disp = Math.min(BASE, window.innerWidth - 32);
+  canvas.style.width  = disp + 'px';
+  canvas.style.height = disp + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return ctx;
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS: GRID FRAME
+// ════════════════════════════════════════════════════════
+
+function drawGrid(ctx) {
+  // Full background
+  ctx.fillStyle = '#0b0b18';
+  ctx.fillRect(0, 0, BASE, BASE);
+
+  // Grid lines
+  ctx.strokeStyle = '#252540';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,BASE); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(BASE,i*CELL); ctx.stroke();
+  }
+
+  // Center 2×2 slightly different bg
+  ctx.fillStyle = '#0f0f22';
+  ctx.fillRect(CELL, CELL, 2*CELL, 2*CELL);
+  ctx.strokeStyle = '#30305a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(CELL+0.75, CELL+0.75, 2*CELL-1.5, 2*CELL-1.5);
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS: PALACE CELL
+// ════════════════════════════════════════════════════════
+
+function drawPalace(ctx, palace, row, col, opts) {
+  const {muMap, decadeMing, flowMing, minorLimPalace, origPalace, bodyPalace} = opts;
+  const cx = col * CELL;
+  const cy = row * CELL;
+  const hasFlow = !!(flowMing);
+
+  // ── Cell bg (redundant but ensures clean fill) ──
+  ctx.fillStyle = '#0b0b18';
+  ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
+
+  // ── Decorative large branch glyph ──
+  ctx.font = `bold 36px "PingFang TC","Microsoft JhengHei",sans-serif`;
+  ctx.fillStyle = '#161628';
+  ctx.textAlign = 'right';
+  ctx.fillText(palace.branch, cx+CELL-6, cy+46);
+  ctx.textAlign = 'left';
+
+  // ── Stem label (top-left, tiny) ──
+  ctx.font = `9px "PingFang TC",sans-serif`;
+  ctx.fillStyle = '#2e2e50';
+  ctx.fillText(palace.stem, cx+PAD, cy+13);
+
+  // ── Decade range (bottom, very dim) ──
+  if (palace.decadeRange) {
+    ctx.font = `9px "PingFang TC",sans-serif`;
+    ctx.fillStyle = '#1c1c38';
+    ctx.fillText(palace.decadeRange[0]+'–'+palace.decadeRange[1], cx+PAD, cy+CELL-PAD);
+  }
+
+  // ── Palace name layers ────────────────────────────
+  let ny = cy + 26; // nameY: baseline will be ny + fontSize
+
+  if (hasFlow && flowMing) {
+    const fp = palOffset(palace.name, flowMing);
+    if (fp) {
+      ctx.font = `bold 15px "PingFang TC",sans-serif`;
+      ctx.fillStyle = '#d4af37';
+      ctx.fillText('流'+fp.charAt(0), cx+PAD, ny+14);
+      ny += 17;
+    }
+  }
+
+  if (hasFlow && decadeMing) {
+    const dp = palOffset(palace.name, decadeMing);
+    if (dp) {
+      ctx.font = `12px "PingFang TC",sans-serif`;
+      ctx.fillStyle = '#8a6a28';
+      ctx.fillText('大'+dp.charAt(0), cx+PAD, ny+12);
+      ny += 14;
+    }
+  }
+
+  // 本命宮位名
+  const nfs = hasFlow ? 11 : 14;
+  ctx.font = `${hasFlow ? '' : 'bold '}${nfs}px "PingFang TC",sans-serif`;
+  ctx.fillStyle = hasFlow ? '#706050' : '#ddd0b8';
+  ctx.fillText(palace.name, cx+PAD, ny+nfs);
+  ny += nfs + 5;
+
+  // ── Major stars ────────────────────────────────────
+  const palMu = muMap[palace.name] || [];
+  let sy = Math.max(ny + 3, cy + (hasFlow ? 92 : 64));
+
+  if (palace.isEmpty && palace.borrowedFromPalace) {
+    // Empty palace: show borrow note
+    ctx.font = `9px "PingFang TC",sans-serif`;
+    ctx.fillStyle = '#3a3a5a';
+    ctx.fillText('空', cx+PAD, sy);
+    ctx.fillStyle = '#2a2a48';
+    ctx.fillText('借'+palace.borrowedFromPalace.charAt(0)+':'+(palace.borrowedStars||[]).join(''), cx+PAD+14, sy);
+    sy += 13;
+  } else {
+    for (const star of (palace.majorStars || [])) {
+      if (sy > cy + CELL - 20) break;
+
+      // Star name
+      ctx.font = `12px "PingFang TC",sans-serif`;
+      ctx.fillStyle = '#bfb8a8';
+      ctx.fillText(star.name, cx+PAD, sy);
+      let sx = cx + PAD + star.name.length * 12 + 2;
+
+      // Brightness
+      if (star.brightness) {
+        ctx.font = `8px "PingFang TC",sans-serif`;
+        ctx.fillStyle = BRIGHT_CLR[star.brightness] || '#4a4a6a';
+        ctx.fillText(star.brightness, sx, sy);
+        sx += star.brightness.length * 8 + 2;
+      }
+
+      // Birth-year mutagen on this star (already in majorStars.yearMutagen)
+      if (star.yearMutagen && MU[star.yearMutagen]) {
+        ctx.font = `bold 9px "PingFang TC",sans-serif`;
+        ctx.fillStyle = MU[star.yearMutagen].fg;
+        ctx.fillText(MU[star.yearMutagen].key, sx, sy);
+        sx += 10;
+      }
+
+      // Decade / flow year mutagens for this star landing in this palace
+      for (const m of palMu) {
+        if (m.star !== star.name || m.src === 'year') continue;
+        if (sx > cx + CELL - 14) break;
+        const ms = MU[m.type]; if (!ms) continue;
+        ctx.font = `bold 8px "PingFang TC",sans-serif`;
+        ctx.fillStyle = ms.fg;
+        ctx.fillText((m.src==='decade'?'大':'流')+ms.key, sx, sy);
+        sx += 14;
+      }
+
+      sy += 15;
+    }
+  }
+
+  // ── Key minor stars (single-char abbreviations) ──
+  const keyMinors = (palace.minorStars||[]).filter(s => KEY_MINOR.has(s.name));
+  if (keyMinors.length > 0 && sy < cy+CELL-18) {
+    ctx.font = `9px "PingFang TC",sans-serif`;
+    ctx.fillStyle = '#35355a';
+    ctx.fillText(keyMinors.map(s=>s.name.charAt(0)).join(' '), cx+PAD, sy);
+  }
+
+  // ── Corner markers (top-right stacked) ───────────
+  let my = cy + 13;
+  ctx.textAlign = 'right';
+  ctx.font = `bold 9px "PingFang TC",sans-serif`;
+
+  if (palace.name === origPalace) {
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillText('來', cx+CELL-PAD, my); my += 12;
+  }
+  if (palace.name === bodyPalace) {
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText('身', cx+CELL-PAD, my); my += 12;
+  }
+  if (palace.name === minorLimPalace) {
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText('限', cx+CELL-PAD, my);
+  }
+  ctx.textAlign = 'left';
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS: CENTER 2×2
+// ════════════════════════════════════════════════════════
+
+function drawCenter(ctx) {
+  const d  = S.chartData;
+  const fd = S.flowData;
+  const cx = CELL, cy = CELL, cw = 2*CELL, ch = 2*CELL;
+
+  ctx.fillStyle = '#0f0f22';
+  ctx.fillRect(cx, cy, cw, ch);
+
+  ctx.textAlign = 'center';
+  const mx = cx + cw/2;
+
+  // Brand
+  ctx.font = `300 17px "PingFang TC",sans-serif`;
+  ctx.fillStyle = '#d4af37';
+  ctx.fillText('ÆTHNOUS', mx, cy+26);
+
+  // Thin divider
+  ctx.strokeStyle = '#252540'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+24,cy+33); ctx.lineTo(cx+cw-24,cy+33); ctx.stroke();
+
+  let iy = cy + 50;
+  const lh = 17;
+
+  if (!d) { ctx.textAlign='left'; return; }
+
+  // Name
+  if (S.name) {
+    ctx.font = `bold 15px "PingFang TC",sans-serif`;
+    ctx.fillStyle = '#e8dcc8';
+    ctx.fillText(S.name, mx, iy); iy += 19;
+  }
+
+  // Birth info
+  ctx.font = `10px "PingFang TC",sans-serif`;
+  ctx.fillStyle = '#8a7a5a';
+  ctx.fillText(`${S.birthDate}　${S.birthTime}　${S.gender}`, mx, iy); iy += lh;
+
+  // Lunar
+  ctx.fillStyle = '#5a4a30';
+  ctx.fillText(d.lunarDate, mx, iy); iy += lh;
+
+  // 五行局 · 陰陽
+  ctx.font = `bold 13px "PingFang TC",sans-serif`;
+  ctx.fillStyle = '#c8a830';
+  ctx.fillText(`${d.fiveElementsClass}　·　${d.yinYang}`, mx, iy); iy += lh+2;
+
+  // 命主 身主
+  ctx.font = `9px "PingFang TC",sans-serif`;
+  ctx.fillStyle = '#5a4a30';
+  ctx.fillText(`命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}`, mx, iy); iy += lh-2;
+
+  // 時辰
+  ctx.fillText(`時辰：${d.shichen||'—'}`, mx, iy); iy += lh;
+
+  // Body / Origin
+  const bodyStr  = d.bodyPalace     ? '身宮：'+d.bodyPalace.name     : '';
+  const origStr  = d.originalPalace ? '來因：'+d.originalPalace.name : '';
+  ctx.fillText([bodyStr,origStr].filter(Boolean).join('　'), mx, iy); iy += lh;
+
+  // Divider
+  ctx.strokeStyle = '#1e1e3a'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+28,iy+2); ctx.lineTo(cx+cw-28,iy+2); ctx.stroke();
+  iy += 10;
+
+  // ── Flow year section ──
+  if (fd) {
+    const fy = fd.flowYear;
+    const ml = fd.currentMajorLimit;
+
+    ctx.font = `bold 22px "PingFang TC",sans-serif`;
+    ctx.fillStyle = '#d4af37';
+    ctx.fillText(`${fy.year}　${fy.ganZhi}年`, mx, iy); iy += 26;
+
+    ctx.font = `10px "PingFang TC",sans-serif`;
+    ctx.fillStyle = '#8a7a5a';
+    ctx.fillText(`虛齡 ${fy.chineseAge} 歲`, mx, iy); iy += lh;
+
+    if (ml) {
+      ctx.fillStyle = '#5a4a28';
+      ctx.fillText(`大限：${ml.palace}宮　${ml.startAge}–${ml.endAge}歲`, mx, iy); iy += lh;
+      ctx.fillStyle = '#3a3020';
+      ctx.fillText(`${ml.startYear}–${ml.endYear}`, mx, iy);
+    }
+  }
+
+  // Copyright
+  ctx.font = `8px "PingFang TC",sans-serif`;
+  ctx.fillStyle = '#1a1a30';
+  ctx.fillText('© 2026 Blue.X  ·  ÆTHNOUS', mx, cy+ch-9);
+
+  ctx.textAlign = 'left';
+}
+
+// ════════════════════════════════════════════════════════
+// CANVAS: MAIN RENDER
+// ════════════════════════════════════════════════════════
+
+function renderChart() {
+  const canvas = document.getElementById('chart-canvas');
+  const ctx    = setupCanvas(canvas);
+  const d      = S.chartData;
+  const fd     = S.flowData;
+  if (!d) return;
+
+  const muMap      = buildMuMap(
+    d.yearMutagens,
+    fd?.currentMajorLimit?.mutagens,
+    fd?.flowYearMutagens,
+  );
+  const decadeMing     = fd?.currentMajorLimit?.palace    || null;
+  const flowMing       = fd?.flowYearLifePalace?.name     || null;
+  const minorLimPalace = fd?.flowYearLifePalace?.name     || null;
+  const origPalace     = d.originalPalace?.name           || null;
+  const bodyPalace     = d.bodyPalace?.name               || null;
+
+  drawGrid(ctx);
+
+  for (const palace of d.palaces) {
+    const pos = BRANCH_POS[palace.branch];
+    if (!pos) continue;
+    drawPalace(ctx, palace, pos[0], pos[1], {
+      muMap, decadeMing, flowMing,
+      minorLimPalace, origPalace, bodyPalace,
+    });
+  }
+
+  drawCenter(ctx);
+}
+
+// ════════════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════════════
+
+async function apiChart(date, time, gender) {
+  const r = await fetch(`/api/chart?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&gender=${encodeURIComponent(gender)}&_t=${ts()}`);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'HTTP '+r.status);
+  return j;
+}
+
+async function apiFlow(date, time, gender, year) {
+  const r = await fetch(`/api/flow?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&gender=${encodeURIComponent(gender)}&year=${year}&_t=${ts()}`);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'HTTP '+r.status);
+  return j;
+}
+
+// ════════════════════════════════════════════════════════
+// UI
+// ════════════════════════════════════════════════════════
+
+function updateMetaBar() {
+  const d = S.chartData; if (!d) return;
+  const mingPal = d.palaces.find(p=>p.name==='命宮');
+  document.getElementById('meta-bar').innerHTML = [
+    ['五行局', d.fiveElementsClass],
+    ['陰陽',   d.yinYang],
+    ['命宮',   mingPal?.stemBranch || '—'],
+    ['身宮',   d.bodyPalace?.name  || '—'],
+    ['來因宮', d.originalPalace?.name || '—'],
+  ].map(([l,v]) => `<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
+   .join('<span class="msep">·</span>');
+}
+
+function updateFlowBar() {
+  const fd = S.flowData;
+  document.getElementById('fc-year').textContent = S.currentYear;
+  if (!fd) return;
+  const fy = fd.flowYear, ml = fd.currentMajorLimit;
+  document.getElementById('fc-gz').textContent  = fy.ganZhi+'年';
+  document.getElementById('fc-age').textContent = `虛齡${fy.chineseAge}歲`;
+  document.getElementById('fc-limit').textContent = ml
+    ? `大限：${ml.palace}宮 ${ml.startAge}–${ml.endAge}歲 (${ml.startYear}–${ml.endYear})`
+    : '';
+}
+
+function showLoading(v) {
+  document.getElementById('loading').style.display = v ? 'block' : 'none';
+}
+
+// ════════════════════════════════════════════════════════
+// HANDLERS
+// ════════════════════════════════════════════════════════
+
+async function handleSubmit() {
+  const date   = document.getElementById('f-date').value;
+  const time   = document.getElementById('f-time').value;
+  const gender = document.querySelector('input[name=g]:checked')?.value;
+  const name   = document.getElementById('f-name').value.trim();
+  const yv     = document.getElementById('f-year').value.trim();
+  const err    = document.getElementById('form-err');
+
+  err.style.display = 'none';
+  if (!date || !time || !gender) {
+    err.textContent = '請填寫生日、時間和性別。';
+    err.style.display = 'block'; return;
+  }
+
+  const year = yv ? parseInt(yv) : new Date().getFullYear();
+  Object.assign(S, { birthDate:date, birthTime:time, gender, name, currentYear:year });
+
+  document.getElementById('input-panel').style.display = 'none';
+  document.getElementById('chart-area').style.display  = 'none';
+  showLoading(true);
+
+  try {
+    const [chartData, flowData] = await Promise.all([
+      apiChart(date, time, gender),
+      apiFlow(date, time, gender, year),
+    ]);
+    S.chartData = chartData;
+    S.flowData  = flowData;
+    showLoading(false);
+    document.getElementById('chart-area').style.display = 'block';
+    updateMetaBar();
+    updateFlowBar();
+    renderChart();
+  } catch(e) {
+    showLoading(false);
+    document.getElementById('input-panel').style.display = 'block';
+    err.textContent = '命盤計算失敗：' + e.message;
+    err.style.display = 'block';
+  }
+}
+
+async function changeYear(delta) {
+  S.currentYear += delta;
+  document.getElementById('fc-year').textContent = S.currentYear;
+  document.getElementById('fc-gz').textContent   = '';
+  document.getElementById('fc-age').textContent  = '';
+  document.getElementById('fc-limit').textContent= '';
+  try {
+    S.flowData = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear);
+    updateFlowBar();
+    renderChart();
+  } catch(e) { console.error('Flow error:', e); }
+}
+
+function exportPNG() {
+  const canvas = document.getElementById('chart-canvas');
+  // Export at full internal resolution (840 * DPR)
+  const link = document.createElement('a');
+  const n = S.name ? S.name+'_' : '';
+  link.download = `AETHNOUS_${n}${S.birthDate}_${S.currentYear}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function resetChart() {
+  S.chartData = null; S.flowData = null;
+  document.getElementById('chart-area').style.display  = 'none';
+  document.getElementById('input-panel').style.display = 'block';
+}
+
+window.addEventListener('resize', () => {
+  if (S.chartData) renderChart();
+});
+</script>
+</body>
+</html>
