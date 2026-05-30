@@ -57,29 +57,12 @@ function getMinorLimitPalace(palaces, age) {
   ) || null;
 }
 
-// ── 占驗派流年命宮算法（Blue's Version）────────────────────────
-// 陰男陽女 = 逆行：(命宮idx - 流年地支idx + 12) % 12
-// 陽男陰女 = 順行：(命宮idx + 流年地支idx) % 12
+// ── 流年命宮算法（Blue's Version v2）──────────────────────────
+// 流年命宮 = 流年地支所對應的本命宮位
 // 驗算（Blue 1987-05-19 陰男，丙午年 2026）：
-//   mingIdx=2(寅), yearIdx=6(午), isReverse=true
-//   (2-6+12)%12 = 8 → EARTHLY_BRANCHES[8] = 申 → 遷移 ✓
-function calcFlowYearLifePalace(palaces, flowYearBranch, yinYang) {
-  const mingPal = palaces.find(p => p.name === '命宮');
-  if (!mingPal) return null;
-
-  const mingIdx  = EARTHLY_BRANCHES.indexOf(mingPal.branch);
-  const yearIdx  = EARTHLY_BRANCHES.indexOf(flowYearBranch);
-  if (mingIdx < 0 || yearIdx < 0) return null;
-
-  // 陰男陽女 = 逆行
-  const isReverse = yinYang === '陰男' || yinYang === '陽女';
-
-  const flowIdx    = isReverse
-    ? (mingIdx - yearIdx + 12) % 12
-    : (mingIdx + yearIdx) % 12;
-
-  const flowBranch = EARTHLY_BRANCHES[flowIdx];
-  return palaces.find(p => p.branch === flowBranch) ?? null;
+//   流年地支=午 → 本命午宮=官祿 → 流命=官祿 ✓
+function calcFlowYearLifePalace(palaces, flowYearBranch /*, yinYang*/) {
+  return palaces.find(p => p.branch === flowYearBranch) ?? null;
 }
 
 function detectTripleStemOverlap(chart, currentMajorLimit) {
@@ -164,8 +147,8 @@ module.exports = function handler(req, res) {
     const currentMajorLimit = getCurrentMajorLimit(chart.majorLimits, queryYear);
     const minorLimitPalace  = getMinorLimitPalace(chart.palaces, age);
 
-    // 占驗派流年命宮（覆寫 iztro 預設值）
-    const flowLifePalace    = calcFlowYearLifePalace(chart.palaces, flowBranch, chart.yinYang);
+    // 流年命宮（覆寫 iztro 預設值）
+    const flowLifePalace    = calcFlowYearLifePalace(chart.palaces, flowBranch);
 
     const tripleStemOverlap = detectTripleStemOverlap(chart, currentMajorLimit);
     const luJiConflicts     = detectLuJiConflict(
@@ -196,7 +179,7 @@ module.exports = function handler(req, res) {
         majorStars:       flowLifePalace.majorStars.map(s => s.name),
         isBodyPalace:     flowLifePalace.isBodyPalace,
         isOriginalPalace: flowLifePalace.isOriginalPalace,
-        algorithm:        '占驗派：命宮地支±流年地支',
+        algorithm:        '流年命宮 = 流年地支對應本命宮位',
       } : null,
 
       // 小限宮（另立欄位，與流年命宮分開）
