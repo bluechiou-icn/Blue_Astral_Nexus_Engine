@@ -16,107 +16,56 @@ body {
 .brand { text-align: center; margin-bottom: 20px; }
 .brand-title {
   font-size: clamp(16px, 4vw, 26px);
-  letter-spacing: 0.3em;
-  color: #d4af37;
-  font-weight: 300;
-  margin-bottom: 4px;
-  white-space: nowrap;
+  letter-spacing: 0.3em; color: #d4af37; font-weight: 300;
+  margin-bottom: 4px; white-space: nowrap;
 }
 .brand-sub { font-size: 10px; letter-spacing: 0.2em; color: #7a6a4a; text-transform: uppercase; }
 .back-link {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; letter-spacing: 0.1em; color: #4a4a6a;
-  text-decoration: none; margin-bottom: 16px;
+  font-size: 11px; color: #4a4a6a; text-decoration: none; margin-bottom: 16px;
   transition: color 0.2s;
 }
 .back-link:hover { color: #d4af37; }
 .panel {
   background: #13132a; border: 1px solid #2a2550;
-  border-radius: 4px; padding: 18px;
-  max-width: 680px; margin: 0 auto 16px;
+  border-radius: 4px; padding: 18px; max-width: 720px; margin: 0 auto 16px;
 }
-.panel-title {
-  font-size: 10px; letter-spacing: 0.25em; color: #7a6a4a;
-  text-transform: uppercase; margin-bottom: 14px;
-  padding-bottom: 8px; border-bottom: 1px solid #1e1e3a;
-}
+.panel-title { font-size: 10px; letter-spacing: 0.25em; color: #7a6a4a; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #1e1e3a; }
 .field { margin-bottom: 12px; }
 .field label { display: block; font-size: 11px; color: #9a8a6a; letter-spacing: 0.08em; margin-bottom: 4px; }
-.field input {
-  width: 100%; background: #0d0d1a; border: 1px solid #2a2550;
-  color: #e8dcc8; padding: 8px 10px; font-size: 14px;
-  border-radius: 2px; outline: none; font-family: inherit;
-  transition: border-color 0.2s;
-}
+.field input { width: 100%; background: #0d0d1a; border: 1px solid #2a2550; color: #e8dcc8; padding: 8px 10px; font-size: 14px; border-radius: 2px; outline: none; font-family: inherit; transition: border-color 0.2s; }
 .field input:focus { border-color: #d4af37; }
 .field input::placeholder { color: #2a2a4a; }
 .row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .radio-grp { display: flex; gap: 8px; padding-top: 2px; }
-.radio-grp label {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 13px; color: #c8b890; cursor: pointer;
-  padding: 6px 12px; border: 1px solid #2a2550; border-radius: 2px;
-  transition: border-color 0.2s; white-space: nowrap;
-}
+.radio-grp label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #c8b890; cursor: pointer; padding: 6px 12px; border: 1px solid #2a2550; border-radius: 2px; transition: border-color 0.2s; white-space: nowrap; }
 .radio-grp input[type=radio] { width: auto; accent-color: #d4af37; }
 .radio-grp label:has(input:checked) { border-color: #d4af37; color: #d4af37; }
-.btn-primary {
-  width: 100%; padding: 11px; background: transparent;
-  border: 1px solid #d4af37; color: #d4af37;
-  font-size: 12px; letter-spacing: 0.3em; cursor: pointer;
-  border-radius: 2px; margin-top: 4px; transition: background 0.2s, color 0.2s;
-  font-family: inherit;
-}
+.btn-primary { width: 100%; padding: 11px; background: transparent; border: 1px solid #d4af37; color: #d4af37; font-size: 12px; letter-spacing: 0.3em; cursor: pointer; border-radius: 2px; margin-top: 4px; transition: background 0.2s, color 0.2s; font-family: inherit; }
 .btn-primary:hover { background: #d4af37; color: #0d0d1a; }
-.err-box {
-  background: rgba(180,50,50,0.1); border: 1px solid #5a1a1a;
-  border-radius: 2px; padding: 9px 12px; color: #f87171;
-  font-size: 12px; display: none; margin-top: 8px;
-}
+.err-box { background: rgba(180,50,50,0.1); border: 1px solid #5a1a1a; border-radius: 2px; padding: 9px 12px; color: #f87171; font-size: 12px; display: none; margin-top: 8px; }
 .loading { text-align: center; padding: 40px; display: none; }
-.spinner {
-  width: 28px; height: 28px; border: 2px solid #2a2550;
-  border-top-color: #d4af37; border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin: 0 auto 10px;
-}
+.spinner { width: 28px; height: 28px; border: 2px solid #2a2550; border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-#chart-area { display: none; max-width: 900px; margin: 0 auto; }
-.meta-bar {
-  background: #13132a; border: 1px solid #2a2550; border-radius: 4px;
-  padding: 10px 14px; margin-bottom: 10px;
-  display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
-  font-size: 11px;
-}
+#chart-area { display: none; max-width: 1060px; margin: 0 auto; }
+.meta-bar { background: #13132a; border: 1px solid #2a2550; border-radius: 4px; padding: 10px 14px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 11px; }
 .mi { display: flex; gap: 4px; }
 .ml { color: #4a3a1a; letter-spacing: 0.1em; }
-.mv { color: #c8a860; }
+.mv { color: #c8a860; font-weight: 500; }
 .msep { color: #2a2550; }
-.flow-bar {
-  background: #13132a; border: 1px solid #2a2550; border-radius: 4px;
-  padding: 9px 14px; margin-bottom: 10px;
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-}
-.fy-year { font-size: 20px; font-weight: 300; color: #d4af37; letter-spacing: 0.08em; }
-.fy-gz   { font-size: 12px; color: #9a8a6a; }
-.fy-age  { font-size: 11px; color: #7a6a4a; }
-.flow-btn {
-  background: transparent; border: 1px solid #3a3a5a; color: #7a7a9a;
-  padding: 5px 12px; border-radius: 2px; cursor: pointer;
-  font-size: 12px; font-family: inherit; transition: border-color 0.2s, color 0.2s;
-}
+.flow-bar { background: #13132a; border: 1px solid #2a2550; border-radius: 4px; padding: 9px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fy-year { font-size: 22px; font-weight: 300; color: #d4af37; letter-spacing: 0.08em; }
+.fy-gz { font-size: 13px; color: #9a8a6a; }
+.fy-age { font-size: 11px; color: #7a6a4a; }
+.flow-btn { background: transparent; border: 1px solid #3a3a5a; color: #7a7a9a; padding: 6px 14px; border-radius: 2px; cursor: pointer; font-size: 13px; font-family: inherit; transition: border-color 0.2s, color 0.2s; }
 .flow-btn:hover { border-color: #d4af37; color: #d4af37; }
 .fy-limit { font-size: 11px; color: #5a4a2a; margin-left: auto; }
-.canvas-wrap { display: flex; justify-content: center; margin-bottom: 10px; overflow-x: auto; }
-canvas { display: block; border-radius: 2px; }
+.canvas-wrap { display: flex; justify-content: center; margin-bottom: 12px; overflow-x: auto; }
+canvas { display: block; border-radius: 3px; box-shadow: 0 4px 24px rgba(0,0,0,0.5); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-.actions button {
-  background: transparent; border: 1px solid #3a3a5a; color: #7a7a9a;
-  padding: 7px 14px; border-radius: 2px; cursor: pointer;
-  font-size: 11px; letter-spacing: 0.12em; font-family: inherit;
-  transition: border-color 0.2s, color 0.2s;
-}
+.actions button { background: transparent; border: 1px solid #3a3a5a; color: #7a7a9a; padding: 7px 16px; border-radius: 2px; cursor: pointer; font-size: 11px; letter-spacing: 0.12em; font-family: inherit; transition: border-color 0.2s, color 0.2s; }
 .actions button:hover { border-color: #d4af37; color: #d4af37; }
 .chart-note { font-size: 10px; color: #2a2a3a; text-align: center; letter-spacing: 0.1em; }
 </style>
@@ -127,7 +76,7 @@ canvas { display: block; border-radius: 2px; }
   <div class="brand-title">Æ&thinsp;T&thinsp;H&thinsp;N&thinsp;O&thinsp;U&thinsp;S</div>
   <div class="brand-sub">Astral Nexus Engine · Chart View</div>
 </div>
-<div style="max-width:900px;margin:0 auto 10px;">
+<div style="max-width:1060px;margin:0 auto 10px;">
   <a href="/" class="back-link">← 返回首頁</a>
 </div>
 
@@ -145,14 +94,8 @@ canvas { display: block; border-radius: 2px; }
     </div>
   </div>
   <div class="row-2">
-    <div class="field">
-      <label>流年（西元，留空=本年）</label>
-      <input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100">
-    </div>
-    <div class="field">
-      <label>命主姓名（選填）</label>
-      <input type="text" id="f-name" placeholder="姓名或代稱">
-    </div>
+    <div class="field"><label>流年（西元，留空=本年）</label><input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100"></div>
+    <div class="field"><label>命主姓名（選填）</label><input type="text" id="f-name" placeholder="姓名或代稱"></div>
   </div>
   <div class="err-box" id="form-err"></div>
   <button class="btn-primary" onclick="handleSubmit()">起　盤</button>
@@ -198,7 +141,6 @@ const BRANCH_POS = {
   '寅':[3,0],'丑':[3,1],'子':[3,2],'亥':[3,3],
 };
 
-// Mutagen type info (fg = text color for non-badge use, bg = badge bg, key = one-char)
 const MU = {
   '化祿':{ fg:'#4ade80', bg:'#16a34a', key:'祿' },
   '化權':{ fg:'#fbbf24', bg:'#ca8a04', key:'權' },
@@ -206,46 +148,42 @@ const MU = {
   '化忌':{ fg:'#f87171', bg:'#dc2626', key:'忌' },
 };
 
-// Brightness colors (star text + brightness text)
 const BRIGHT_CLR = {
   '廟':'#f8d57e', '旺':'#f0b429',
-  '得':'#e5a000', '利':'#c4870a',
+  '得':'#e0980a', '利':'#c0830a',
   '平':'#8a7250',
   '不利':'#6b5a3e',
-  '陷':'#4a3f2d',
-  '不':'#3a302a',
+  '陷':'#5a4832',
+  '不':'#483c28',
 };
 
-const AUXILIARY_STARS = new Set(['左輔','右弼','文昌','文曲','天魁','天鉞','祿存','天馬']);
-const KILLING_STARS   = new Set(['擎羊','陀羅','火星','鈴星','地空','地劫']);
+// Star category sets
+const AUX_STARS  = new Set(['左輔','右弼','文昌','文曲','天魁','天鉞','祿存','天馬']);
+const KILL_STARS = new Set(['擎羊','陀羅','火星','鈴星','地空','地劫']);
 
-const CELL = 210;
-const BASE = 840;
-const PAD  = 7;
+// ── Canvas geometry ──────────────────────────────────────
+const CELL = 250;          // px per cell (was 210)
+const BASE = 1000;         // canvas logical size
+const PAD  = 10;           // inner padding
+const BOT  = 48;           // bottom reserve for palace name + decade
 const DPR  = window.devicePixelRatio || 1;
 const FONT = '"PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif';
-const BOTTOM_RESERVE = 38; // px from cell bottom reserved for palace name + decade
 
 // ════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════
 const S = {
-  chartData: null,
-  flowData:  null,
-  birthDate: '',
-  birthTime: '',
-  gender:    '',
-  name:      '',
+  chartData: null, flowData: null,
+  birthDate: '', birthTime: '', gender: '', name: '',
   currentYear: new Date().getFullYear(),
 };
 
 // ════════════════════════════════════════════════════════
-// UTILS
+// UTILITIES
 // ════════════════════════════════════════════════════════
 
-function palOffset(natalName, refMingName) {
-  const i = PAL_SEQ.indexOf(natalName);
-  const j = PAL_SEQ.indexOf(refMingName);
+function palOffset(n, ref) {
+  const i = PAL_SEQ.indexOf(n), j = PAL_SEQ.indexOf(ref);
   if (i < 0 || j < 0) return null;
   return PAL_SEQ[(i - j + 12) % 12];
 }
@@ -253,21 +191,16 @@ function palOffset(natalName, refMingName) {
 function buildMuMap(yearM, decadeM, flowM) {
   const map = {};
   const add = (arr, src) => {
-    for (const m of arr || []) {
-      const pal = m.palace ?? m.targetPalace;
-      if (!pal) continue;
-      (map[pal] = map[pal] || []).push({ type: m.type, star: m.star, src });
+    for (const m of arr||[]) {
+      const pal = m.palace ?? m.targetPalace; if (!pal) continue;
+      (map[pal] = map[pal]||[]).push({ type: m.type, star: m.star, src });
     }
   };
-  add(yearM,   'year');
-  add(decadeM, 'decade');
-  add(flowM,   'flow');
+  add(yearM,'year'); add(decadeM,'decade'); add(flowM,'flow');
   return map;
 }
 
-function ts() {
-  return new Date().toISOString().replace(/\D/g,'').slice(0,8);
-}
+function ts() { return new Date().toISOString().replace(/\D/g,'').slice(0,8); }
 
 // ════════════════════════════════════════════════════════
 // CANVAS HELPERS
@@ -284,42 +217,49 @@ function setupCanvas(canvas) {
   return ctx;
 }
 
-// Draw a colored badge with white text; returns next x position
-function drawBadge(ctx, text, bg, x, y, fs) {
-  fs = fs || 8;
+// Draw a coloured badge; returns next x
+function badge(ctx, text, bg, x, y, fs) {
+  fs = fs || 10;
   ctx.save();
   ctx.font = `bold ${fs}px ${FONT}`;
   const tw = ctx.measureText(text).width;
-  const bw = tw + 3, bh = fs + 2;
+  const bw = tw + 4, bh = fs + 2;
   ctx.fillStyle = bg;
   ctx.fillRect(x, y - fs - 1, bw, bh);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(text, x + 1.5, y);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, x + 2, y);
   ctx.restore();
   return x + bw + 2;
 }
 
 // ════════════════════════════════════════════════════════
-// CANVAS: GRID
+// GRID
 // ════════════════════════════════════════════════════════
 
 function drawGrid(ctx) {
-  ctx.fillStyle = '#090912';
+  ctx.fillStyle = '#080812';
   ctx.fillRect(0, 0, BASE, BASE);
-  ctx.strokeStyle = '#252545';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
+
+  // Outer border
+  ctx.strokeStyle = '#30305a'; ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, BASE-2, BASE-2);
+
+  // Inner grid lines
+  ctx.strokeStyle = '#282848'; ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
     ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,BASE); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(BASE,i*CELL); ctx.stroke();
   }
-  ctx.fillStyle = '#0f0f22';
+
+  // Center 2×2
+  ctx.fillStyle = '#0d0d20';
   ctx.fillRect(CELL, CELL, 2*CELL, 2*CELL);
-  ctx.strokeStyle = '#30305a'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(CELL+0.75, CELL+0.75, 2*CELL-1.5, 2*CELL-1.5);
+  ctx.strokeStyle = '#38386a'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(CELL+1, CELL+1, 2*CELL-2, 2*CELL-2);
 }
 
 // ════════════════════════════════════════════════════════
-// CANVAS: PALACE CELL
+// PALACE CELL
 // ════════════════════════════════════════════════════════
 
 function drawPalace(ctx, palace, row, col, opts) {
@@ -327,261 +267,304 @@ function drawPalace(ctx, palace, row, col, opts) {
           origPalace, bodyPalace, birthYear } = opts;
   const cx = col * CELL, cy = row * CELL;
   const hasFlow = !!(flowMing);
-  const isHot   = hasFlow && palace.name === minorLimPalace; // 流限同宮
+  const isHot   = hasFlow && palace.name === minorLimPalace;
 
-  // ── Background ──────────────────────────────────────────
-  ctx.fillStyle = '#090912';
+  // ── Background ─────────────────────────────────────────
+  ctx.fillStyle = '#080812';
   ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
 
-  // ── 流限同宮：金色雙線邊框 ────────────────────────────────
+  // ── 流限同宮 double gold border ────────────────────────
   if (isHot) {
-    ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2;
+    ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2.5;
     ctx.strokeRect(cx+2, cy+2, CELL-4, CELL-4);
-    ctx.strokeStyle = '#8a6822'; ctx.lineWidth = 1;
-    ctx.strokeRect(cx+5, cy+5, CELL-10, CELL-10);
+    ctx.strokeStyle = '#9a7830'; ctx.lineWidth = 1;
+    ctx.strokeRect(cx+6, cy+6, CELL-12, CELL-12);
+    ctx.lineWidth = 1;
   }
 
-  // ── Corner markers (top-right stacked) ───────────────────
-  let markerY = cy + 10;
-  ctx.textAlign = 'right';
-  ctx.font = `bold 8px ${FONT}`;
-  if (palace.name === origPalace) {
-    ctx.fillStyle='#3b82f6'; ctx.fillText('來', cx+CELL-PAD, markerY); markerY += 10;
-  }
-  if (palace.name === bodyPalace) {
-    ctx.fillStyle='#f59e0b'; ctx.fillText('身', cx+CELL-PAD, markerY); markerY += 10;
-  }
-  if (hasFlow && palace.name === minorLimPalace) {
-    ctx.fillStyle='#ef4444'; ctx.fillText('限', cx+CELL-PAD, markerY);
-  }
+  // ── Corner markers ──────────────────────────────────────
+  let my = cy + 14;
+  ctx.textAlign = 'right'; ctx.font = `bold 11px ${FONT}`;
+  if (palace.name === origPalace)   { ctx.fillStyle='#3b82f6'; ctx.fillText('來', cx+CELL-PAD, my); my+=14; }
+  if (palace.name === bodyPalace)   { ctx.fillStyle='#f59e0b'; ctx.fillText('身', cx+CELL-PAD, my); my+=14; }
+  if (hasFlow && palace.name === minorLimPalace) { ctx.fillStyle='#ef4444'; ctx.fillText('限', cx+CELL-PAD, my); }
   ctx.textAlign = 'left';
 
-  // ── Top-left: 流限同宮 label + 流年/大限 palace names ─────
-  let nameY = cy + 8;
+  // ── TOP-LEFT: flow/decade names ────────────────────────
+  let ny = cy + 8;
 
   if (isHot) {
-    ctx.font = `bold 8px ${FONT}`; ctx.fillStyle = '#d4af37';
-    ctx.fillText('★ 流限同宮', cx + PAD, nameY + 8); nameY += 11;
+    ctx.font = `bold 10px ${FONT}`; ctx.fillStyle = '#d4af37';
+    ctx.fillText('★ 流限同宮', cx+PAD, ny+10); ny += 14;
   }
+
   if (hasFlow && flowMing) {
     const fp = palOffset(palace.name, flowMing);
     if (fp) {
-      ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#d4af37';
-      ctx.fillText('流' + fp.charAt(0), cx + PAD, nameY + 12); nameY += 14;
+      ctx.font = `bold 19px ${FONT}`; ctx.fillStyle = '#d4af37';
+      ctx.fillText('流' + fp.charAt(0), cx+PAD, ny+17); ny += 22;
     }
   }
+
   if (hasFlow && decadeMing) {
     const dp = palOffset(palace.name, decadeMing);
     if (dp) {
-      ctx.font = `10px ${FONT}`; ctx.fillStyle = '#8a6828';
-      ctx.fillText('大' + dp.charAt(0), cx + PAD, nameY + 10); nameY += 12;
+      ctx.font = `14px ${FONT}`; ctx.fillStyle = '#9a7030';
+      ctx.fillText('大' + dp.charAt(0), cx+PAD, ny+13); ny += 17;
     }
   }
 
-  // ── Stars area start ─────────────────────────────────────
-  const starsTop = Math.max(nameY + 3, cy + (hasFlow ? 50 : 12));
+  // ── Thin separator after names ─────────────────────────
+  if (hasFlow) {
+    const sepY = Math.max(ny + 4, cy + (isHot ? 80 : 62));
+    ctx.strokeStyle = '#1a1a35'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx+PAD, sepY); ctx.lineTo(cx+CELL-PAD, sepY); ctx.stroke();
+    ny = sepY;
+  }
+
+  // ── STARS START ────────────────────────────────────────
+  const starsTop = Math.max(ny + 6, cy + (hasFlow ? 68 : PAD+2));
   let sy = starsTop;
   const palMu = muMap[palace.name] || [];
-  const bottomLimit = cy + CELL - BOTTOM_RESERVE;
+  const botLim = cy + CELL - BOT;
 
-  // Helper: draw ONE star line (major star style)
-  const drawStarLine = (name, brightness, fontSize) => {
-    if (sy > bottomLimit) return;
-    const bc = BRIGHT_CLR[brightness] || '#5a5060';
+  // ── Helper: ONE major star line ────────────────────────
+  function starLine(name, brightness, fs) {
+    if (sy > botLim) return;
+    fs = fs || 15;
+    const bc = BRIGHT_CLR[brightness] || '#6a5a4a';
 
-    ctx.font = `${fontSize}px ${FONT}`;
-    ctx.fillStyle = '#c0b8a8';
-    ctx.fillText(name, cx + PAD, sy);
-    let sx = cx + PAD + name.length * fontSize * 0.85 + 1;
+    ctx.font = `${fs}px ${FONT}`; ctx.fillStyle = '#c8c0b0';
+    ctx.fillText(name, cx+PAD, sy);
+    let sx = cx + PAD + ctx.measureText(name).width + 2;
 
     if (brightness) {
-      ctx.font = `${fontSize - 1}px ${FONT}`;
-      ctx.fillStyle = bc;
+      ctx.font = `${fs-2}px ${FONT}`; ctx.fillStyle = bc;
       ctx.fillText(brightness, sx, sy);
-      sx += brightness.length * (fontSize - 1) * 0.85 + 2;
+      sx += ctx.measureText(brightness).width + 3;
     }
 
-    // Inline mutagen badges
     const starMu = palMu.filter(m => m.star === name);
     for (const mu of starMu) {
-      if (sx > cx + CELL - 14) break;
+      if (sx > cx + CELL - 18) break;
       const info = MU[mu.type]; if (!info) continue;
-      const prefix = mu.src === 'year' ? '生' : mu.src === 'decade' ? '大' : '流';
-      sx = drawBadge(ctx, prefix + info.key, info.bg, sx, sy, 8);
+      const pfx = mu.src==='year'?'生': mu.src==='decade'?'大':'流';
+      sx = badge(ctx, pfx+info.key, info.bg, sx, sy, 10);
     }
-    sy += fontSize + 2;
-  };
-
-  // Layer 1: Major stars
-  if (palace.isEmpty && palace.borrowedFromPalace) {
-    if (sy <= bottomLimit) {
-      ctx.font = `9px ${FONT}`; ctx.fillStyle = '#252545';
-      ctx.fillText('空 借' + palace.borrowedFromPalace.charAt(0) + '：' +
-        (palace.borrowedStars || []).join(''), cx + PAD, sy + 8);
-      sy += 12;
-    }
-  } else {
-    for (const star of palace.majorStars || []) {
-      drawStarLine(star.name, star.brightness, 12);
-    }
+    sy += fs + 11;  // 26px per major star line — generous spacing
   }
 
-  // Layer 2: Auxiliary stars (compact, colored by brightness)
-  const auxSt = (palace.minorStars || []).filter(s => AUXILIARY_STARS.has(s.name));
-  if (auxSt.length > 0 && sy <= bottomLimit) {
-    let ax = cx + PAD, ay = sy;
-    let row2 = 0;
-    const afs = 9;
-    ctx.font = `${afs}px ${FONT}`;
-    for (const st of auxSt) {
-      const abbr = st.name.charAt(0) + (st.brightness || '');
-      const aw = ctx.measureText(abbr).width + 3;
-      if (ax + aw > cx + CELL - PAD) {
-        if (row2 >= 1) break;
-        ay += afs + 2; ax = cx + PAD; row2++;
+  // ── Layer 1: Major stars ───────────────────────────────
+  if (palace.isEmpty && palace.borrowedFromPalace) {
+    if (sy <= botLim) {
+      ctx.font = `13px ${FONT}`; ctx.fillStyle = '#38385a';
+      ctx.fillText('空宮　借 ' + palace.borrowedFromPalace, cx+PAD, sy+13);
+      sy += 22;
+      if (palace.borrowedStars?.length && sy <= botLim) {
+        ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#5a5a80';
+        ctx.fillText(palace.borrowedStars.join('　'), cx+PAD, sy+14);
+        sy += 22;
       }
-      ctx.fillStyle = BRIGHT_CLR[st.brightness] || '#35355a';
+    }
+  } else {
+    for (const s of palace.majorStars||[]) starLine(s.name, s.brightness, 15);
+  }
+
+  // ── Section gap after major stars ─────────────────────
+  if (sy > starsTop) sy += 10;
+
+  // ── Layer 2: Auxiliary stars (compact, 2-char abbrev) ──
+  const auxSt = (palace.minorStars||[]).filter(s => AUX_STARS.has(s.name));
+  if (auxSt.length > 0 && sy <= botLim) {
+    let ax = cx + PAD, ay = sy;
+    const afs = 12;
+    ctx.font = `${afs}px ${FONT}`;
+    let rowCount = 0;
+
+    for (const st of auxSt) {
+      // Show 2-char name abbreviation + brightness
+      const abbr = st.name.slice(0,2) + (st.brightness||'');
+      const aw = ctx.measureText(abbr).width + 5;
+
+      if (ax + aw > cx + CELL - PAD) {
+        if (rowCount >= 1) break; // max 2 rows
+        ay += afs + 4; ax = cx + PAD; rowCount++;
+        if (ay > botLim) break;
+      }
+
+      ctx.fillStyle = BRIGHT_CLR[st.brightness] || '#404062';
       ctx.fillText(abbr, ax, ay + afs);
       ax += aw;
 
-      // tiny badges for minor stars
+      // Badges for this minor star
       const sMu = palMu.filter(m => m.star === st.name);
       for (const mu of sMu) {
-        if (ax > cx + CELL - 12) break;
+        if (ax > cx+CELL-PAD) break;
         const info = MU[mu.type]; if (!info) continue;
-        const pfx = mu.src === 'year' ? '生' : mu.src === 'decade' ? '大' : '流';
-        ax = drawBadge(ctx, pfx + info.key, info.bg, ax, ay + afs, 7);
+        const pfx = mu.src==='year'?'生': mu.src==='decade'?'大':'流';
+        ax = badge(ctx, pfx+info.key, info.bg, ax, ay+afs, 9);
       }
     }
-    sy = ay + afs + 4;
+    sy = ay + afs + 10;
   }
 
-  // Layer 3: Killing stars (compact, reddish tone)
-  const killSt = (palace.minorStars || []).filter(s => KILLING_STARS.has(s.name));
-  if (killSt.length > 0 && sy <= bottomLimit) {
+  // ── Layer 3: Killing stars ─────────────────────────────
+  const killSt = (palace.minorStars||[]).filter(s => KILL_STARS.has(s.name));
+  if (killSt.length > 0 && sy <= botLim) {
     let kx = cx + PAD;
-    const kfs = 9;
+    const kfs = 12;
     ctx.font = `${kfs}px ${FONT}`;
+
     for (const st of killSt) {
       if (kx > cx + CELL - PAD) break;
-      const abbr = st.name.charAt(0) + (st.brightness?.charAt(0) || '');
-      ctx.fillStyle = BRIGHT_CLR[st.brightness] || '#5a3535';
+      const abbr = st.name.slice(0,2) + (st.brightness?.charAt(0)||'');
+      ctx.fillStyle = BRIGHT_CLR[st.brightness] || '#6a3535';
       ctx.fillText(abbr, kx, sy + kfs);
-      kx += abbr.length * kfs * 0.85 + 4;
+      kx += ctx.measureText(abbr).width + 6;
     }
-    sy += kfs + 4;
+    sy += kfs + 9;
   }
 
-  // Layer 4: Small/misc stars (very dim, first chars only)
-  const otherMin = (palace.minorStars || []).filter(
-    s => !AUXILIARY_STARS.has(s.name) && !KILLING_STARS.has(s.name)
+  // ── Layer 4: Miscellaneous small stars ─────────────────
+  const otherMin = (palace.minorStars||[]).filter(
+    s => !AUX_STARS.has(s.name) && !KILL_STARS.has(s.name)
   );
-  const smSt = [...otherMin, ...(palace.smallStars || [])];
-  if (smSt.length > 0 && sy <= bottomLimit) {
+  const smSt = [...otherMin, ...(palace.smallStars||[])];
+  if (smSt.length > 0 && sy <= botLim - 4) {
     const text = smSt.map(s => s.name.charAt(0)).join(' ');
-    ctx.font = `8px ${FONT}`; ctx.fillStyle = '#242435';
-    ctx.fillText(text, cx + PAD, sy + 8);
+    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#2e2e4a';
+    ctx.fillText(text, cx+PAD, sy + 11);
   }
 
-  // ── Bottom: Palace name (centered, bold, white) ────────────
-  // Center horizontally, leave right space for stem/branch
-  const palNameX = cx + (CELL - 16) / 2;
-  ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#ddd0b8';
+  // ── BOTTOM: Palace name ────────────────────────────────
+  ctx.font = `bold 19px ${FONT}`; ctx.fillStyle = '#e8dcc8';
   ctx.textAlign = 'center';
-  ctx.fillText(palace.name, palNameX, cy + CELL - 16);
+  ctx.fillText(palace.name, cx + CELL/2 - 10, cy + CELL - 16);
   ctx.textAlign = 'left';
 
-  // ── Bottom: Decade years (西元年 format) ──────────────────
+  // ── BOTTOM: Decade years (西元 format) ──────────────────
   if (palace.decadeRange && birthYear) {
     const sy0 = birthYear + palace.decadeRange[0];
     const ey0 = birthYear + palace.decadeRange[1];
-    ctx.font = `8px ${FONT}`; ctx.fillStyle = '#1c1c36';
-    ctx.fillText(`${sy0}~${ey0}`, cx + PAD, cy + CELL - 5);
+    ctx.font = `10px ${FONT}`; ctx.fillStyle = '#2a2a4a';
+    ctx.fillText(`${sy0}~${ey0}`, cx+PAD, cy+CELL-5);
   }
 
-  // ── Bottom-right: Stem ↑ Branch ↓ (vertically stacked) ───
-  ctx.font = `9px ${FONT}`; ctx.fillStyle = '#2e2e52';
+  // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ (stacked) ──────────
+  ctx.font = `11px ${FONT}`; ctx.fillStyle = '#38386a';
   ctx.textAlign = 'right';
-  ctx.fillText(palace.stem,   cx + CELL - PAD, cy + CELL - 22);
-  ctx.fillText(palace.branch, cx + CELL - PAD, cy + CELL - 10);
+  ctx.fillText(palace.stem,   cx+CELL-PAD, cy+CELL-26);
+  ctx.fillText(palace.branch, cx+CELL-PAD, cy+CELL-12);
+  ctx.textAlign = 'left';
+
+  // ── Decorative large dim branch glyph (background) ─────
+  ctx.font = `bold 44px ${FONT}`; ctx.fillStyle = '#111126';
+  ctx.textAlign = 'right';
+  ctx.fillText(palace.branch, cx+CELL-8, cy+52);
   ctx.textAlign = 'left';
 }
 
 // ════════════════════════════════════════════════════════
-// CANVAS: CENTER 2×2
+// CENTER 2×2
 // ════════════════════════════════════════════════════════
 
 function drawCenter(ctx) {
-  const d  = S.chartData, fd = S.flowData;
+  const d = S.chartData, fd = S.flowData;
   const cx = CELL, cy = CELL, cw = 2*CELL, ch = 2*CELL;
   const mx = cx + cw/2;
 
-  ctx.fillStyle = '#0f0f22';
+  ctx.fillStyle = '#0d0d20';
   ctx.fillRect(cx, cy, cw, ch);
   ctx.textAlign = 'center';
 
-  // Brand
-  ctx.font = `300 17px ${FONT}`; ctx.fillStyle = '#d4af37';
-  ctx.fillText('ÆTHNOUS', mx, cy + 26);
-  ctx.strokeStyle = '#252540'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+24, cy+33); ctx.lineTo(cx+cw-24, cy+33); ctx.stroke();
+  // Brand title
+  ctx.font = `300 22px ${FONT}`; ctx.fillStyle = '#d4af37';
+  ctx.fillText('ÆTHNOUS', mx, cy+32);
+
+  ctx.strokeStyle = '#2a2a50'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+30,cy+40); ctx.lineTo(cx+cw-30,cy+40); ctx.stroke();
 
   if (!d) { ctx.textAlign='left'; return; }
 
-  let iy = cy + 50;
-  const lh = 17;
+  let iy = cy + 58;
+  const lh = 20;
 
   // Name
   if (S.name) {
-    ctx.font = `bold 15px ${FONT}`; ctx.fillStyle = '#e8dcc8';
-    ctx.fillText(S.name, mx, iy); iy += 20;
+    ctx.font = `bold 18px ${FONT}`; ctx.fillStyle = '#e8dcc8';
+    ctx.fillText(S.name, mx, iy); iy += 24;
   }
 
-  ctx.font = `10px ${FONT}`; ctx.fillStyle = '#8a7a5a';
+  ctx.font = `12px ${FONT}`; ctx.fillStyle = '#8a7a5a';
   ctx.fillText(`${S.birthDate}　${S.birthTime}　${S.gender}`, mx, iy); iy += lh;
 
-  ctx.fillStyle = '#5a4a30';
+  ctx.fillStyle = '#5a4a32';
   ctx.fillText(d.lunarDate, mx, iy); iy += lh;
 
-  ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#c8a830';
-  ctx.fillText(`${d.fiveElementsClass}　·　${d.yinYang}`, mx, iy); iy += lh + 2;
+  ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#c8a830';
+  ctx.fillText(`${d.fiveElementsClass}　·　${d.yinYang}`, mx, iy); iy += lh+4;
 
-  ctx.font = `9px ${FONT}`; ctx.fillStyle = '#5a4a30';
-  ctx.fillText(`命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}`, mx, iy); iy += lh - 2;
+  ctx.font = `12px ${FONT}`; ctx.fillStyle = '#5a4a30';
+  ctx.fillText(`命主：${d.lifeStars?.mingZhu||'—'}　　身主：${d.lifeStars?.shenZhu||'—'}`, mx, iy); iy += lh;
+  ctx.fillText(`時辰：${d.shichen||'—'}`, mx, iy); iy += lh;
 
-  ctx.fillText(`時辰：${d.shichen||'—'}`, mx, iy); iy += lh - 2;
+  const bStr = d.bodyPalace    ? '身宮：'+d.bodyPalace.name : '';
+  const oStr = d.originalPalace? '來因：'+d.originalPalace.name : '';
+  ctx.fillText([bStr,oStr].filter(Boolean).join('　　'), mx, iy); iy += lh;
 
-  const bStr = d.bodyPalace ? '身宮：' + d.bodyPalace.name : '';
-  const oStr = d.originalPalace ? '來因：' + d.originalPalace.name : '';
-  ctx.fillText([bStr, oStr].filter(Boolean).join('　'), mx, iy); iy += lh;
+  ctx.strokeStyle = '#202040'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+40,iy+4); ctx.lineTo(cx+cw-40,iy+4); ctx.stroke();
+  iy += 14;
 
-  ctx.strokeStyle = '#1e1e3a'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+28, iy+2); ctx.lineTo(cx+cw-28, iy+2); ctx.stroke();
-  iy += 10;
-
-  // Flow year section
+  // ── Flow year section ──────────────────────────────────
   if (fd) {
     const fy = fd.flowYear, ml = fd.currentMajorLimit;
 
-    ctx.font = `bold 22px ${FONT}`; ctx.fillStyle = '#d4af37';
-    ctx.fillText(`${fy.year}　${fy.ganZhi}年`, mx, iy); iy += 26;
+    ctx.font = `bold 30px ${FONT}`; ctx.fillStyle = '#d4af37';
+    ctx.fillText(`${fy.year}　${fy.ganZhi}年`, mx, iy); iy += 36;
 
-    ctx.font = `10px ${FONT}`; ctx.fillStyle = '#8a7a5a';
+    ctx.font = `13px ${FONT}`; ctx.fillStyle = '#8a7a5a';
     ctx.fillText(`虛齡 ${fy.chineseAge} 歲`, mx, iy); iy += lh;
 
     if (ml) {
-      ctx.fillStyle = '#5a4a28';
+      ctx.font = `13px ${FONT}`; ctx.fillStyle = '#6a5a30';
       ctx.fillText(`大限：${ml.palace}宮　${ml.startYear}~${ml.endYear}`, mx, iy); iy += lh;
     }
   }
 
-  ctx.font = `8px ${FONT}`; ctx.fillStyle = '#181830';
-  ctx.fillText('© 2026 Blue.X  ·  ÆTHNOUS', mx, cy + ch - 9);
+  // ── 格局提示 ───────────────────────────────────────────
+  const fms = d.classicalFormations;
+  if (fms?.length > 0) {
+    ctx.strokeStyle = '#202040'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx+40, iy+4); ctx.lineTo(cx+cw-40, iy+4); ctx.stroke();
+    iy += 14;
+
+    ctx.font = `10px ${FONT}`; ctx.fillStyle = '#3a3a60';
+    ctx.fillText('格局', mx, iy); iy += 14;
+
+    for (const fm of fms.slice(0,3)) {
+      if (iy > cy + ch - 55) break;
+      const col = fm.type==='auspicious' ? '#4ade80' : fm.type==='challenge' ? '#f87171' : '#93c5fd';
+      ctx.font = `11px ${FONT}`; ctx.fillStyle = col;
+      ctx.fillText(fm.name, mx, iy); iy += 15;
+    }
+  }
+
+  // ── Bottom signature ───────────────────────────────────
+  ctx.strokeStyle = '#202040'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+30, cy+ch-50); ctx.lineTo(cx+cw-30, cy+ch-50); ctx.stroke();
+
+  ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#9a8040';
+  ctx.fillText("Blue's 紫微斗數跨門派論命系統 V1.0", mx, cy+ch-30);
+
+  ctx.font = `9px ${FONT}`; ctx.fillStyle = '#1e1e38';
+  ctx.fillText('© 2026 Blue.X  ·  ÆTHNOUS', mx, cy+ch-12);
+
   ctx.textAlign = 'left';
 }
 
 // ════════════════════════════════════════════════════════
-// CANVAS: MAIN RENDER
+// MAIN RENDER
 // ════════════════════════════════════════════════════════
 
 function renderChart() {
@@ -599,16 +582,13 @@ function renderChart() {
   const birthYear  = parseInt(S.birthDate.split('-')[0]);
 
   drawGrid(ctx);
-
   for (const palace of d.palaces) {
-    const pos = BRANCH_POS[palace.branch];
-    if (!pos) continue;
+    const pos = BRANCH_POS[palace.branch]; if (!pos) continue;
     drawPalace(ctx, palace, pos[0], pos[1], {
       muMap, decadeMing, flowMing, minorLimPalace,
       origPalace, bodyPalace, birthYear,
     });
   }
-
   drawCenter(ctx);
 }
 
@@ -616,18 +596,14 @@ function renderChart() {
 // API
 // ════════════════════════════════════════════════════════
 
-async function apiChart(date, time, gender) {
-  const r = await fetch(`/api/chart?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&gender=${encodeURIComponent(gender)}&_t=${ts()}`);
-  const j = await r.json();
-  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
-  return j;
+async function apiChart(d,t,g) {
+  const r = await fetch(`/api/chart?date=${encodeURIComponent(d)}&time=${encodeURIComponent(t)}&gender=${encodeURIComponent(g)}&_t=${ts()}`);
+  const j = await r.json(); if (!r.ok) throw new Error(j.error||'HTTP '+r.status); return j;
 }
 
-async function apiFlow(date, time, gender, year) {
-  const r = await fetch(`/api/flow?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}&gender=${encodeURIComponent(gender)}&year=${year}&_t=${ts()}`);
-  const j = await r.json();
-  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
-  return j;
+async function apiFlow(d,t,g,y) {
+  const r = await fetch(`/api/flow?date=${encodeURIComponent(d)}&time=${encodeURIComponent(t)}&gender=${encodeURIComponent(g)}&year=${y}&_t=${ts()}`);
+  const j = await r.json(); if (!r.ok) throw new Error(j.error||'HTTP '+r.status); return j;
 }
 
 // ════════════════════════════════════════════════════════
@@ -636,14 +612,14 @@ async function apiFlow(date, time, gender, year) {
 
 function updateMetaBar() {
   const d = S.chartData; if (!d) return;
-  const mingPal = d.palaces.find(p => p.name === '命宮');
+  const mingPal = d.palaces.find(p=>p.name==='命宮');
   document.getElementById('meta-bar').innerHTML = [
     ['五行局', d.fiveElementsClass],
     ['陰陽',   d.yinYang],
-    ['命宮',   mingPal?.stemBranch || '—'],
-    ['身宮',   d.bodyPalace?.name  || '—'],
-    ['來因宮', d.originalPalace?.name || '—'],
-  ].map(([l,v]) => `<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
+    ['命宮',   mingPal?.stemBranch||'—'],
+    ['身宮',   d.bodyPalace?.name||'—'],
+    ['來因宮', d.originalPalace?.name||'—'],
+  ].map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
    .join('<span class="msep">·</span>');
 }
 
@@ -652,11 +628,10 @@ function updateFlowBar() {
   document.getElementById('fc-year').textContent = S.currentYear;
   if (!fd) return;
   const fy = fd.flowYear, ml = fd.currentMajorLimit;
-  document.getElementById('fc-gz').textContent  = fy.ganZhi + '年';
+  document.getElementById('fc-gz').textContent  = fy.ganZhi+'年';
   document.getElementById('fc-age').textContent = `虛齡${fy.chineseAge}歲`;
   document.getElementById('fc-limit').textContent = ml
-    ? `大限：${ml.palace}宮　${ml.startYear}~${ml.endYear}`
-    : '';
+    ? `大限：${ml.palace}宮　${ml.startYear}~${ml.endYear}` : '';
 }
 
 // ════════════════════════════════════════════════════════
@@ -672,9 +647,8 @@ async function handleSubmit() {
   const err    = document.getElementById('form-err');
 
   err.style.display = 'none';
-  if (!date || !time || !gender) {
-    err.textContent = '請填寫生日、時間和性別。';
-    err.style.display = 'block'; return;
+  if (!date||!time||!gender) {
+    err.textContent='請填寫生日、時間和性別。'; err.style.display='block'; return;
   }
 
   const year = yv ? parseInt(yv) : new Date().getFullYear();
@@ -689,52 +663,43 @@ async function handleSubmit() {
       apiChart(date, time, gender),
       apiFlow(date, time, gender, year),
     ]);
-    S.chartData = chartData;
-    S.flowData  = flowData;
+    S.chartData = chartData; S.flowData = flowData;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('chart-area').style.display = 'block';
-    updateMetaBar();
-    updateFlowBar();
-    renderChart();
+    updateMetaBar(); updateFlowBar(); renderChart();
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('input-panel').style.display = 'block';
-    err.textContent = '命盤計算失敗：' + e.message;
-    err.style.display = 'block';
+    err.textContent = '命盤計算失敗：' + e.message; err.style.display = 'block';
   }
 }
 
 async function changeYear(delta) {
   S.currentYear += delta;
   document.getElementById('fc-year').textContent = S.currentYear;
-  document.getElementById('fc-gz').textContent   = '';
-  document.getElementById('fc-age').textContent  = '';
-  document.getElementById('fc-limit').textContent= '';
+  ['fc-gz','fc-age','fc-limit'].forEach(id => document.getElementById(id).textContent='');
   try {
     S.flowData = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear);
-    updateFlowBar();
-    renderChart();
-  } catch(e) { console.error('Flow error:', e); }
+    updateFlowBar(); renderChart();
+  } catch(e) { console.error('Flow error:',e); }
 }
 
 function exportPNG() {
   const canvas = document.getElementById('chart-canvas');
   const link = document.createElement('a');
-  const n = S.name ? S.name + '_' : '';
+  const n = S.name ? S.name+'_' : '';
   link.download = `AETHNOUS_${n}${S.birthDate}_${S.currentYear}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
 
 function resetChart() {
-  S.chartData = null; S.flowData = null;
+  S.chartData=null; S.flowData=null;
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('input-panel').style.display = 'block';
 }
 
-window.addEventListener('resize', () => {
-  if (S.chartData) renderChart();
-});
+window.addEventListener('resize', () => { if (S.chartData) renderChart(); });
 </script>
 </body>
 </html>
