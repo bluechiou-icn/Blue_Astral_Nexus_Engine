@@ -575,8 +575,10 @@ function renderChart() {
 
   const muMap      = buildMuMap(d.yearMutagens, fd?.currentMajorLimit?.mutagens, fd?.flowYearMutagens);
   const decadeMing = fd?.currentMajorLimit?.palace   || null;
+  // flowMing = 流年命宮（占驗派公式，用於三盤疊盤宮名計算）
   const flowMing   = fd?.flowYearLifePalace?.name    || null;
-  const minorLimPalace = flowMing;
+  // minorLimPalace = 小限宮（另立欄位，用於「限」標記）
+  const minorLimPalace = fd?.minorLimitPalace?.name  || null;
   const origPalace = d.originalPalace?.name          || null;
   const bodyPalace = d.bodyPalace?.name              || null;
   const birthYear  = parseInt(S.birthDate.split('-')[0]);
