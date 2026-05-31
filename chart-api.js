@@ -5,8 +5,86 @@
 const pkg = require("iztro");
 const { astro, util } = pkg;
 const { timeToIndex, SHICHEN_NAMES } = require("./utils.js");
+// lunar-typescript（iztro 已將其拉為相依），用於八字起運節氣計算
+let _lunarLib = null;
+try { _lunarLib = require("lunar-typescript"); } catch(_) { /* graceful fallback */ }
 
 astro.config({ language: "zh-TW" });
+
+// ── 八字起運計算（Blue's Version）────────────────────────────
+// 規則：
+//   陽男陰女 → 順排：找出生時刻之後的下一個「節」
+//   陰男陽女 → 逆排：找出生時刻之前的上一個「節」
+// 換算（傳統公式）：
+//   3 日 = 1 歲，1 日 = 4 個月，1 時辰 = 10 天（在月內）
+//   即 1 歲 = 36 時辰，1 月 = 3 時辰，1 時辰 = 10 天
+const JIE_NAMES = ['立春','驚蟄','清明','立夏','芒種','小暑','立秋','白露','寒露','立冬','大雪','小寒'];
+
+function _collectJieQiDates(solarYear) {
+  if (!_lunarLib) return [];
+  const { Solar } = _lunarLib;
+  const dates = [];
+  for (const yearOffset of [-1, 0, 1]) {
+    const y = solarYear + yearOffset;
+    // 用該年 1 月 1 日的 Lunar 取得 jieQiTable（含當年所有節氣）
+    try {
+      const lunar = Solar.fromYmd(y, 1, 1).getLunar();
+      const table = lunar.getJieQiTable();
+      for (const name of JIE_NAMES) {
+        const jq = table[name];
+        if (!jq) continue;
+        const ms = new Date(jq.getYear(), jq.getMonth()-1, jq.getDay(),
+                            jq.getHour(), jq.getMinute(), jq.getSecond()).getTime();
+        dates.push({ name, ms, year: jq.getYear() });
+      }
+    } catch(e) { /* skip year */ }
+  }
+  return dates.sort((a,b) => a.ms - b.ms);
+}
+
+function calcBaziQiyun(solarDate, birthTime, gender, yearStem) {
+  if (!_lunarLib) return null;
+  const [y, m, d] = solarDate.split('-').map(Number);
+  const [h, mi]   = birthTime.split(':').map(Number);
+  const birthMs   = new Date(y, m-1, d, h, mi, 0).getTime();
+
+  const yangStems = ['甲','丙','戊','庚','壬'];
+  const isYang    = yangStems.includes(toTrad(yearStem));
+  const isMale    = gender === '男';
+  const isForward = (isYang && isMale) || (!isYang && !isMale);
+
+  const allJie = _collectJieQiDates(y);
+  if (allJie.length === 0) return null;
+
+  let target = null;
+  if (isForward) {
+    target = allJie.find(j => j.ms > birthMs);
+  } else {
+    for (let i = allJie.length - 1; i >= 0; i--) {
+      if (allJie[i].ms < birthMs) { target = allJie[i]; break; }
+    }
+  }
+  if (!target) return null;
+
+  const diffMs = isForward ? (target.ms - birthMs) : (birthMs - target.ms);
+  const hours  = diffMs / (1000 * 60 * 60);
+  const shichen = hours / 2;   // 1 時辰 = 2 小時
+
+  // 1 歲 = 36 時辰, 1 月 = 3 時辰, 1 時辰 = 10 天 (within month)
+  const years  = Math.floor(shichen / 36);
+  let rem      = shichen - years * 36;
+  const months = Math.floor(rem / 3);
+  rem         -= months * 3;
+  const days   = Math.round(rem * 10);
+
+  return {
+    years, months, days,
+    direction: isForward ? '順排' : '逆排',
+    jieName:   target.name,
+    jieTime:   new Date(target.ms).toISOString(),
+    note:      `從出生時刻${isForward ? '順數至下一個節' : '逆數至上一個節'}（${target.name}），換算 3日=1歲、1日=4月、1時辰=10天`,
+  };
+}
 
 const MUTAGEN_KEYS  = ["祿", "權", "科", "忌"];
 const MUTAGEN_FULL  = ["化祿", "化權", "化科", "化忌"];
@@ -547,6 +625,7 @@ function generateChart(solarDate, birthTime, gender) {
     } : null,
 
     classicalFormations,
+    baziQiyun: calcBaziQiyun(solarDate, birthTime, gender, yearStem),
     yearMutagens,
     palaces,
     majorLimits,

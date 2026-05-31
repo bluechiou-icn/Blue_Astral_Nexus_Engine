@@ -15,10 +15,10 @@ body {
 }
 h1.page-title {
   text-align: center;
-  font-size: 15px;
-  font-weight: 400;
-  letter-spacing: 0.3em;
-  color: #555;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #0C6170;
   margin-bottom: 20px;
 }
 .panel {
@@ -138,7 +138,7 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 </head>
 <body>
 
-<h1 class="page-title">命 盤 視 覺 化 工 具</h1>
+<h1 class="page-title">Blue's 紫微斗數命理顧問排盤系統</h1>
 
 <div class="panel" id="input-panel">
   <div class="panel-title">命主資料</div>
@@ -656,10 +656,17 @@ function drawPalace(ctx, palace, row, col, opts) {
   }
 
   if (palace.decadeRange && birthYear) {
-    const sy0 = birthYear + palace.decadeRange[0] - 1;
-    const ey0 = birthYear + palace.decadeRange[1] - 1;
-    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#aaa';
-    ctx.fillText(`${sy0} ~ ${ey0} 年`, centerBx, cy + CELL - 38);
+    const startAge = palace.decadeRange[0];
+    // 第10/11/12 大限（94歲+）顯示「胎兒命」取代太遙遠的西元年
+    if (startAge >= 94) {
+      ctx.font = `11px ${FONT}`; ctx.fillStyle = '#bbb';
+      ctx.fillText('胎兒命', centerBx, cy + CELL - 38);
+    } else {
+      const sy0 = birthYear + startAge - 1;
+      const ey0 = birthYear + palace.decadeRange[1] - 1;
+      ctx.font = `11px ${FONT}`; ctx.fillStyle = '#aaa';
+      ctx.fillText(`${sy0} ~ ${ey0} 年`, centerBx, cy + CELL - 38);
+    }
   }
 
   // 宮位名（加大加粗，加「宮」後綴）
@@ -690,7 +697,8 @@ function drawCenterTo(ctx, fd) {
   ctx.fillRect(cx, cy, cw, ch);
 
   // ── Watermark Crystibee logo (drawn FIRST so text overlays on top) ──
-  drawCrystibeeLogo(ctx, mx, cy + ch/2 - 10, 280, '#e6e3dc');
+  // Crystibee logo watermark: 放大 20% (280→336), 顏色淡 30% (alpha 0.18→0.126)
+  drawCrystibeeLogo(ctx, mx, cy + ch/2 - 10, 336, '#e6e3dc');
 
   ctx.textAlign = 'center';
 
@@ -705,7 +713,31 @@ function drawCenterTo(ctx, fd) {
   const pillarLabels = ['年','月','日','時'];
   const pillarKeys = ['yearly','monthly','daily','hourly'];
 
-  let iy = cy + 30;
+  // ── 動態計算內容總高度，垂直置中（不含底部 brand 行） ──
+  const FSPillar = 17;
+  const SEP_BLANK = 14;  // 每條 sep 之下增加一行空白
+
+  // 元素高度清單
+  const heights = [];
+  if (S.name) heights.push(32);     // 姓名
+  heights.push(28);                  // 生日
+  heights.push(30);                  // 農曆
+  heights.push(16 + SEP_BLANK);      // sep1 + 空白
+  heights.push(15);                  // 八字 label
+  heights.push(FSPillar + 4);        // 八字 stem
+  heights.push(FSPillar + 8);        // 八字 branch
+  heights.push(14 + SEP_BLANK);      // sep2 + 空白
+  heights.push(22);                  // 命主行
+  if (d.baziQiyun) heights.push(22); // 起運行
+  heights.push(16 + SEP_BLANK);      // sep3 + 空白
+  heights.push(24 + 26);             // 流年 1
+  heights.push(24 + 26);             // 流年 2
+
+  const totalContent = heights.reduce((a, b) => a + b, 0);
+  const brandH = 50;
+  const availableH = ch - brandH;
+  const topMargin = Math.max(20, (availableH - totalContent) / 2);
+  let iy = cy + topMargin;
 
   // Row 1: 姓名 (large bold)
   if (S.name) {
@@ -723,16 +755,15 @@ function drawCenterTo(ctx, fd) {
   ctx.fillText(`${d.lunarDate}　${zodiac ? '屬'+zodiac+'　' : ''}${d.fiveElementsClass||''}`, mx, iy);
   iy += 30;
 
-  // Separator
+  // Separator 1（之後加一行空白）
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
-  iy += 14;
+  iy += 16 + SEP_BLANK;
 
-  // ── 八字四柱（直書，四個 column，每柱兩字：天干上、地支下） ──
-  const colSpacing = 38;        // distance between pillar columns
+  // ── 八字四柱（直書） ──
+  const colSpacing = 38;
   const totalW     = colSpacing * 4;
   const pStartX    = mx - totalW/2 + colSpacing/2;
-  const FSPillar   = 17;
 
   // Label row (年/月/日/時)
   ctx.font = `11px ${FONT}`; ctx.fillStyle = '#888';
@@ -757,18 +788,31 @@ function drawCenterTo(ctx, fd) {
   }
   iy += FSPillar + 8;
 
+  // Separator 2（之後加一行空白）
+  ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
+  iy += 14 + SEP_BLANK;
+
   // Row: 命主 身主 身宮 來因
   ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#333';
   ctx.fillText(
     `命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}　身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`,
     mx, iy
   );
-  iy += 26;
+  iy += 22;
 
-  // Separator
+  // Row: 降世後 X 歲 Y 月 Z 天 八字起運
+  const qy = d.baziQiyun;
+  if (qy) {
+    ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#555';
+    ctx.fillText(`降世後 ${qy.years} 歲 ${qy.months} 月 ${qy.days} 天　八字起運`, mx, iy);
+    iy += 22;
+  }
+
+  // Separator 3（之後加一行空白）
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
-  iy += 16;
+  iy += 16 + SEP_BLANK;
 
   // ── 流年疊盤（當前流年 + 次年） ──
   const printOverlay = (year, gz, branchOfPalace) => {
@@ -828,7 +872,7 @@ function drawCrystibeeLogo(ctx, cx, cy, size, color) {
   // Prefer loaded PNG; fall back to canvas-drawn triquetra
   if (WATERMARK_IMG && WATERMARK_IMG.complete && WATERMARK_IMG.naturalWidth > 0) {
     ctx.save();
-    ctx.globalAlpha = 0.18;
+    ctx.globalAlpha = 0.126;  // 0.18 × 0.7 = 顏色淡 30%
     // Render as grayscale by drawing once normally then overlaying
     const iw = WATERMARK_IMG.naturalWidth;
     const ih = WATERMARK_IMG.naturalHeight;
