@@ -58,6 +58,40 @@ h1.page-title {
   margin-top: 4px; transition: background 0.15s; font-family: inherit;
 }
 .btn-primary:hover { background: #333; }
+
+.extra-years {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  margin-top: 6px;
+}
+.extra-years label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: #333; cursor: pointer;
+  padding: 5px 8px; border: 1px solid #d0cec8; border-radius: 2px;
+  transition: border-color 0.15s, background 0.15s; white-space: nowrap;
+  background: #fff;
+}
+.extra-years input[type=checkbox] { width: auto; accent-color: #0C6170; }
+.extra-years label:has(input:checked) { border-color: #0C6170; background: #e6f5f3; color: #0C6170; }
+.extra-years label.disabled { opacity: 0.4; cursor: not-allowed; }
+
+.chart-block {
+  margin-bottom: 24px;
+  background: #fff; border: 1px solid #d8d6d0;
+  border-radius: 4px; padding: 16px;
+}
+.chart-block-title {
+  font-size: 14px; font-weight: 700; color: #0C6170;
+  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e8e6e0;
+  letter-spacing: 0.08em;
+}
+.chart-block-actions { margin-top: 10px; display: flex; gap: 8px; }
+.chart-block-actions button {
+  background: #fff; border: 1px solid #ccc; color: #333;
+  padding: 6px 14px; border-radius: 2px; cursor: pointer;
+  font-size: 11px; font-family: inherit;
+  transition: background 0.15s;
+}
+.chart-block-actions button:hover { background: #f5f4f0; }
 .err-box { background: #fff0f0; border: 1px solid #f5c6c6; border-radius: 2px; padding: 9px 12px; color: #c0392b; font-size: 12px; display: none; margin-top: 8px; }
 .loading { text-align: center; padding: 40px; display: none; }
 .spinner { width: 24px; height: 24px; border: 2px solid #ddd; border-top-color: #555; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
@@ -120,8 +154,12 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     </div>
   </div>
   <div class="row-2">
-    <div class="field"><label>流年（西元，留空=本年）</label><input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100"></div>
+    <div class="field"><label>主流年（西元，留空=本年）</label><input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100"></div>
     <div class="field"><label>命主姓名（選填）</label><input type="text" id="f-name" placeholder=""></div>
+  </div>
+  <div class="field">
+    <label>額外流年命盤（最多選 2 個）</label>
+    <div id="extra-years" class="extra-years"></div>
   </div>
   <div class="err-box" id="form-err"></div>
   <button class="btn-primary" onclick="handleSubmit()">起　盤</button>
@@ -135,7 +173,7 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 <div id="chart-area">
   <div class="meta-bar" id="meta-bar"></div>
   <div class="flow-bar">
-    <span class="fy-label">流年</span>
+    <span class="fy-label">主流年</span>
     <span class="fy-year" id="fc-year">—</span>
     <span class="fy-gz" id="fc-gz"></span>
     <span class="fy-age" id="fc-age"></span>
@@ -143,11 +181,8 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     <button class="flow-btn" onclick="changeYear(+1)">下一年 →</button>
     <span class="fy-limit" id="fc-limit"></span>
   </div>
-  <div class="canvas-wrap">
-    <canvas id="chart-canvas"></canvas>
-  </div>
-  <div class="actions">
-    <button onclick="exportPNG()">匯出命盤</button>
+  <div id="charts-container"></div>
+  <div class="actions" style="margin-top:14px;">
     <button onclick="resetChart()">重新輸入</button>
   </div>
 </div>
@@ -166,28 +201,54 @@ const BRANCH_POS = {
   '寅':[3,0],'丑':[3,1],'子':[3,2],'亥':[3,3],
 };
 
-// Mutagen colors for LIGHT theme
-const MU_LIGHT = {
-  '化祿': { solid:'#16a34a', light:'#f0fdf4', textL:'#166534', border:'#22c55e', key:'祿' },
-  '化權': { solid:'#d97706', light:'#fffbeb', textL:'#92400e', border:'#f59e0b', key:'權' },
-  '化科': { solid:'#2563eb', light:'#eff6ff', textL:'#1e3a8a', border:'#60a5fa', key:'科' },
-  '化忌': { solid:'#dc2626', light:'#fef2f2', textL:'#991b1b', border:'#f87171', key:'忌' },
-};
+// 太歲輪序列：寅→丑（從寅年開始順時針一週共 12 年）
+const YIN_SEQ = ['寅','卯','辰','巳','午','未','申','酉','戌','亥','子','丑'];
+const HEAVENLY_STEMS   = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const EARTHLY_BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 
-// Star category colors (light theme)
-const CLR_MAJOR = '#1a1a1a';
-const CLR_AUX   = '#1a4fa8';   // deep blue for 輔吉星
-const CLR_KILL  = '#c0392b';   // red for 煞忌星
-const CLR_SMALL = '#999999';   // gray for 小星
+// 取得某年的天干地支
+function getYearStem(year)   { return HEAVENLY_STEMS[(year - 4) % 10]; }
+function getYearBranch(year) { return EARTHLY_BRANCHES[(year - 4) % 12]; }
+
+// 計算某宮位地支對應的「流年資訊」（依當前流年所在的太歲輪）
+// 例：流年 2026 丙午年 → 寅位=2022壬寅, 卯位=2023癸卯, ... 丑位=2033癸丑
+function getPalaceFlowYear(palaceBranch, flowYear, flowBranch) {
+  const baseYear = flowYear - YIN_SEQ.indexOf(flowBranch);  // 起始寅年
+  const yearOffset = YIN_SEQ.indexOf(palaceBranch);
+  const year = baseYear + yearOffset;
+  return { year, stem: getYearStem(year), branch: palaceBranch };
+}
+
+// Mutagen color by SOURCE
+const MU_BY_SRC = {
+  year:   { bg:'#c0392b', fg:'#fff' },  // 生年 紅
+  decade: { bg:'#16542d', fg:'#fff' },  // 大限 深綠 (per user spec)
+  flow:   { bg:'#2563eb', fg:'#fff' },  // 流年 藍
+};
+const MU_KEY = { '化祿':'祿', '化權':'權', '化科':'科', '化忌':'忌' };
+
+// Star category colors
+const CLR_MAJOR = '#1e3a8a';   // 主星 深藍 (加粗)
+const CLR_AUX   = '#7c3aed';   // 吉/輔星 紫色
+const CLR_KILL  = '#c0392b';   // 凶星 紅色
+const CLR_SMALL = '#60a5fa';   // 小星 淺藍
+
+// Brand & accent colors
+const BRAND_TIFFANY = '#0abab5';
+const GOLD_HIGHLIGHT = '#d4af37';
+const RED_BOX = '#c0392b';
+
+// Zodiac map (生肖)
+const ZODIACS = {'子':'鼠','丑':'牛','寅':'虎','卯':'兔','辰':'龍','巳':'蛇','午':'馬','未':'羊','申':'猴','酉':'雞','戌':'狗','亥':'豬'};
 
 // Brightness colors for light bg
 const BRIGHT_CLR = {
-  '廟':'#d4960a', '旺':'#e07800',
-  '得':'#666666', '利':'#777777',
-  '平':'#999999',
-  '不利':'#bbbbbb',
-  '陷':'#cccccc',
-  '不':'#dddddd',
+  '廟':'#c46e0f', '旺':'#d97706',
+  '得':'#92400e', '利':'#9a3412',
+  '平':'#78716c',
+  '不利':'#a8a29e',
+  '陷':'#b8a89e',
+  '不':'#c8b8a8',
 };
 
 // Star category membership
@@ -198,7 +259,7 @@ const KILL_STARS = new Set(['擎羊','陀羅','火星','鈴星','地空','地劫
 const CELL = 250;
 const BASE = 1000;
 const PAD  = 10;
-const BOT  = 44;  // bottom reserve
+const BOT  = 68;  // bottom reserve (流年資訊 + 大限年範圍 + 宮位名)
 const DPR  = window.devicePixelRatio || 1;
 const FONT = '"PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif';
 
@@ -206,7 +267,10 @@ const FONT = '"PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif';
 // STATE
 // ════════════════════════════════════════════════════════
 const S = {
-  chartData: null, flowData: null,
+  chartData: null,
+  flowData: null,                  // legacy single (= flowDataByYear[currentYear])
+  flowDataByYear: {},              // {year: flowData}
+  yearBlocks: [],                  // [{year, gz, canvasId}]
   birthDate: '', birthTime: '', gender: '', name: '',
   currentYear: new Date().getFullYear(),
 };
@@ -315,100 +379,135 @@ function drawGrid(ctx) {
 // PALACE CELL
 // ════════════════════════════════════════════════════════
 
-// Draw one star as a vertical column (name chars stacked + brightness + mutagen badges)
-// Returns the column width used (so next star can be placed)
-function drawStarColumn(ctx, x, top, bottom, name, brightness, mutagens, color) {
-  const FS = 14;
-  const COL_W = FS + 4;             // column width per star
-  const lineH = FS + 1;             // tight stacking
+// Star unified font size (主/輔/煞/小 all same size, only color differs)
+const STAR_FS_BASE = 28;
+
+// Draw one star as a vertical column.
+// centerX is the horizontal CENTER of this star's column.
+// fsOverride lets caller specify a smaller font when many stars cramp the cell.
+// isBorrowed: true → wrap name in dashed gray box (借星標記)
+function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, color, isMajor, fsOverride, isBorrowed) {
+  const FS = fsOverride || STAR_FS_BASE;
+  const lineH = FS + 3;
   let y = top;
 
   ctx.textAlign = 'center';
-  const centerX = x + FS / 2;
 
-  // Star name (vertical char-by-char)
-  ctx.font = `${FS}px ${FONT}`;
+  // 借星虛線方框（圍住星名 + 亮度）
+  if (isBorrowed) {
+    const totalChars = name.length + (brightness ? brightness.length : 0);
+    const boxH = totalChars * lineH + 6;
+    ctx.save();
+    ctx.strokeStyle = '#999';
+    ctx.setLineDash([3, 2]);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(centerX - FS/2 - 2, y - 2, FS + 4, boxH);
+    ctx.restore();
+  }
+
+  // Star name (vertical char-by-char) — bold for major stars
+  ctx.font = `${isMajor ? 'bold ' : ''}${FS}px ${FONT}`;
   ctx.fillStyle = color;
   for (const ch of name) {
-    if (y + FS > bottom) { ctx.textAlign='left'; return COL_W; }
+    if (y + FS > bottom) { ctx.textAlign='left'; return; }
     ctx.fillText(ch, centerX, y + FS);
     y += lineH;
   }
 
-  // Brightness (slight gap, color by brightness)
+  // Brightness (color by brightness, slightly smaller)
   if (brightness) {
     y += 2;
-    ctx.font = `${FS}px ${FONT}`;
+    const bFS = Math.max(FS - 2, 16);
+    ctx.font = `${bFS}px ${FONT}`;
     ctx.fillStyle = BRIGHT_CLR[brightness] || '#666';
     for (const ch of brightness) {
-      if (y + FS > bottom) { ctx.textAlign='left'; return COL_W; }
-      ctx.fillText(ch, centerX, y + FS);
-      y += lineH;
+      if (y + bFS > bottom) { ctx.textAlign='left'; return; }
+      ctx.fillText(ch, centerX, y + bFS);
+      y += bFS + 2;
     }
   }
 
-  // Mutagen badges (small square below)
+  // Mutagen badges - 顏色按來源（生年紅/大限綠/流年藍），實心方框 + 白字
+  const mFS = Math.max(FS - 4, 18);
   for (const mu of mutagens) {
-    if (y + FS + 2 > bottom) break;
-    y += 2;
-    const info = MU_LIGHT[mu.type]; if (!info) continue;
-    const bw = FS, bh = FS;
+    if (y + mFS + 2 > bottom) break;
+    y += 3;
+    const palette = MU_BY_SRC[mu.src]; if (!palette) continue;
+    const key = MU_KEY[mu.type]; if (!key) continue;
+    const bw = mFS + 2, bh = mFS + 2;
+    const bx = centerX - bw/2;
 
-    if (mu.src === 'year') {
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(x, y, bw, bh);
-      ctx.strokeStyle = info.border; ctx.lineWidth = 1;
-      ctx.strokeRect(x+0.5, y+0.5, bw-1, bh-1);
-      ctx.fillStyle = info.border;
-    } else if (mu.src === 'decade') {
-      ctx.fillStyle = info.light;
-      ctx.fillRect(x, y, bw, bh);
-      ctx.strokeStyle = info.border; ctx.lineWidth = 0.7;
-      ctx.strokeRect(x+0.5, y+0.5, bw-1, bh-1);
-      ctx.fillStyle = info.textL;
-    } else { // flow
-      ctx.fillStyle = info.solid;
-      ctx.fillRect(x, y, bw, bh);
-      ctx.fillStyle = '#fff';
-    }
-    ctx.font = `bold 10px ${FONT}`;
-    ctx.fillText(info.key, x + bw/2, y + bh - 3);
-    y += bh + 1;
+    ctx.fillStyle = palette.bg;
+    ctx.fillRect(bx, y, bw, bh);
+    ctx.fillStyle = palette.fg;
+    ctx.font = `bold ${mFS}px ${FONT}`;
+    ctx.fillText(key, centerX, y + bh - 4);
+    y += bh + 2;
   }
 
   ctx.textAlign = 'left';
-  return COL_W;
 }
 
 function drawPalace(ctx, palace, row, col, opts) {
   const { muMap, decadeMing, flowMing, minorLimPalace,
-          origPalace, bodyPalace, birthYear } = opts;
+          origPalace, bodyPalace, birthYear,
+          flowYearStr, flowYearGZ } = opts;
   const cx = col * CELL, cy = row * CELL;
   const hasFlow = !!(flowMing);
 
-  const isMinorLim    = hasFlow && palace.name === minorLimPalace;
-  const isFlowLimSame = hasFlow && flowMing === minorLimPalace;
-  const isHot         = isMinorLim && isFlowLimSame;
+  const isFlowMing = hasFlow && palace.name === flowMing;
+  const isMinorLim = hasFlow && palace.name === minorLimPalace;
 
   // ── Background ──
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
 
-  // ── 流限同宮 amber double border ──
-  if (isHot) {
-    ctx.strokeStyle = '#d4960a'; ctx.lineWidth = 2;
+  // ── 流年命宮：整個宮格金色雙線高亮邊框 ──
+  if (isFlowMing) {
+    ctx.strokeStyle = GOLD_HIGHLIGHT; ctx.lineWidth = 3;
     ctx.strokeRect(cx+2, cy+2, CELL-4, CELL-4);
-    ctx.strokeStyle = '#f0c840'; ctx.lineWidth = 1;
-    ctx.strokeRect(cx+5, cy+5, CELL-10, CELL-10);
+    ctx.strokeStyle = '#e8c860'; ctx.lineWidth = 1;
+    ctx.strokeRect(cx+6, cy+6, CELL-12, CELL-12);
   }
 
-  // ── Corner markers (top-right) ──
-  let my = cy + 14;
-  ctx.textAlign = 'right'; ctx.font = `bold 11px ${FONT}`;
-  if (palace.name === origPalace) { ctx.fillStyle='#2563eb'; ctx.fillText('來', cx+CELL-PAD, my); my+=14; }
-  if (palace.name === bodyPalace) { ctx.fillStyle='#d97706'; ctx.fillText('身', cx+CELL-PAD, my); my+=14; }
-  if (isMinorLim)                 { ctx.fillStyle='#dc2626'; ctx.fillText('限', cx+CELL-PAD, my); }
-  ctx.textAlign = 'left';
+  // ── Top-right: 限 marker (小限) ──
+  if (isMinorLim) {
+    ctx.font = `bold 13px ${FONT}`;
+    ctx.fillStyle = RED_BOX;
+    ctx.textAlign = 'right';
+    ctx.fillText('限', cx + CELL - PAD, cy + 16);
+    ctx.textAlign = 'left';
+  }
+
+  // ── Bottom-right (left of stem/branch): 身宮 / 來因宮 直書紅框 ──
+  // 位置：cx+CELL-40 左右，cy+CELL-58 ~ cy+CELL-10
+  const drawVertRedBox = (text, slot) => {
+    const VFS = 14;                       // 1.5× 原本 11px → 16, 縮減為 14 配空間
+    const padding = 3;
+    const bw = VFS + 2*padding;
+    const bh = text.length * (VFS + 1) + 2*padding;
+    // slot 0 = inner (closer to stem/branch), slot 1 = outer (further left)
+    const rightEdge = cx + CELL - PAD - 22;  // leave 22px for stem/branch column
+    const bx = rightEdge - slot * (bw + 4) - bw;
+    const by = cy + CELL - 12 - bh;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = RED_BOX; ctx.lineWidth = 1.5;
+    ctx.strokeRect(bx + 0.75, by + 0.75, bw - 1.5, bh - 1.5);
+    ctx.font = `bold ${VFS}px ${FONT}`;
+    ctx.fillStyle = RED_BOX;
+    ctx.textAlign = 'center';
+    let ty = by + padding;
+    for (const ch of text) {
+      ctx.fillText(ch, bx + bw/2, ty + VFS);
+      ty += VFS + 1;
+    }
+    ctx.textAlign = 'left';
+  };
+  // 多重標記時：身宮 inner, 來因宮 outer
+  let slot = 0;
+  if (palace.name === bodyPalace) { drawVertRedBox('身宮', slot); slot++; }
+  if (palace.name === origPalace) { drawVertRedBox('來因宮', slot); slot++; }
 
   // ── TOP-LEFT: Three-layer names 流X｜大X｜本命名 ──
   let topY = cy + 14;
@@ -449,81 +548,124 @@ function drawPalace(ctx, palace, row, col, opts) {
   ctx.fillText(palace.branch, cx+CELL-6, cy+60);
   ctx.textAlign = 'left';
 
-  // ── STARS (vertical columns) ──
+  // ── STARS (vertical columns, evenly distributed) ──
   const starsTop = Math.max(topY + 4, cy + (hasFlow ? 36 : 16));
-  const botStarLim = cy + CELL - BOT - 4;  // leave room for decade year + palace name
+  const botStarLim = cy + CELL - BOT - 4;
   const palMu = muMap[palace.name] || [];
 
-  // Collect all stars in priority order with categorical color
-  const stars = [];
+  // Reserve right side for stem/branch column (~16px)
+  const STEM_BR_RESERVE = 20;
+  // Reserve left side for empty-palace text block
+  const isEmptyP = palace.isEmpty && palace.borrowedFromPalace;
+  const LEFT_RESERVE = isEmptyP ? 50 : 0;
 
-  // Empty palace special case
-  if (palace.isEmpty && palace.borrowedFromPalace) {
-    ctx.font = `12px ${FONT}`; ctx.fillStyle = '#999';
-    ctx.fillText('空宮', cx+PAD, starsTop + 12);
-    ctx.fillStyle = '#888';
-    ctx.fillText('借 ' + palace.borrowedFromPalace, cx+PAD, starsTop + 28);
-    // Treat borrowed stars as major (gray-ish to indicate borrow)
+  // Empty palace label (small "空" stamp top-left)
+  if (isEmptyP) {
+    ctx.font = `bold 11px ${FONT}`; ctx.fillStyle = '#aaa';
+    ctx.fillText('空', cx+PAD, starsTop + 11);
+    ctx.font = `9px ${FONT}`; ctx.fillStyle = '#bbb';
+    ctx.fillText('借' + palace.borrowedFromPalace.charAt(0), cx+PAD, starsTop + 22);
+  }
+
+  // Look up brightness for borrowed stars from the source palace
+  const borrowSource = isEmptyP
+    ? S.chartData.palaces.find(p => p.name === palace.borrowedFromPalace)
+    : null;
+  const borrowBrightness = {};
+  if (borrowSource) {
+    for (const ms of (borrowSource.majorStars || [])) {
+      borrowBrightness[ms.name] = ms.brightness || '';
+    }
+  }
+
+  // Collect all stars (priority order): major, aux, kill, small
+  const stars = [];
+  if (isEmptyP) {
+    // Borrowed major stars - keep deep blue color (still 主星), with dashed border
     for (const sname of (palace.borrowedStars || [])) {
-      stars.push({ name: sname, brightness: '', color: '#666666' });
+      stars.push({
+        name: sname,
+        brightness: borrowBrightness[sname] || '',
+        color: CLR_MAJOR,
+        isMajor: true,
+        isBorrowed: true,
+      });
     }
   } else {
     for (const s of (palace.majorStars||[])) {
-      stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_MAJOR });
+      stars.push({
+        name: s.name,
+        brightness: s.brightness || '',
+        color: CLR_MAJOR,
+        isMajor: true,
+      });
     }
   }
-
-  // Aux stars (deep blue)
   for (const s of (palace.minorStars||[]).filter(s => AUX_STARS.has(s.name))) {
-    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_AUX });
+    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_AUX, isMajor: false });
   }
-  // Killing stars (red)
   for (const s of (palace.minorStars||[]).filter(s => KILL_STARS.has(s.name))) {
-    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_KILL });
+    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_KILL, isMajor: false });
   }
-
-  // Layout stars as columns. If empty-palace top text was drawn, shift starsX right.
-  const startX = palace.isEmpty && palace.borrowedFromPalace
-    ? cx + PAD + 70   // give room for "空宮 / 借 X" text
-    : cx + PAD;
-  let starX = startX;
-  const rightLimit = cx + CELL - PAD;
-
-  for (const star of stars) {
-    if (starX + 18 > rightLimit) break;  // no more space
-    const mu = palMu.filter(m => m.star === star.name);
-    const colW = drawStarColumn(ctx, starX, starsTop, botStarLim, star.name, star.brightness, mu, star.color);
-    starX += colW;
-  }
-
-  // Small/misc stars (gray, compact horizontal row at the bottom of star area)
   const otherMin = (palace.minorStars||[]).filter(
     s => !AUX_STARS.has(s.name) && !KILL_STARS.has(s.name)
   );
-  const smSt = [...otherMin, ...(palace.smallStars||[])];
-  if (smSt.length > 0) {
-    // Render small stars vertically too if space remains
-    for (const s of smSt) {
-      if (starX + 18 > rightLimit) break;
-      const colW = drawStarColumn(ctx, starX, starsTop, botStarLim, s.name, '', [], CLR_SMALL);
-      starX += colW;
-    }
+  for (const s of otherMin) {
+    stars.push({ name: s.name, brightness: s.brightness || '', color: CLR_SMALL, isMajor: false });
+  }
+  for (const s of (palace.smallStars||[])) {
+    stars.push({ name: s.name, brightness: '', color: CLR_SMALL, isMajor: false });
   }
 
-  // ── BOTTOM: Decade year range (above palace name) ──
+  // Calculate dynamic column width and font size based on star count
+  const N = stars.length;
+  const usableW = CELL - 2*PAD - LEFT_RESERVE - STEM_BR_RESERVE;
+  // Dynamic font: larger when fewer stars, smaller when crowded
+  let FS = STAR_FS_BASE;
+  if (N >= 10)      FS = 20;
+  else if (N >= 8)  FS = 22;
+  else if (N >= 6)  FS = 25;
+  else              FS = 28;
+  const colW = N === 0 ? 0
+             : Math.max(FS + 1, Math.min(FS + 12, usableW / N));
+
+  const blockW = N * colW;
+  const startX = cx + PAD + LEFT_RESERVE + Math.max(0, (usableW - blockW) / 2);
+
+  for (let i = 0; i < N; i++) {
+    const star = stars[i];
+    const centerX = startX + colW * i + colW / 2;
+    const mu = palMu.filter(m => m.star === star.name);
+    drawStarColumn(ctx, centerX, starsTop, botStarLim, star.name, star.brightness, mu, star.color, star.isMajor, FS, star.isBorrowed);
+  }
+
+  // ── BOTTOM 三層資訊 ──
+  // Layer 1（最上）: 該宮位對應的流年「2026年／丙午年」 深灰
+  // Layer 2: 該宮位的大限年份範圍「2020~2029年」 淺灰
+  // Layer 3（最下）: 宮位名「官祿宮」 加粗黑大字
+  // 字置中，但要避開右下角的天干地支區
+  const centerBx = cx + CELL/2 - 14;
+  ctx.textAlign = 'center';
+
+  // 依宮位地支計算對應的流年
+  if (opts.flowYearVal && opts.flowYearBranch) {
+    const py = getPalaceFlowYear(palace.branch, opts.flowYearVal, opts.flowYearBranch);
+    const palaceGZ = py.stem + py.branch;
+    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#555';
+    ctx.fillText(`${py.year}年／${palaceGZ}年`, centerBx, cy + CELL - 56);
+  }
+
   if (palace.decadeRange && birthYear) {
     const sy0 = birthYear + palace.decadeRange[0] - 1;
     const ey0 = birthYear + palace.decadeRange[1] - 1;
-    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#999';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${sy0} ~ ${ey0}`, cx + CELL/2 - 10, cy + CELL - 32);
-    ctx.textAlign = 'left';
+    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#aaa';
+    ctx.fillText(`${sy0} ~ ${ey0} 年`, centerBx, cy + CELL - 38);
   }
 
-  // ── BOTTOM: Palace name (centered, bold) ──
-  ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-  ctx.textAlign = 'center';
-  ctx.fillText(palace.name, cx + CELL/2 - 10, cy + CELL - 13);
+  // 宮位名（加大加粗，加「宮」後綴）
+  ctx.font = `bold 18px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  const palaceLabel = palace.name + (palace.name.endsWith('宮') ? '' : '宮');
+  ctx.fillText(palaceLabel, centerBx, cy + CELL - 14);
   ctx.textAlign = 'left';
 
   // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ ──
@@ -538,101 +680,194 @@ function drawPalace(ctx, palace, row, col, opts) {
 // CENTER 2×2 (minimal)
 // ════════════════════════════════════════════════════════
 
-function drawCenter(ctx) {
-  const d = S.chartData, fd = S.flowData;
+function drawCenterTo(ctx, fd) {
+  const d = S.chartData;
   const cx = CELL, cy = CELL, cw = 2*CELL, ch = 2*CELL;
   const mx = cx + cw/2;
 
+  // Background
   ctx.fillStyle = '#f9f8f4';
   ctx.fillRect(cx, cy, cw, ch);
+
+  // ── Watermark Crystibee logo (drawn FIRST so text overlays on top) ──
+  drawCrystibeeLogo(ctx, mx, cy + ch/2 - 10, 280, '#e6e3dc');
+
   ctx.textAlign = 'center';
 
   if (!d) { ctx.textAlign='left'; return; }
 
-  let iy = cy + 36;
-  const lh = 20;
+  // Compute extras
+  const fy = fd?.flowYear;
+  const ml = fd?.currentMajorLimit;
+  const yearBranch = d.fourPillars?.raw?.yearly?.[1] || '';
+  const zodiac = ZODIACS[yearBranch] || '';
+  const pillars = d.fourPillars?.raw || {};
+  const pillarLabels = ['年','月','日','時'];
+  const pillarKeys = ['yearly','monthly','daily','hourly'];
 
-  // Name (only if provided)
+  let iy = cy + 30;
+
+  // Row 1: 姓名 (large bold)
   if (S.name) {
-    ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-    ctx.fillText(S.name, mx, iy); iy += 26;
+    ctx.font = `bold 24px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(S.name, mx, iy); iy += 32;
   }
 
-  // Birth info
-  ctx.font = `12px ${FONT}`; ctx.fillStyle = '#555';
-  ctx.fillText(`${S.birthDate}　${S.birthTime}　${S.gender}`, mx, iy); iy += lh;
+  // Row 2: 西元生日 + 時間 + 時辰 + 陰陽 (1.5×, 20px bold)
+  ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  ctx.fillText(`${S.birthDate}　${S.birthTime}　${d.shichen||''}　${d.yinYang||''}`, mx, iy);
+  iy += 28;
 
-  // Lunar date
-  ctx.fillStyle = '#777';
-  ctx.fillText(d.lunarDate, mx, iy); iy += lh;
-
-  // 五行局 · 陰陽
-  ctx.font = `bold 18px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-  ctx.fillText(`${d.fiveElementsClass}　·　${d.yinYang}`, mx, iy); iy += lh+4;
-
-  // 命主星 · 身主星
-  ctx.font = `12px ${FONT}`; ctx.fillStyle = '#555';
-  ctx.fillText(`命主：${d.lifeStars?.mingZhu||'—'}　　身主：${d.lifeStars?.shenZhu||'—'}`, mx, iy); iy += lh;
-
-  // 身宮 · 來因宮
-  const bStr = d.bodyPalace     ? '身宮：' + d.bodyPalace.name     : '';
-  const oStr = d.originalPalace ? '來因：' + d.originalPalace.name : '';
-  ctx.fillText([bStr,oStr].filter(Boolean).join('　　'), mx, iy); iy += lh;
+  // Row 3: 農曆 + 生肖 + 五行局 (1.5×, 20px bold)
+  ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  ctx.fillText(`${d.lunarDate}　${zodiac ? '屬'+zodiac+'　' : ''}${d.fiveElementsClass||''}`, mx, iy);
+  iy += 30;
 
   // Separator
-  ctx.strokeStyle = '#e0ded8'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+40,iy+6); ctx.lineTo(cx+cw-40,iy+6); ctx.stroke();
-  iy += 18;
+  ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
+  iy += 14;
 
-  // Flow year (only if data exists)
-  if (fd) {
-    const fy = fd.flowYear, ml = fd.currentMajorLimit;
+  // ── 八字四柱（直書，四個 column，每柱兩字：天干上、地支下） ──
+  const colSpacing = 38;        // distance between pillar columns
+  const totalW     = colSpacing * 4;
+  const pStartX    = mx - totalW/2 + colSpacing/2;
+  const FSPillar   = 17;
 
-    // Large flow year display
-    ctx.font = `300 34px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-    ctx.fillText(`${fy.year}　${fy.ganZhi}年`, mx, iy); iy += 42;
+  // Label row (年/月/日/時)
+  ctx.font = `11px ${FONT}`; ctx.fillStyle = '#888';
+  for (let i = 0; i < 4; i++) {
+    ctx.fillText(pillarLabels[i] + '柱', pStartX + i * colSpacing, iy);
+  }
+  iy += 15;
 
-    ctx.font = `12px ${FONT}`; ctx.fillStyle = '#777';
-    ctx.fillText(`虛齡 ${fy.chineseAge} 歲`, mx, iy); iy += lh;
+  // Stem row (天干)
+  ctx.font = `bold ${FSPillar}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  for (let i = 0; i < 4; i++) {
+    const stem = pillars[pillarKeys[i]]?.[0] || '－';
+    ctx.fillText(stem, pStartX + i * colSpacing, iy + FSPillar);
+  }
+  iy += FSPillar + 4;
 
-    if (ml) {
-      ctx.fillStyle = '#555';
-      ctx.fillText(`大限：${ml.palace}宮　${ml.startYear}~${ml.endYear}`, mx, iy); iy += lh;
-    }
+  // Branch row (地支)
+  ctx.font = `bold ${FSPillar}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  for (let i = 0; i < 4; i++) {
+    const branch = pillars[pillarKeys[i]]?.[1] || '－';
+    ctx.fillText(branch, pStartX + i * colSpacing, iy + FSPillar);
+  }
+  iy += FSPillar + 8;
+
+  // Row: 命主 身主 身宮 來因
+  ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#333';
+  ctx.fillText(
+    `命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}　身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`,
+    mx, iy
+  );
+  iy += 26;
+
+  // Separator
+  ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
+  iy += 16;
+
+  // ── 流年疊盤（當前流年 + 次年） ──
+  const printOverlay = (year, gz, branchOfPalace) => {
+    const flowPal = d.palaces.find(p => p.branch === branchOfPalace);
+    if (!flowPal) return;
+    const flowMingName = flowPal.name;
+    const dpName = ml ? palOffset(flowMingName, ml.palace) : null;
+    const dpStr  = dpName ? '大' + dpName.charAt(0) : '大命';
+
+    ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(`${gz}年（${year}）流年疊盤`, mx, iy);
+    iy += 24;
+
+    ctx.font = `15px ${FONT}`; ctx.fillStyle = '#444';
+    ctx.fillText(`年命　${dpStr}　本命${flowMingName}宮`, mx, iy);
+    iy += 26;
+  };
+
+  if (fy) {
+    printOverlay(fy.year, fy.ganZhi, fy.branch);
+    iy += 4;
+    const ny  = fy.year + 1;
+    const nb  = getYearBranch(ny);
+    const ngz = getYearStem(ny) + nb;
+    printOverlay(ny, ngz, nb);
   }
 
-  // ── Triquetra watermark (light gray, bottom of center area) ──
-  drawTriquetra(ctx, mx, cy + ch - 50, 36, '#d8d6d0');
+  // ── Bottom brand: Midnight Blue + Crystibee® ──
+  ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#0C6170';
+  ctx.fillText("Blue's 紫微斗數命理顧問排盤系統 V2.0", mx, cy + ch - 28);
+
+  ctx.font = `bold 12px ${FONT}`; ctx.fillStyle = '#0C6170';
+  ctx.fillText('Crystibee ®', mx, cy + ch - 12);
 
   ctx.textAlign = 'left';
 }
 
 // ════════════════════════════════════════════════════════
-// TRIQUETRA WATERMARK (Trinity Knot)
+// CRYSTIBEE WATERMARK LOGO (Triquetra + gothic text)
 // ════════════════════════════════════════════════════════
 
-function drawTriquetra(ctx, cx, cy, size, color) {
-  // Three interlocking arcs forming a trinity knot.
-  // Three circle centers at vertices of equilateral triangle.
-  // Each circle radius = side length × √3/3 (circumradius pattern).
-  const R = size * 0.42;
-  const dy = size * 0.24;  // vertical offset of centers
-  const dx = size * 0.42;  // horizontal offset
-  const centers = [
-    { x: cx,      y: cy - dy*1.4 },  // top
-    { x: cx - dx, y: cy + dy },       // bottom-left
-    { x: cx + dx, y: cy + dy },       // bottom-right
-  ];
+// Watermark image (loaded from /watermark.png if available)
+let WATERMARK_IMG = null;
+(function loadWatermark() {
+  const img = new Image();
+  img.onload = () => {
+    WATERMARK_IMG = img;
+    // Re-render all charts now that watermark is loaded
+    if (typeof renderAllCharts === 'function') renderAllCharts();
+    else if (S.chartData) renderChart();
+  };
+  img.onerror = () => { /* keep fallback SVG drawing */ };
+  img.src = '/watermark.png';
+})();
 
+function drawCrystibeeLogo(ctx, cx, cy, size, color) {
+  // Prefer loaded PNG; fall back to canvas-drawn triquetra
+  if (WATERMARK_IMG && WATERMARK_IMG.complete && WATERMARK_IMG.naturalWidth > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    // Render as grayscale by drawing once normally then overlaying
+    const iw = WATERMARK_IMG.naturalWidth;
+    const ih = WATERMARK_IMG.naturalHeight;
+    const ratio = ih / iw;
+    const drawW = size;
+    const drawH = drawW * ratio;
+    ctx.drawImage(WATERMARK_IMG, cx - drawW/2, cy - drawH/2, drawW, drawH);
+    ctx.restore();
+    return;
+  }
+
+  // Fallback: canvas-drawn triquetra + gothic "Crystibee"
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth   = Math.max(1.5, size * 0.045);
-  ctx.lineCap     = 'round';
+  ctx.fillStyle = color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const R = size * 0.32;
+  const offset = size * 0.20;
+  const centers = [
+    { x: cx,              y: cy - offset*1.4 },
+    { x: cx - offset*1.2, y: cy + offset*0.5 },
+    { x: cx + offset*1.2, y: cy + offset*0.5 },
+  ];
+  ctx.lineWidth = size * 0.035;
   for (const c of centers) {
     ctx.beginPath();
     ctx.arc(c.x, c.y, R, 0, Math.PI * 2);
     ctx.stroke();
   }
+  ctx.lineWidth = size * 0.015;
+  for (const c of centers) {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, R - size * 0.07, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.font = `italic bold ${size * 0.18}px "UnifrakturMaguntia","Old English Text MT","Apple Chancery","Times New Roman",serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Crystibee', cx, cy + size * 0.55);
   ctx.restore();
 }
 
@@ -640,19 +875,23 @@ function drawTriquetra(ctx, cx, cy, size, color) {
 // MAIN RENDER
 // ════════════════════════════════════════════════════════
 
-function renderChart() {
-  const canvas = document.getElementById('chart-canvas');
+// Render chart onto a SPECIFIC canvas with SPECIFIC flowData.
+function renderChartTo(canvas, fd) {
   const ctx = setupCanvas(canvas);
-  const d = S.chartData, fd = S.flowData;
+  const d = S.chartData;
   if (!d) return;
 
   const muMap      = buildMuMap(d.yearMutagens, fd?.currentMajorLimit?.mutagens, fd?.flowYearMutagens);
   const decadeMing = fd?.currentMajorLimit?.palace       || null;
-  const flowMing   = fd?.flowYearLifePalace?.name        || null;  // 流年命宮（流年地支對應宮位）
-  const minorLimPalace = fd?.minorLimitPalace?.name      || null;  // 小限宮（限標記）
+  const flowMing   = fd?.flowYearLifePalace?.name        || null;
+  const minorLimPalace = fd?.minorLimitPalace?.name      || null;
   const origPalace = d.originalPalace?.name              || null;
   const bodyPalace = d.bodyPalace?.name                  || null;
   const birthYear  = parseInt(S.birthDate.split('-')[0]);
+
+  const flowYearVal    = fd?.flowYear?.year || S.currentYear;
+  const flowYearBranch = fd?.flowYear?.branch || getYearBranch(flowYearVal);
+  const flowYearGZ     = fd?.flowYear?.ganZhi || '';
 
   drawGrid(ctx);
   for (const palace of d.palaces) {
@@ -660,9 +899,17 @@ function renderChart() {
     drawPalace(ctx, palace, pos[0], pos[1], {
       muMap, decadeMing, flowMing, minorLimPalace,
       origPalace, bodyPalace, birthYear,
+      flowYearVal, flowYearBranch, flowYearGZ,
     });
   }
-  drawCenter(ctx);
+  drawCenterTo(ctx, fd);
+}
+
+// Backward-compat: render the primary canvas (used by changeYear which still
+// targets the legacy single canvas id if it exists).
+function renderChart() {
+  // Rerender all blocks (covers multi-year mode + handles WATERMARK_IMG reload)
+  if (S.yearBlocks && S.yearBlocks.length) renderAllCharts();
 }
 
 // ════════════════════════════════════════════════════════
@@ -711,6 +958,37 @@ function updateFlowBar() {
 // HANDLERS
 // ════════════════════════════════════════════════════════
 
+// Populate the "額外流年" checkbox list (current year + 1 ... + 10)
+function populateExtraYears() {
+  const container = document.getElementById('extra-years');
+  if (!container) return;
+  // Anchor year: use the value in #f-year if present, else current calendar year
+  const yv = document.getElementById('f-year').value.trim();
+  const anchor = yv ? parseInt(yv) : new Date().getFullYear();
+  const items = [];
+  for (let i = 1; i <= 10; i++) {
+    const y = anchor + i;
+    const gz = getYearStem(y) + getYearBranch(y);
+    items.push(`<label data-year="${y}"><input type="checkbox" value="${y}" onchange="enforceMax2()"> ${y}<br>${gz}</label>`);
+  }
+  container.innerHTML = items.join('');
+}
+
+function enforceMax2() {
+  const boxes = [...document.querySelectorAll('#extra-years input[type=checkbox]')];
+  const checked = boxes.filter(b => b.checked);
+  if (checked.length > 2) {
+    // Uncheck the most recently clicked beyond limit (event ordering not exposed; just keep first 2)
+    boxes.forEach(b => { if (b.checked && checked.indexOf(b) >= 2) b.checked = false; });
+  }
+  // Disable unchecked when limit reached
+  const limit = boxes.filter(b => b.checked).length >= 2;
+  boxes.forEach(b => {
+    b.disabled = limit && !b.checked;
+    b.closest('label').classList.toggle('disabled', b.disabled);
+  });
+}
+
 async function handleSubmit() {
   const date   = document.getElementById('f-date').value;
   const time   = document.getElementById('f-time').value;
@@ -725,26 +1003,68 @@ async function handleSubmit() {
     err.style.display = 'block'; return;
   }
 
-  const year = yv ? parseInt(yv) : new Date().getFullYear();
-  Object.assign(S, { birthDate:date, birthTime:time, gender, name, currentYear:year });
+  const mainYear = yv ? parseInt(yv) : new Date().getFullYear();
+  const extras = [...document.querySelectorAll('#extra-years input[type=checkbox]:checked')]
+    .slice(0, 2).map(el => parseInt(el.value));
+  const allYears = [mainYear, ...extras];
+
+  Object.assign(S, { birthDate:date, birthTime:time, gender, name, currentYear:mainYear });
 
   document.getElementById('input-panel').style.display = 'none';
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('loading').style.display     = 'block';
 
   try {
-    const [chartData, flowData] = await Promise.all([
-      apiChart(date, time, gender),
-      apiFlow(date, time, gender, year),
-    ]);
-    S.chartData = chartData; S.flowData = flowData;
+    const chartData = await apiChart(date, time, gender);
+    S.chartData = chartData;
+    S.flowDataByYear = {};
+    const flows = await Promise.all(allYears.map(y => apiFlow(date, time, gender, y)));
+    allYears.forEach((y, i) => { S.flowDataByYear[y] = flows[i]; });
+    S.flowData = S.flowDataByYear[mainYear];
+
     document.getElementById('loading').style.display = 'none';
     document.getElementById('chart-area').style.display = 'block';
-    updateMetaBar(); updateFlowBar(); renderChart();
+
+    S.yearBlocks = allYears.map(y => {
+      const gz = getYearStem(y) + getYearBranch(y);
+      return { year: y, gz, canvasId: `chart-canvas-${y}` };
+    });
+
+    updateMetaBar(); updateFlowBar();
+    buildChartBlocks();
+    renderAllCharts();
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('input-panel').style.display = 'block';
     err.textContent = '命盤計算失敗：' + e.message; err.style.display = 'block';
+  }
+}
+
+// Build the DOM for each year block (title + canvas + actions)
+function buildChartBlocks() {
+  const container = document.getElementById('charts-container');
+  container.innerHTML = '';
+  for (const blk of S.yearBlocks) {
+    const div = document.createElement('div');
+    div.className = 'chart-block';
+    const isMain = blk.year === S.currentYear;
+    div.innerHTML = `
+      <div class="chart-block-title">${isMain ? '主流年' : '額外流年'}　${blk.year}年　${blk.gz}年</div>
+      <div class="canvas-wrap"><canvas id="${blk.canvasId}"></canvas></div>
+      <div class="chart-block-actions">
+        <button onclick="exportPNGForYear(${blk.year})">匯出 ${blk.year} 命盤</button>
+      </div>
+    `;
+    container.appendChild(div);
+  }
+}
+
+function renderAllCharts() {
+  for (const blk of S.yearBlocks) {
+    const canvas = document.getElementById(blk.canvasId);
+    if (!canvas) continue;
+    const fd = S.flowDataByYear[blk.year];
+    renderChartTo(canvas, fd);
   }
 }
 
@@ -753,27 +1073,49 @@ async function changeYear(delta) {
   document.getElementById('fc-year').textContent = S.currentYear;
   ['fc-gz','fc-age','fc-limit'].forEach(id => document.getElementById(id).textContent='');
   try {
-    S.flowData = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear);
-    updateFlowBar(); renderChart();
+    // Fetch new main-year flow data
+    const newFd = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear);
+    S.flowDataByYear[S.currentYear] = newFd;
+    S.flowData = newFd;
+    // Rebuild yearBlocks: replace the FIRST block (main) with new year; keep extras
+    const extras = S.yearBlocks.slice(1).map(b => b.year);
+    const allYears = [S.currentYear, ...extras];
+    S.yearBlocks = allYears.map(y => {
+      const gz = getYearStem(y) + getYearBranch(y);
+      return { year: y, gz, canvasId: `chart-canvas-${y}` };
+    });
+    updateFlowBar();
+    buildChartBlocks();
+    renderAllCharts();
   } catch(e) { console.error('Flow error:',e); }
 }
 
-function exportPNG() {
-  const canvas = document.getElementById('chart-canvas');
+function exportPNGForYear(year) {
+  const canvas = document.getElementById(`chart-canvas-${year}`);
+  if (!canvas) return;
   const link = document.createElement('a');
   const n = S.name ? S.name+'_' : '';
-  link.download = `${n}${S.birthDate}_流年${S.currentYear}.png`;
+  link.download = `${n}${S.birthDate}_流年${year}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
 
 function resetChart() {
-  S.chartData=null; S.flowData=null;
+  S.chartData=null; S.flowData=null; S.flowDataByYear={}; S.yearBlocks=[];
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('input-panel').style.display = 'block';
 }
 
-window.addEventListener('resize', () => { if (S.chartData) renderChart(); });
+// Recompute extra years list whenever main flow year input changes
+document.addEventListener('DOMContentLoaded', () => {
+  populateExtraYears();
+  const fy = document.getElementById('f-year');
+  if (fy) fy.addEventListener('change', populateExtraYears);
+});
+// Also run immediately in case DOMContentLoaded already fired
+populateExtraYears();
+
+window.addEventListener('resize', () => { if (S.yearBlocks.length) renderAllCharts(); });
 </script>
 </body>
 </html>

@@ -4,11 +4,30 @@ node_modules/
 .env.local
 *.log
 .vercel
+.DS_Store
+.claude/
 
 # 知識文件（含個人資料，僅存 Google Drive）
 ClaudeCode_*.md
 CLAUDE_Code_*.md
+*_BriefReport.md
+*_brief_report.md
 *.rtf
+
+# 命盤圖片（含命主生日/姓名，僅存 Google Drive）
+# 例外允許：public/ 內的 brand asset（watermark, logos 等）
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.gif
+!public/watermark.png
+!public/logo*.png
+!public/favicon*
 
 # 本地測試腳本
 test-chart.mjs.rtf
+test-*.mjs
+
+# macOS Icon resource forks
+Icon?
