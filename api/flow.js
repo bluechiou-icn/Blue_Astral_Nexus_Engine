@@ -94,28 +94,76 @@ function detectTripleStemOverlap(chart, currentMajorLimit) {
   };
 }
 
-function detectLuJiConflict(flowMutagens, decadeMutagens, birthMutagens) {
-  const all = [
-    ...flowMutagens.map(m  => ({ ...m, source: '流年' })),
-    ...decadeMutagens.map(m => ({ ...m, source: '大限' })),
-    ...birthMutagens.map(m  => ({ ...m, source: '生年' })),
-  ];
+// ── 祿忌交戰偵測（增強版 v2 Blue's Version）───────────────────
+// 涵蓋四種來源：生年四化、大限四化、流年四化、宮干飛化（incoming mutations）
+// 任一星於同宮位同時被「祿」+「忌」化（來源不限），即構成祿忌交戰。
+function detectLuJiConflict({
+  palaces,
+  yearMutagens = [],
+  currentMajorLimit = null,
+  flowYearMutagens = [],
+  birthYearStem = null,
+  flowYearStem = null,
+}) {
   const conflicts = [];
-  const luList = all.filter(m => m.type === '化祿');
-  const jiList = all.filter(m => m.type === '化忌');
-  for (const lu of luList) {
-    for (const ji of jiList) {
-      if (lu.star === ji.star && lu.targetPalace === ji.targetPalace && lu.source !== ji.source) {
+
+  for (const palace of palaces) {
+    // {star: {lu: [{src, stem}], ji: [{src, stem}]}}
+    const starMutMap = {};
+
+    const ensure = (star) => {
+      if (!starMutMap[star]) starMutMap[star] = { lu: [], ji: [] };
+      return starMutMap[star];
+    };
+
+    // 1. 生年四化
+    for (const ym of yearMutagens) {
+      if (ym.palace !== palace.name) continue;
+      const slot = ensure(ym.star);
+      if (ym.type === '化祿') slot.lu.push({ src: '生年', stem: birthYearStem });
+      if (ym.type === '化忌') slot.ji.push({ src: '生年', stem: birthYearStem });
+    }
+
+    // 2. 大限四化
+    for (const mut of (currentMajorLimit?.mutagens || [])) {
+      if (mut.targetPalace !== palace.name) continue;
+      const slot = ensure(mut.star);
+      if (mut.type === '化祿') slot.lu.push({ src: '大限', stem: currentMajorLimit.stem });
+      if (mut.type === '化忌') slot.ji.push({ src: '大限', stem: currentMajorLimit.stem });
+    }
+
+    // 3. 流年四化
+    for (const fm of flowYearMutagens) {
+      if (fm.targetPalace !== palace.name) continue;
+      const slot = ensure(fm.star);
+      if (fm.type === '化祿') slot.lu.push({ src: '流年', stem: flowYearStem });
+      if (fm.type === '化忌') slot.ji.push({ src: '流年', stem: flowYearStem });
+    }
+
+    // 4. 宮干飛化（incoming mutations）— 來自其他本命宮的宮干飛入
+    for (const inc of (palace.palaceMutagens?.incoming || [])) {
+      const slot = ensure(inc.star);
+      if (inc.type === '化祿') slot.lu.push({ src: inc.fromPalace, stem: inc.fromStem });
+      if (inc.type === '化忌') slot.ji.push({ src: inc.fromPalace, stem: inc.fromStem });
+    }
+
+    // 5. 偵測衝突
+    for (const [star, { lu, ji }] of Object.entries(starMutMap)) {
+      if (lu.length > 0 && ji.length > 0) {
+        const total = lu.length + ji.length;
+        const severity = total >= 4 ? 'critical' : total >= 3 ? 'high' : 'medium';
         conflicts.push({
-          star:      lu.star,
-          palace:    lu.targetPalace,
-          luSource:  lu.source,
-          jiSource:  ji.source,
-          note:      `${lu.star}在${lu.targetPalace}：${lu.source}化祿 vs ${ji.source}化忌，形成祿忌交戰`,
+          palace:    palace.name,
+          star,
+          luSources: lu,
+          jiSources: ji,
+          severity,
+          note:      `${star}在${palace.name}：${lu.length}祿 vs ${ji.length}忌`,
         });
       }
     }
   }
+
   return conflicts;
 }
 
@@ -151,11 +199,15 @@ module.exports = function handler(req, res) {
     const flowLifePalace    = calcFlowYearLifePalace(chart.palaces, flowBranch);
 
     const tripleStemOverlap = detectTripleStemOverlap(chart, currentMajorLimit);
-    const luJiConflicts     = detectLuJiConflict(
+    const birthYearStem     = chart.fourPillars?.raw?.yearly?.[0] || null;
+    const luJiConflicts     = detectLuJiConflict({
+      palaces:           chart.palaces,
+      yearMutagens:      chart.yearMutagens || [],
+      currentMajorLimit,
       flowYearMutagens,
-      currentMajorLimit?.mutagens || [],
-      chart.yearMutagens || []
-    );
+      birthYearStem,
+      flowYearStem:      flowStem,
+    });
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Surrogate-Control', 'no-store');
