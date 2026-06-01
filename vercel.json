@@ -1,8 +1,9 @@
 {
   "version": 2,
   "functions": {
-    "api/chart.js": { "maxDuration": 10 },
-    "api/flow.js":  { "maxDuration": 10 }
+    "api/chart.js":    { "maxDuration": 10 },
+    "api/flow.js":     { "maxDuration": 10 },
+    "api/synastry.js": { "maxDuration": 15 }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },

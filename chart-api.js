@@ -445,6 +445,21 @@ function calcFlowYearAges(palaceBranch, fiveElements, yinYang, maxAge = 110) {
 }
 
 // ── 主函式 ───────────────────────────────────────────────────
+/**
+ * 生成完整命盤資料。
+ *
+ * ⚠️ IMPORTANT：palaces 陣列按地支順序輸出（子丑寅卯…亥），
+ *    palaces[0] 不必然是命宮，命宮可能在任何 index。
+ *    正確取法：palaces.find(p => p.name === '命宮')
+ *    勿以 palaces[0] 假設命宮位置。
+ *
+ * @param {string} solarDate  - "YYYY-MM-DD"
+ * @param {string} birthTime  - "HH:MM" 鐘錶時間
+ * @param {"男"|"女"} gender
+ * @param {string|null} city  - 出生城市（用於真太陽時校正）
+ * @param {number|null} longitude - 自訂經度（覆寫城市預設值）
+ * @returns {object} chart - 含 meta, palaces, majorLimits, classicalFormations, baziQiyun 等
+ */
 function generateChart(solarDate, birthTime, gender, city = null, longitude = null) {
   const timeIndex = timeToIndex(birthTime);
 
@@ -673,12 +688,19 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
       },
     },
 
-    lifeStars: {
-      mingZhu:         toTrad(r.soul),   // 命主
-      shenZhu:         toTrad(r.body),   // 身主
-      yearBucketStart: null,             // 斗君起始地支；iztro 未直接提供
-      yearBucketNote:  "斗君需依生月地支推算，iztro 未直接輸出此欄位",
-    },
+    lifeStars: (() => {
+      // 斗君起始地支 = 生月地支（正月寅、二月卯…依序類推）
+      // BlueVersion：直接以 monthBranch 作為斗君所在宮位
+      const _mb = birthData.monthBranch;
+      const _mbPal = palaces.find(p => p.branch === _mb);
+      return {
+        mingZhu:           toTrad(r.soul),
+        shenZhu:           toTrad(r.body),
+        yearBucketStart:   _mb,
+        yearBucketPalace:  _mbPal?.name || null,
+        yearBucketNote:    `斗君在${_mb}（${_mbPal?.name || ''}宮），依生月地支推算（BlueVersion，待命理師確認）`,
+      };
+    })(),
 
     // 基本資訊（向後相容保留）
     lunarDate:       r.lunarDate,
