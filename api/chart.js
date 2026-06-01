@@ -20,7 +20,7 @@ module.exports = function handler(req, res) {
   //   return res.status(401).json({ error: "Unauthorized" });
   // }
 
-  const { date, time, gender } = req.query;
+  const { date, time, gender, city, longitude } = req.query;
 
   // ── 驗證必填參數 ──────────────────────────────────────────
   if (!date || !time || !gender) {
@@ -44,7 +44,14 @@ module.exports = function handler(req, res) {
   }
 
   try {
-    const chart = generateChart(date, time, gender);
+    const lon = longitude ? parseFloat(longitude) : null;
+    const chart = generateChart(date, time, gender, city || null, lon);
+
+    // ── Step 6: debug log for baziQiyun（部署後可從 Vercel Function Logs 觀察） ──
+    if (process.env.DEBUG_QIYUN === "1") {
+      console.log("baziQiyun raw:", JSON.stringify(chart?.baziQiyun || null));
+    }
+
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Surrogate-Control", "no-store");
     return res.status(200).json(chart);

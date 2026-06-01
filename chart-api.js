@@ -11,6 +11,66 @@ try { _lunarLib = require("lunar-typescript"); } catch(_) { /* graceful fallback
 
 astro.config({ language: "zh-TW" });
 
+// ── 真太陽時校正（Blue's Version）────────────────────────────
+// 規則：真太陽時 = 鐘錶時間 + (出生地經度 - 標準經度) × 4 分鐘
+// 標準經度 = 時區 × 15°
+const CITY_LONGITUDES = {
+  '台北':121.5654,'台中':120.6839,'台南':120.2133,'高雄':120.3014,
+  '新北':121.4657,'桃園':121.3010,'新竹':120.9675,'基隆':121.7391,
+  '香港':114.1694,'澳門':113.5439,
+  '上海':121.4737,'北京':116.4074,'廣州':113.2644,'深圳':114.0579,
+  '成都':104.0665,'重慶':106.5516,'武漢':114.3054,
+  '首爾':126.9780,'釜山':129.0756,
+  '東京':139.6917,'大阪':135.5023,
+  '曼谷':100.5018,'新加坡':103.8198,'吉隆坡':101.6869,
+  '胡志明市':106.6297,'河內':105.8342,
+  '洛杉磯':-118.2437,'紐約':-74.0060,'多倫多':-79.3832,
+  '倫敦':-0.1276,'巴黎':2.3522,
+};
+
+const CITY_TIMEZONE_OFFSET = {
+  '台北':8,'台中':8,'台南':8,'高雄':8,'新北':8,
+  '桃園':8,'新竹':8,'基隆':8,
+  '香港':8,'澳門':8,
+  '上海':8,'北京':8,'廣州':8,'深圳':8,
+  '成都':8,'重慶':8,'武漢':8,
+  '首爾':9,'釜山':9,
+  '東京':9,'大阪':9,
+  '曼谷':7,'新加坡':8,'吉隆坡':8,
+  '胡志明市':7,'河內':7,
+  '洛杉磯':-8,'紐約':-5,'多倫多':-5,
+  '倫敦':0,'巴黎':1,
+};
+
+function calcTrueSolarTime(clockTime, city, longitude) {
+  const lon = longitude ?? CITY_LONGITUDES[city] ?? null;
+  const tzOffset = city ? (CITY_TIMEZONE_OFFSET[city] ?? 8) : 8;
+
+  if (lon === null) {
+    return {
+      trueSolarTime: clockTime,
+      offsetMinutes: 0,
+      longitude:    null,
+      note: `城市「${city || '未填'}」不在資料庫，以鐘錶時間代替。`,
+    };
+  }
+
+  const standardMeridian = tzOffset * 15;
+  const offsetMinutes = Math.round((lon - standardMeridian) * 4);
+  const [h, m] = clockTime.split(':').map(Number);
+  let total = h * 60 + m + offsetMinutes;
+  total = ((total % 1440) + 1440) % 1440;
+  const newH = Math.floor(total / 60).toString().padStart(2, '0');
+  const newM = (total % 60).toString().padStart(2, '0');
+
+  return {
+    trueSolarTime: `${newH}:${newM}`,
+    offsetMinutes,
+    longitude: lon,
+    note: `${city || '自訂'}（東經${lon.toFixed(2)}°），鐘錶時間${offsetMinutes >= 0 ? '+' : ''}${offsetMinutes}分鐘`,
+  };
+}
+
 // ── 八字起運計算（Blue's Version）────────────────────────────
 // 規則：
 //   陽男陰女 → 順排：找出生時刻之後的下一個「節」
@@ -18,7 +78,10 @@ astro.config({ language: "zh-TW" });
 // 換算（傳統公式）：
 //   3 日 = 1 歲，1 日 = 4 個月，1 時辰 = 10 天（在月內）
 //   即 1 歲 = 36 時辰，1 月 = 3 時辰，1 時辰 = 10 天
-const JIE_NAMES = ['立春','驚蟄','清明','立夏','芒種','小暑','立秋','白露','寒露','立冬','大雪','小寒'];
+// lunar-typescript 的 jieQiTable key 為簡體中文，這裡用簡體 keys 查表，
+// 對外顯示時 normalize 為繁體
+const JIE_NAMES_SIMP = ['立春','惊蛰','清明','立夏','芒种','小暑','立秋','白露','寒露','立冬','大雪','小寒'];
+const JIE_SIMP_TO_TRAD = { '立春':'立春','惊蛰':'驚蟄','清明':'清明','立夏':'立夏','芒种':'芒種','小暑':'小暑','立秋':'立秋','白露':'白露','寒露':'寒露','立冬':'立冬','大雪':'大雪','小寒':'小寒' };
 
 function _collectJieQiDates(solarYear) {
   if (!_lunarLib) return [];
@@ -26,16 +89,15 @@ function _collectJieQiDates(solarYear) {
   const dates = [];
   for (const yearOffset of [-1, 0, 1]) {
     const y = solarYear + yearOffset;
-    // 用該年 1 月 1 日的 Lunar 取得 jieQiTable（含當年所有節氣）
     try {
       const lunar = Solar.fromYmd(y, 1, 1).getLunar();
       const table = lunar.getJieQiTable();
-      for (const name of JIE_NAMES) {
-        const jq = table[name];
+      for (const simp of JIE_NAMES_SIMP) {
+        const jq = table[simp];
         if (!jq) continue;
         const ms = new Date(jq.getYear(), jq.getMonth()-1, jq.getDay(),
                             jq.getHour(), jq.getMinute(), jq.getSecond()).getTime();
-        dates.push({ name, ms, year: jq.getYear() });
+        dates.push({ name: JIE_SIMP_TO_TRAD[simp] || simp, ms, year: jq.getYear() });
       }
     } catch(e) { /* skip year */ }
   }
@@ -383,9 +445,18 @@ function calcFlowYearAges(palaceBranch, fiveElements, yinYang, maxAge = 110) {
 }
 
 // ── 主函式 ───────────────────────────────────────────────────
-function generateChart(solarDate, birthTime, gender) {
+function generateChart(solarDate, birthTime, gender, city = null, longitude = null) {
   const timeIndex = timeToIndex(birthTime);
-  const r = astro.bySolar(solarDate, timeIndex, gender, true);
+
+  // 真太陽時校正：依出生地經度換算
+  const trueSolarTimeResult = calcTrueSolarTime(birthTime, city, longitude);
+  const trueSolarTime = trueSolarTimeResult.trueSolarTime;
+  // 若真太陽時與鐘錶時間不同，用真太陽時重新計算 timeIndex
+  const effectiveTimeIndex = trueSolarTime !== birthTime
+    ? timeToIndex(trueSolarTime)
+    : timeIndex;
+
+  const r = astro.bySolar(solarDate, effectiveTimeIndex, gender, true);
 
   // ── 生年干、陰陽 ──────────────────────────────────────────
   const yearStem   = r.rawDates.chineseDate.yearly[0];
@@ -396,7 +467,7 @@ function generateChart(solarDate, birthTime, gender) {
     yearStem:    toTrad(yearStem),
     yearBranch:  toTrad(yearBranch),
     monthBranch: toTrad(r.rawDates.chineseDate.monthly[1]),
-    hourBranch:  toTrad(TIME_INDEX_TO_BRANCH[timeIndex]),
+    hourBranch:  toTrad(TIME_INDEX_TO_BRANCH[effectiveTimeIndex]),
   };
   const yangStems = ["甲", "丙", "戊", "庚", "壬"];
   const isYang    = yangStems.includes(yearStem);
@@ -578,13 +649,15 @@ function generateChart(solarDate, birthTime, gender) {
 
   // ── 組合最終輸出 ───────────────────────────────────────────
   const result = {
-    // ── 修改二：meta ────────────────────────────────────────
+    // ── meta（真太陽時校正）────────────────────────────────
     meta: {
       solarDate,
-      clockTime:     birthTime,
-      trueSolarTime: birthTime,   // iztro 未提供真太陽時；此處填入時鐘時間
-      trueSolarTimeNote: "真太陽時計算待實作（需搭配出生地經度換算）",
-      longitude:     120.000,     // 預設台灣中部基準經度
+      clockTime:                  birthTime,
+      trueSolarTime:              trueSolarTimeResult.trueSolarTime,
+      trueSolarTimeOffsetMinutes: trueSolarTimeResult.offsetMinutes,
+      trueSolarTimeNote:          trueSolarTimeResult.note,
+      city:                       city || null,
+      longitude:                  trueSolarTimeResult.longitude || null,
       gender,
     },
 
@@ -610,7 +683,7 @@ function generateChart(solarDate, birthTime, gender) {
     // 基本資訊（向後相容保留）
     lunarDate:       r.lunarDate,
     chineseDate:     r.chineseDate,
-    shichen:         SHICHEN_NAMES[timeIndex],
+    shichen:         SHICHEN_NAMES[effectiveTimeIndex],
     fiveElementsClass: toTrad(r.fiveElementsClass),
     yinYang,
 
@@ -796,11 +869,12 @@ module.exports = { generateChart };
 
 // ── CLI ──────────────────────────────────────────────────────
 if (require.main === module) {
-  const [, , solarDate, birthTime, gender] = process.argv;
+  const [, , solarDate, birthTime, gender, city, longitudeArg] = process.argv;
   if (!solarDate || !birthTime || !gender) {
-    console.error("用法：node chart-api.js YYYY-MM-DD HH:MM 男|女");
+    console.error("用法：node chart-api.js YYYY-MM-DD HH:MM 男|女 [城市] [經度]");
     process.exit(1);
   }
-  const result = generateChart(solarDate, birthTime, gender);
+  const lon = longitudeArg ? parseFloat(longitudeArg) : null;
+  const result = generateChart(solarDate, birthTime, gender, city || null, lon);
   console.log(JSON.stringify(result, null, 2));
 }
