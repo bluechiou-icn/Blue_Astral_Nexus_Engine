@@ -471,6 +471,14 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
     ? timeToIndex(trueSolarTime)
     : timeIndex;
 
+  // 跨時辰警示：真太陽時校正後改變時辰時，提醒命理師核實定盤
+  const crossedHour = effectiveTimeIndex !== timeIndex;
+  const crossedHourWarning = crossedHour
+    ? `⚠️ 真太陽時校正後，時辰從「${SHICHEN_NAMES[timeIndex]}」` +
+      `變更為「${SHICHEN_NAMES[effectiveTimeIndex]}」。` +
+      `命盤已依真太陽時重新排盤，建議命理師核實定盤。`
+    : null;
+
   const r = astro.bySolar(solarDate, effectiveTimeIndex, gender, true);
 
   // ── 生年干、陰陽 ──────────────────────────────────────────
@@ -664,15 +672,17 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
 
   // ── 組合最終輸出 ───────────────────────────────────────────
   const result = {
-    // ── meta（真太陽時校正）────────────────────────────────
+    // ── meta（真太陽時校正 + 跨時辰警示）─────────────────
     meta: {
       solarDate,
-      clockTime:                  birthTime,
-      trueSolarTime:              trueSolarTimeResult.trueSolarTime,
-      trueSolarTimeOffsetMinutes: trueSolarTimeResult.offsetMinutes,
-      trueSolarTimeNote:          trueSolarTimeResult.note,
-      city:                       city || null,
-      longitude:                  trueSolarTimeResult.longitude || null,
+      clockTime:                       birthTime,
+      trueSolarTime:                   trueSolarTimeResult.trueSolarTime,
+      trueSolarTimeOffsetMinutes:      trueSolarTimeResult.offsetMinutes,
+      trueSolarTimeNote:               trueSolarTimeResult.note,
+      trueSolarTimeCrossedHour:        crossedHour,
+      trueSolarTimeCrossedHourWarning: crossedHourWarning,
+      city:                            city || null,
+      longitude:                       trueSolarTimeResult.longitude || null,
       gender,
     },
 
