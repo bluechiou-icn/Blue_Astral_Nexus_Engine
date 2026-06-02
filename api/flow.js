@@ -262,6 +262,12 @@ module.exports = function handler(req, res) {
       tripleStemOverlap,
       luJiConflicts,
       hasLuJiConflict: luJiConflicts.length > 0,
+      luJiConflictSummary: luJiConflicts.map(c => ({
+        palace:   c.palace,
+        star:     c.star,
+        severity: c.severity,
+        note:     c.note,
+      })),
 
       birthYearMutagens: chart.yearMutagens,
 

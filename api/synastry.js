@@ -55,76 +55,117 @@ function calcCrossFlyingTransformations(fromStem, fromLabel, toPalaces) {
 function detectResonances(chart1, chart2) {
   const resonances = [];
 
-  const body1Branch = chart1.palaces.find(p => p.isBodyPalace)?.branch;
-  const body2Branch = chart2.palaces.find(p => p.isBodyPalace)?.branch;
-  const orig1Branch = chart1.palaces.find(p => p.isOriginalPalace)?.branch;
-  const orig2Branch = chart2.palaces.find(p => p.isOriginalPalace)?.branch;
-  const ming1Branch = chart1.palaces.find(p => p.name === '命宮')?.branch;
-  const ming2Branch = chart2.palaces.find(p => p.name === '命宮')?.branch;
+  const body1 = chart1.palaces.find(p => p.isBodyPalace);
+  const body2 = chart2.palaces.find(p => p.isBodyPalace);
+  const orig1 = chart1.palaces.find(p => p.isOriginalPalace);
+  const orig2 = chart2.palaces.find(p => p.isOriginalPalace);
+  const ming1 = chart1.palaces.find(p => p.name === '命宮');
+  const ming2 = chart2.palaces.find(p => p.name === '命宮');
+  const tian1 = chart1.palaces.find(p => p.name === '田宅');
+  const tian2 = chart2.palaces.find(p => p.name === '田宅');
 
-  // 雙身宮同宮
-  if (body1Branch && body2Branch && body1Branch === body2Branch) {
+  const stem1 = chart1.fourPillars?.raw?.yearly?.[0];
+  const stem2 = chart2.fourPillars?.raw?.yearly?.[0];
+
+  // ── 雙身宮同地支 ─────────────────────────────
+  if (body1?.branch && body2?.branch && body1.branch === body2.branch) {
     resonances.push({
       type: '雙身宮共振',
-      branch: body1Branch,
-      note: `雙方身宮皆在${body1Branch}，身宮能量高度共振`,
+      direction: '對稱',
+      branch: body1.branch,
+      note: `雙方身宮皆在${body1.branch}，身宮能量高度共振`,
     });
   }
 
-  // 雙來因宮同宮
-  if (orig1Branch && orig2Branch && orig1Branch === orig2Branch) {
+  // ── 雙來因宮同地支 ────────────────────────────
+  if (orig1?.branch && orig2?.branch && orig1.branch === orig2.branch) {
     resonances.push({
       type: '雙來因宮共振',
-      branch: orig1Branch,
-      note: `雙方來因宮皆在${orig1Branch}，業力連結深厚`,
+      direction: '對稱',
+      branch: orig1.branch,
+      note: `雙方來因宮皆在${orig1.branch}，業力連結深厚`,
     });
   }
 
-  // A 身宮地支 = B 命宮地支
-  if (body1Branch && ming2Branch && body1Branch === ming2Branch) {
+  // ── 身宮 ↔ 命宮 互映（雙向對稱）─────────────
+  if (body1?.branch && ming2?.branch && body1.branch === ming2.branch) {
     resonances.push({
-      type: 'A身宮入B命宮',
-      branch: body1Branch,
-      note: `A的身宮地支（${body1Branch}）= B的命宮地支，A的核心能量直接映射B的命格`,
+      type: 'A身宮映B命宮',
+      direction: 'A→B',
+      branch: body1.branch,
+      note: `A身宮（${body1.branch}）= B命宮地支，A核心能量直接映射B命格`,
     });
   }
-  if (body2Branch && ming1Branch && body2Branch === ming1Branch) {
+  if (body2?.branch && ming1?.branch && body2.branch === ming1.branch) {
     resonances.push({
-      type: 'B身宮入A命宮',
-      branch: body2Branch,
-      note: `B的身宮地支（${body2Branch}）= A的命宮地支`,
+      type: 'B身宮映A命宮',
+      direction: 'B→A',
+      branch: body2.branch,
+      note: `B身宮（${body2.branch}）= A命宮地支，B核心能量直接映射A命格`,
     });
   }
 
-  // 田宅雙祿：A 化祿 → B 田宅，B 化祿 → A 田宅
-  const tianzhai1 = chart1.palaces.find(p => p.name === '田宅');
-  const tianzhai2 = chart2.palaces.find(p => p.name === '田宅');
-  const birthStem1 = chart1.fourPillars?.raw?.yearly?.[0];
-  const birthStem2 = chart2.fourPillars?.raw?.yearly?.[0];
-
-  if (birthStem1 && tianzhai2) {
-    const lukStar1 = BLUE_SI_HUA_TABLE[birthStem1]?.[0];
-    const lukLands1InTianzhai2 = tianzhai2.majorStars.some(s => s.name === lukStar1) ||
-                                 tianzhai2.minorStars.some(s => s.name === lukStar1);
-    if (lukLands1InTianzhai2) {
-      resonances.push({
-        type: 'A生年化祿入B田宅',
-        star: lukStar1,
-        note: `A生年干${birthStem1}化祿（${lukStar1}）→ B的田宅宮，A對B的居所財庫有祿化助益`,
-      });
-    }
+  // ── 來因宮 ↔ 命宮 互映（雙向對稱）───────────
+  if (orig1?.branch && ming2?.branch && orig1.branch === ming2.branch) {
+    resonances.push({
+      type: 'A來因宮映B命宮',
+      direction: 'A→B',
+      branch: orig1.branch,
+      note: `A來因宮（${orig1.branch}）= B命宮地支，業力入口對準B命格`,
+    });
   }
-  if (birthStem2 && tianzhai1) {
-    const lukStar2 = BLUE_SI_HUA_TABLE[birthStem2]?.[0];
-    const lukLands2InTianzhai1 = tianzhai1.majorStars.some(s => s.name === lukStar2) ||
-                                 tianzhai1.minorStars.some(s => s.name === lukStar2);
-    if (lukLands2InTianzhai1) {
-      resonances.push({
-        type: 'B生年化祿入A田宅',
-        star: lukStar2,
-        note: `B生年干${birthStem2}化祿（${lukStar2}）→ A的田宅宮`,
-      });
-    }
+  if (orig2?.branch && ming1?.branch && orig2.branch === ming1.branch) {
+    resonances.push({
+      type: 'B來因宮映A命宮',
+      direction: 'B→A',
+      branch: orig2.branch,
+      note: `B來因宮（${orig2.branch}）= A命宮地支`,
+    });
+  }
+
+  // ── 田宅雙向化祿（雙向對稱）──────────────────
+  function starInPalace(palace, star) {
+    if (!palace || !star) return false;
+    return palace.majorStars.some(s => s.name === star) ||
+           palace.minorStars.some(s => s.name === star);
+  }
+
+  const lukStar1 = stem1 ? BLUE_SI_HUA_TABLE[stem1]?.[0] : null;
+  const lukStar2 = stem2 ? BLUE_SI_HUA_TABLE[stem2]?.[0] : null;
+
+  if (lukStar1 && tian2 && starInPalace(tian2, lukStar1)) {
+    resonances.push({
+      type: 'A生年祿入B田宅',
+      direction: 'A→B',
+      star: lukStar1,
+      note: `A生年干${stem1}化祿（${lukStar1}）→ B田宅宮，A對B居所財庫有化祿`,
+    });
+  }
+  if (lukStar2 && tian1 && starInPalace(tian1, lukStar2)) {
+    resonances.push({
+      type: 'B生年祿入A田宅',
+      direction: 'B→A',
+      star: lukStar2,
+      note: `B生年干${stem2}化祿（${lukStar2}）→ A田宅宮`,
+    });
+  }
+
+  // ── 雙方身宮 ↔ 來因宮 互映 ───────────────────
+  if (body1?.branch && orig2?.branch && body1.branch === orig2.branch) {
+    resonances.push({
+      type: 'A身宮映B來因宮',
+      direction: 'A→B',
+      branch: body1.branch,
+      note: `A身宮（${body1.branch}）= B來因宮地支，A的靈魂核心與B的業力入口共振`,
+    });
+  }
+  if (body2?.branch && orig1?.branch && body2.branch === orig1.branch) {
+    resonances.push({
+      type: 'B身宮映A來因宮',
+      direction: 'B→A',
+      branch: body2.branch,
+      note: `B身宮（${body2.branch}）= A來因宮地支`,
+    });
   }
 
   return resonances;
