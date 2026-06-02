@@ -257,7 +257,7 @@
 
   <div class="field">
     <label data-i18n="city_label">出生城市 <span class="optional" data-i18n="optional">選填</span></label>
-    <input type="text" id="f-city" data-i18n-ph="city_ph">
+    <input type="text" id="f-city" value="台北" data-i18n-ph="city_ph">
   </div>
 
   <div class="field">
@@ -445,7 +445,8 @@ async function submit() {
   document.getElementById('result').style.display = 'none';
 
   try {
-    const res  = await fetch(`/api/chart?date=${date}&time=${time}&gender=${encodeURIComponent(gender)}`);
+    const cityQS = city ? '&city=' + encodeURIComponent(city) : '';
+    const res  = await fetch(`/api/chart?date=${date}&time=${time}&gender=${encodeURIComponent(gender)}${cityQS}`);
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     lastData = await res.json();
     renderResult(lastData);
@@ -467,11 +468,31 @@ function renderResult(d) {
     ? `<div class="mode-badge analysis">▸ ANALYSIS MODE &nbsp;·&nbsp; ${clientData.order}</div>`
     : `<div class="mode-badge preview">▸ PREVIEW MODE &nbsp;·&nbsp; ${lang === 'en' ? 'Reference only' : '僅供參考'}</div>`;
 
+  // 真太陽時資訊（從 meta 取得）
+  const trueSolarTime = d.meta?.trueSolarTime || null;
+  const clockTime     = d.meta?.clockTime || null;
+  const offsetMin     = d.meta?.trueSolarTimeOffsetMinutes;
+  const crossedHour   = d.meta?.trueSolarTimeCrossedHour;
+  const crossedWarning = d.meta?.trueSolarTimeCrossedHourWarning;
+
+  // 真太陽時顯示：若與鐘錶時間不同，顯示偏差
+  const solarTimeDisplay = (trueSolarTime && trueSolarTime !== clockTime)
+    ? `${trueSolarTime} <span style="font-size:11px;color:#9a6a3a">（鐘錶${clockTime}，偏差${offsetMin >= 0 ? '+' : ''}${offsetMin}分）</span>`
+    : (trueSolarTime || '—');
+
   // 定盤警示
   const rectEl = document.getElementById('rectification-notice');
   rectEl.innerHTML = needRect
     ? `<div class="rectification-notice">⚠ ${t(clientData.timecert === 'approx' ? 'rect_approx' : 'rect_unknown')}</div>`
     : '';
+
+  // 跨時辰警示（比定盤警示更高優先，前置顯示）
+  if (crossedHour && crossedWarning) {
+    const existingRect = rectEl.innerHTML;
+    rectEl.innerHTML = `<div class="rectification-notice" style="border-color:#8a4a1a;color:#e08040;">
+      ${crossedWarning}
+    </div>` + existingRect;
+  }
 
   // 基本資訊
   const relKey = 'rel_' + (clientData.relation || 'undisclosed');
@@ -483,6 +504,7 @@ function renderResult(d) {
     <div class="info-item"><div class="info-label">${t('info_body')}</div><div class="info-value">${palName(d.bodyPalace?.name ?? '—')}（${d.bodyPalace?.stemBranch ?? ''}）</div></div>
     <div class="info-item"><div class="info-label">${t('info_origin')}</div><div class="info-value">${palName(d.originalPalace?.name ?? '—')}（${d.originalPalace?.stemBranch ?? ''}）</div></div>
     <div class="info-item"><div class="info-label">${t('info_city')}</div><div class="info-value">${clientData.city || '—'}</div></div>
+    <div class="info-item"><div class="info-label">真太陽時</div><div class="info-value">${solarTimeDisplay}</div></div>
     <div class="info-item"><div class="info-label">${t('info_relation')}</div><div class="info-value">${t(relKey)}</div></div>
   `;
 
@@ -545,6 +567,17 @@ function renderResult(d) {
   document.getElementById('preview-cta').innerHTML = !isAnalysis
     ? `<div class="preview-cta"><p>${t('preview_p1')}<br>${t('preview_p2')}</p></div>`
     : '';
+
+  // Analysis Mode：附加真太陽時技術註記
+  if (isAnalysis && d.meta?.trueSolarTimeNote) {
+    const existingNote = document.getElementById('true-solar-tech-note');
+    if (existingNote) existingNote.remove();
+    const techNote = document.createElement('div');
+    techNote.id = 'true-solar-tech-note';
+    techNote.style.cssText = 'font-size:10px;color:#4a4a6a;margin-top:16px;padding:8px 12px;border:1px solid #1e1e3a;border-radius:2px;';
+    techNote.textContent = '真太陽時：' + d.meta.trueSolarTimeNote;
+    document.getElementById('result').querySelector('.card').appendChild(techNote);
+  }
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('result').style.display = 'block';
