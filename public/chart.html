@@ -157,6 +157,13 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     <div class="field"><label>主流年（西元，留空=本年）</label><input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100"></div>
     <div class="field"><label>命主姓名（選填）</label><input type="text" id="f-name" placeholder=""></div>
   </div>
+  <div class="row-2">
+    <div class="field">
+      <label for="f-city">出生城市</label>
+      <input type="text" id="f-city" value="台北" placeholder="台北、香港、首爾…">
+    </div>
+    <div class="field"></div>
+  </div>
   <div class="field">
     <label>額外流年命盤（最多選 2 個）</label>
     <div id="extra-years" class="extra-years"></div>
@@ -271,7 +278,7 @@ const S = {
   flowData: null,                  // legacy single (= flowDataByYear[currentYear])
   flowDataByYear: {},              // {year: flowData}
   yearBlocks: [],                  // [{year, gz, canvasId}]
-  birthDate: '', birthTime: '', gender: '', name: '',
+  birthDate: '', birthTime: '', gender: '', name: '', city: '',
   currentYear: new Date().getFullYear(),
 };
 
@@ -750,6 +757,16 @@ function drawCenterTo(ctx, fd) {
   ctx.fillText(`${S.birthDate}　${S.birthTime}　${d.shichen||''}　${d.yinYang||''}`, mx, iy);
   iy += 28;
 
+  // Row 2.5: 真太陽時（若有偏差才顯示）
+  const tst    = d.meta?.trueSolarTime;
+  const ckt    = d.meta?.clockTime;
+  const offset = d.meta?.trueSolarTimeOffsetMinutes;
+  if (tst && ckt && tst !== ckt) {
+    ctx.font = `12px ${FONT}`; ctx.fillStyle = '#9a6a3a';
+    ctx.fillText(`真太陽時 ${tst}（${offset >= 0 ? '+' : ''}${offset}分）`, mx, iy);
+    iy += 20;
+  }
+
   // Row 3: 農曆 + 生肖 + 五行局 (1.5×, 20px bold)
   ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   ctx.fillText(`${d.lunarDate}　${zodiac ? '屬'+zodiac+'　' : ''}${d.fiveElementsClass||''}`, mx, iy);
@@ -838,6 +855,12 @@ function drawCenterTo(ctx, fd) {
     const nb  = getYearBranch(ny);
     const ngz = getYearStem(ny) + nb;
     printOverlay(ny, ngz, nb);
+  }
+
+  // ── 跨時辰警示（brand 上方） ──
+  if (d.meta?.trueSolarTimeCrossedHour) {
+    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#e08040';
+    ctx.fillText('⚠ 真太陽時校正後時辰已變更，請確認定盤', mx, cy + ch - 44);
   }
 
   // ── Bottom brand: Midnight Blue + Crystibee® ──
@@ -960,13 +983,15 @@ function renderChart() {
 // API
 // ════════════════════════════════════════════════════════
 
-async function apiChart(d, t, g) {
-  const r = await fetch(`/api/chart?date=${encodeURIComponent(d)}&time=${encodeURIComponent(t)}&gender=${encodeURIComponent(g)}&_t=${ts()}`);
+async function apiChart(d, t, g, city = '') {
+  const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+  const r = await fetch(`/api/chart?date=${encodeURIComponent(d)}&time=${encodeURIComponent(t)}&gender=${encodeURIComponent(g)}${cityParam}&_t=${ts()}`);
   const j = await r.json(); if (!r.ok) throw new Error(j.error||'HTTP '+r.status); return j;
 }
 
-async function apiFlow(d, t, g, y) {
-  const r = await fetch(`/api/flow?date=${encodeURIComponent(d)}&time=${encodeURIComponent(t)}&gender=${encodeURIComponent(g)}&year=${y}&_t=${ts()}`);
+async function apiFlow(d, t, g, y, city = '') {
+  const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+  const r = await fetch(`/api/flow?date=${encodeURIComponent(d)}&time=${encodeURIComponent(t)}&gender=${encodeURIComponent(g)}&year=${y}${cityParam}&_t=${ts()}`);
   const j = await r.json(); if (!r.ok) throw new Error(j.error||'HTTP '+r.status); return j;
 }
 
@@ -1038,6 +1063,7 @@ async function handleSubmit() {
   const time   = document.getElementById('f-time').value;
   const gender = document.querySelector('input[name=g]:checked')?.value;
   const name   = document.getElementById('f-name').value.trim();
+  const city   = document.getElementById('f-city')?.value.trim() || '';
   const yv     = document.getElementById('f-year').value.trim();
   const err    = document.getElementById('form-err');
 
@@ -1052,17 +1078,17 @@ async function handleSubmit() {
     .slice(0, 2).map(el => parseInt(el.value));
   const allYears = [mainYear, ...extras];
 
-  Object.assign(S, { birthDate:date, birthTime:time, gender, name, currentYear:mainYear });
+  Object.assign(S, { birthDate:date, birthTime:time, gender, name, city, currentYear:mainYear });
 
   document.getElementById('input-panel').style.display = 'none';
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('loading').style.display     = 'block';
 
   try {
-    const chartData = await apiChart(date, time, gender);
+    const chartData = await apiChart(date, time, gender, city);
     S.chartData = chartData;
     S.flowDataByYear = {};
-    const flows = await Promise.all(allYears.map(y => apiFlow(date, time, gender, y)));
+    const flows = await Promise.all(allYears.map(y => apiFlow(date, time, gender, y, city)));
     allYears.forEach((y, i) => { S.flowDataByYear[y] = flows[i]; });
     S.flowData = S.flowDataByYear[mainYear];
 
@@ -1118,7 +1144,7 @@ async function changeYear(delta) {
   ['fc-gz','fc-age','fc-limit'].forEach(id => document.getElementById(id).textContent='');
   try {
     // Fetch new main-year flow data
-    const newFd = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear);
+    const newFd = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear, S.city);
     S.flowDataByYear[S.currentYear] = newFd;
     S.flowData = newFd;
     // Rebuild yearBlocks: replace the FIRST block (main) with new year; keep extras
