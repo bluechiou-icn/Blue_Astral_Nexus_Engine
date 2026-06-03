@@ -41,6 +41,17 @@ h1.page-title {
 .field input:focus { border-color: #888; }
 .field input::placeholder { color: #bbb; }
 
+/* lang bar */
+.lang-bar-chart { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.lbtn {
+  background: transparent; border: 1px solid #c0bdb6; color: #888;
+  padding: 4px 14px; border-radius: 2px; cursor: pointer;
+  font-size: 11px; letter-spacing: 0.08em; font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lbtn:hover { border-color: #888; color: #333; }
+.lbtn.active { border-color: #333; color: #1a1a1a; font-weight: 600; }
+
 /* city autocomplete */
 .city-wrap { position: relative; }
 .city-hint { font-size: 10px; color: #aaa; margin-top: 3px; letter-spacing: 0.02em; }
@@ -158,67 +169,182 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 </head>
 <body>
 
-<h1 class="page-title">Blue's 紫微斗數命理顧問排盤系統</h1>
+<h1 class="page-title" data-i18n="page_title">Blue's 紫微斗數命理顧問排盤系統</h1>
+
+<div class="lang-bar-chart">
+  <button class="lbtn active" onclick="setLang('zh')">中文</button>
+  <button class="lbtn" onclick="setLang('en')">EN</button>
+  <button class="lbtn" onclick="setLang('ko')">한국어</button>
+</div>
 
 <div class="panel" id="input-panel">
-  <div class="panel-title">命主資料</div>
+  <div class="panel-title" data-i18n="form_title">命主資料</div>
   <div class="row-3">
-    <div class="field"><label>西曆生日</label><input type="date" id="f-date"></div>
-    <div class="field"><label>出生時間</label><input type="time" id="f-time"></div>
+    <div class="field"><label data-i18n="date_label">西曆生日</label><input type="date" id="f-date"></div>
+    <div class="field"><label data-i18n="time_label">出生時間</label><input type="time" id="f-time"></div>
     <div class="field">
-      <label>性別</label>
+      <label data-i18n="gender_label">性別</label>
       <div class="radio-grp">
-        <label><input type="radio" name="g" value="男" checked> 男</label>
-        <label><input type="radio" name="g" value="女"> 女</label>
+        <label><input type="radio" name="g" value="男" checked> <span data-i18n="male">男</span></label>
+        <label><input type="radio" name="g" value="女"> <span data-i18n="female">女</span></label>
       </div>
     </div>
   </div>
   <div class="row-2">
-    <div class="field"><label>主流年（西元，留空=本年）</label><input type="number" id="f-year" placeholder="e.g. 2026" min="1900" max="2100"></div>
-    <div class="field"><label>命主姓名（選填）</label><input type="text" id="f-name" placeholder=""></div>
+    <div class="field"><label data-i18n="year_label">主流年（西元，留空=本年）</label><input type="number" id="f-year" data-i18n-ph="year_ph" placeholder="e.g. 2026" min="1900" max="2100"></div>
+    <div class="field"><label data-i18n="name_label">命主姓名（選填）</label><input type="text" id="f-name" data-i18n-ph="name_ph" placeholder=""></div>
   </div>
   <div class="row-2">
     <div class="field">
-      <label for="f-city">出生城市</label>
+      <label for="f-city" data-i18n="city_label">出生城市</label>
       <div class="city-wrap">
-        <input type="text" id="f-city" value="台北" placeholder="城市名 / 機場代號（如 BKK、ICN）" autocomplete="off">
+        <input type="text" id="f-city" value="台北" data-i18n-ph="city_ph" placeholder="城市名 / 機場代號（如 BKK、ICN）" autocomplete="off">
         <div class="city-dropdown" id="city-dropdown"></div>
-        <div class="city-hint">可直接輸入城市名或機場代號，例如 BKK（曼谷）、ICN（首爾）</div>
+        <div class="city-hint" data-i18n="city_hint">可直接輸入城市名或機場代號，例如 BKK（曼谷）、ICN（首爾）</div>
       </div>
     </div>
-    <div class="field"><label>Email（選填）</label><input type="email" id="f-email" placeholder=""></div>
+    <div class="field"><label data-i18n="email_label">Email（選填）</label><input type="email" id="f-email" data-i18n-ph="email_ph" placeholder=""></div>
   </div>
   <div class="field">
-    <label>額外流年命盤（最多選 2 個）</label>
+    <label data-i18n="extra_years_label">額外流年命盤（最多選 2 個）</label>
     <div id="extra-years" class="extra-years"></div>
   </div>
   <div class="err-box" id="form-err"></div>
-  <button class="btn-primary" onclick="handleSubmit()">起　盤</button>
+  <button class="btn-primary" onclick="handleSubmit()" data-i18n="btn_submit">起　盤</button>
 </div>
 
 <div class="loading" id="loading">
   <div class="spinner"></div>
-  <div style="font-size:11px;color:#888;letter-spacing:0.15em;">命盤計算中</div>
+  <div id="loading-text" style="font-size:11px;color:#888;letter-spacing:0.15em;" data-i18n="loading_text">命盤計算中</div>
 </div>
 
 <div id="chart-area">
   <div class="meta-bar" id="meta-bar"></div>
   <div class="flow-bar">
-    <span class="fy-label">主流年</span>
+    <span class="fy-label" data-i18n="flow_year_label">主流年</span>
     <span class="fy-year" id="fc-year">—</span>
     <span class="fy-gz" id="fc-gz"></span>
     <span class="fy-age" id="fc-age"></span>
-    <button class="flow-btn" onclick="changeYear(-1)">← 上一年</button>
-    <button class="flow-btn" onclick="changeYear(+1)">下一年 →</button>
+    <button class="flow-btn" onclick="changeYear(-1)" data-i18n="prev_year">← 上一年</button>
+    <button class="flow-btn" onclick="changeYear(+1)" data-i18n="next_year">下一年 →</button>
     <span class="fy-limit" id="fc-limit"></span>
   </div>
   <div id="charts-container"></div>
   <div class="actions" style="margin-top:14px;">
-    <button onclick="resetChart()">重新輸入</button>
+    <button onclick="resetChart()" data-i18n="btn_reset">重新輸入</button>
   </div>
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════
+// i18n
+// ════════════════════════════════════════════════════════
+let lang = 'zh';
+
+const I18N = {
+  zh: {
+    page_title: 'Blue\'s 紫微斗數命理顧問排盤系統',
+    form_title: '命主資料',
+    date_label: '西曆生日', time_label: '出生時間',
+    gender_label: '性別', male: '男', female: '女',
+    year_label: '主流年（西元，留空=本年）', year_ph: 'e.g. 2026',
+    name_label: '命主姓名（選填）', name_ph: '',
+    city_label: '出生城市',
+    city_ph: '城市名 / 機場代號（如 BKK、ICN）',
+    city_hint: '可直接輸入城市名或機場代號，例如 BKK（曼谷）、ICN（首爾）',
+    email_label: 'Email（選填）', email_ph: '',
+    extra_years_label: '額外流年命盤（最多選 2 個）',
+    btn_submit: '起　盤', loading_text: '命盤計算中',
+    flow_year_label: '主流年',
+    prev_year: '← 上一年', next_year: '下一年 →',
+    btn_reset: '重新輸入',
+    err_required: '請填寫生日、時間和性別。',
+    err_failed: '命盤計算失敗：',
+    meta_wuxing: '五行局', meta_yinyang: '陰陽',
+    meta_ming: '命宮', meta_body: '身宮', meta_origin: '來因宮',
+    block_main: '主流年', block_extra: '額外流年',
+    btn_export: '匯出', btn_export_suffix: '命盤',
+    age_prefix: '虛齡', age_suffix: '歲',
+    limit_label: '大限：', limit_palace: '宮',
+  },
+  en: {
+    page_title: "Blue's Zi Wei Dou Shu Chart System",
+    form_title: 'SUBJECT DATA',
+    date_label: 'Date of Birth', time_label: 'Time of Birth',
+    gender_label: 'Gender', male: 'Male', female: 'Female',
+    year_label: 'Main Flow Year (blank = current year)', year_ph: 'e.g. 2026',
+    name_label: 'Name (Optional)', name_ph: '',
+    city_label: 'Birth City',
+    city_ph: 'City name or airport code (e.g. BKK, ICN)',
+    city_hint: 'You can type a city name or airport code, e.g. BKK (Bangkok), ICN (Seoul)',
+    email_label: 'Email (Optional)', email_ph: '',
+    extra_years_label: 'Additional Flow Year Charts (max 2)',
+    btn_submit: 'Generate Chart', loading_text: 'Calculating...',
+    flow_year_label: 'Flow Year',
+    prev_year: '← Prev Year', next_year: 'Next Year →',
+    btn_reset: 'Start Over',
+    err_required: 'Please fill in date, time and gender.',
+    err_failed: 'Chart calculation failed: ',
+    meta_wuxing: 'Five Elements', meta_yinyang: 'Yin/Yang',
+    meta_ming: 'Life Palace', meta_body: 'Soul Palace', meta_origin: 'Origin Palace',
+    block_main: 'Main Year', block_extra: 'Extra Year',
+    btn_export: 'Export', btn_export_suffix: 'Chart',
+    age_prefix: 'Age ', age_suffix: '',
+    limit_label: 'Major Limit: ', limit_palace: ' Palace',
+  },
+  ko: {
+    page_title: 'Blue\'s 자미두수 명반 시스템',
+    form_title: '명주 정보',
+    date_label: '양력 생일', time_label: '출생 시간',
+    gender_label: '성별', male: '남', female: '여',
+    year_label: '주 유년（서기, 공백=올해）', year_ph: '예: 2026',
+    name_label: '이름（선택）', name_ph: '',
+    city_label: '출생 도시',
+    city_ph: '도시명 또는 공항 코드 (예: BKK, ICN)',
+    city_hint: '도시명 또는 공항 코드를 입력하세요. 예: BKK (방콕), ICN (서울)',
+    email_label: 'Email（선택）', email_ph: '',
+    extra_years_label: '추가 유년 명반（최대 2개）',
+    btn_submit: '명반 생성', loading_text: '명반 계산 중',
+    flow_year_label: '주 유년',
+    prev_year: '← 이전 년도', next_year: '다음 년도 →',
+    btn_reset: '다시 입력',
+    err_required: '생일, 시간, 성별을 입력해주세요.',
+    err_failed: '명반 계산 실패: ',
+    meta_wuxing: '오행국', meta_yinyang: '음양',
+    meta_ming: '명궁', meta_body: '신궁', meta_origin: '래인궁',
+    block_main: '주 유년', block_extra: '추가 유년',
+    btn_export: '내보내기', btn_export_suffix: '명반',
+    age_prefix: '나이 ', age_suffix: '세',
+    limit_label: '대한: ', limit_palace: '궁',
+  },
+};
+
+function t(key) { return I18N[lang]?.[key] ?? I18N['zh'][key] ?? key; }
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if (v !== undefined) el.innerHTML = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh);
+    if (v !== undefined) el.placeholder = v;
+  });
+  document.querySelectorAll('.lbtn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${lang}'`));
+  });
+  // update city default placeholder label on f-city
+  const cityInp = document.getElementById('f-city');
+  if (cityInp) cityInp.placeholder = t('city_ph');
+}
+
+function setLang(l) {
+  lang = l;
+  applyI18n();
+  // re-render dynamic areas if chart is showing
+  if (S && S.chartData) { updateMetaBar(); updateFlowBar(); buildChartBlocks(); renderAllCharts(); }
+}
+
 // ════════════════════════════════════════════════════════
 // CONSTANTS
 // ════════════════════════════════════════════════════════
@@ -1027,11 +1153,11 @@ function updateMetaBar() {
   const d = S.chartData; if (!d) return;
   const mingPal = d.palaces.find(p=>p.name==='命宮');
   document.getElementById('meta-bar').innerHTML = [
-    ['五行局', d.fiveElementsClass],
-    ['陰陽',   d.yinYang],
-    ['命宮',   mingPal?.stemBranch||'—'],
-    ['身宮',   d.bodyPalace?.name||'—'],
-    ['來因宮', d.originalPalace?.name||'—'],
+    [t('meta_wuxing'),  d.fiveElementsClass],
+    [t('meta_yinyang'), d.yinYang],
+    [t('meta_ming'),    mingPal?.stemBranch||'—'],
+    [t('meta_body'),    d.bodyPalace?.name||'—'],
+    [t('meta_origin'),  d.originalPalace?.name||'—'],
   ].map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
    .join('<span class="msep">·</span>');
 }
@@ -1042,9 +1168,9 @@ function updateFlowBar() {
   if (!fd) return;
   const fy = fd.flowYear, ml = fd.currentMajorLimit;
   document.getElementById('fc-gz').textContent  = fy.ganZhi+'年';
-  document.getElementById('fc-age').textContent = `虛齡${fy.chineseAge}歲`;
+  document.getElementById('fc-age').textContent = `${t('age_prefix')}${fy.chineseAge}${t('age_suffix')}`;
   document.getElementById('fc-limit').textContent = ml
-    ? `大限：${ml.palace}宮　${ml.startYear}~${ml.endYear}` : '';
+    ? `${t('limit_label')}${ml.palace}${t('limit_palace')}　${ml.startYear}~${ml.endYear}` : '';
 }
 
 // ════════════════════════════════════════════════════════
@@ -1093,7 +1219,7 @@ async function handleSubmit() {
 
   err.style.display = 'none';
   if (!date||!time||!gender) {
-    err.textContent = '請填寫生日、時間和性別。';
+    err.textContent = t('err_required');
     err.style.display = 'block'; return;
   }
 
@@ -1130,7 +1256,7 @@ async function handleSubmit() {
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('input-panel').style.display = 'block';
-    err.textContent = '命盤計算失敗：' + e.message; err.style.display = 'block';
+    err.textContent = t('err_failed') + e.message; err.style.display = 'block';
   }
 }
 
@@ -1143,10 +1269,10 @@ function buildChartBlocks() {
     div.className = 'chart-block';
     const isMain = blk.year === S.currentYear;
     div.innerHTML = `
-      <div class="chart-block-title">${isMain ? '主流年' : '額外流年'}　${blk.year}年　${blk.gz}年</div>
+      <div class="chart-block-title">${isMain ? t('block_main') : t('block_extra')}　${blk.year}年　${blk.gz}年</div>
       <div class="canvas-wrap"><canvas id="${blk.canvasId}"></canvas></div>
       <div class="chart-block-actions">
-        <button onclick="exportPNGForYear(${blk.year})">匯出 ${blk.year} 命盤</button>
+        <button onclick="exportPNGForYear(${blk.year})">${t('btn_export')} ${blk.year} ${t('btn_export_suffix')}</button>
       </div>
     `;
     container.appendChild(div);
@@ -1202,6 +1328,7 @@ function resetChart() {
 
 // Recompute extra years list whenever main flow year input changes
 document.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
   populateExtraYears();
   const fy = document.getElementById('f-year');
   if (fy) fy.addEventListener('change', populateExtraYears);

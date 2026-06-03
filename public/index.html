@@ -224,7 +224,7 @@
   <div class="lang-bar">
     <button class="lang-btn active" onclick="setLang('zh')">中文</button>
     <button class="lang-btn"        onclick="setLang('en')">EN</button>
-    <button class="lang-btn" disabled title="Coming soon">한국어</button>
+    <button class="lang-btn" onclick="setLang('ko')">한국어</button>
   </div>
 </div>
 
@@ -373,6 +373,33 @@ const I18N = {
     empty_palace:'(Empty)', no_star:'(No major stars)',
     borrowed_prefix:'Borrows · ',
   },
+  ko: {
+    form_title:'명주 정보', name_label:'이름', optional:'선택',
+    name_ph:'이름 또는 별칭', date_label:'양력 생일', time_label:'출생 시간',
+    gender_label:'성별', male:'남', female:'여',
+    city_label:'출생 도시', city_ph:'예: 台北, 香港, 서울',
+    timecert_label:'출생 시간 확실도',
+    tc_certain:'확실 (출생 기록, 호적 등)', tc_approx:'대략 (±30분 이내)', tc_unknown:'불명 (정반 필요)',
+    relation_label:'현재 관계 상태',
+    rel_single:'싱글', rel_dating:'연애 중', rel_married:'기혼',
+    rel_divorced:'이혼', rel_widowed:'사별', rel_undisclosed:'비공개',
+    order_label:'주문 번호', order_ph:'예: GUM-20260523-001',
+    mode_note:'주문 번호 입력 → Analysis Mode (정식 분석 케이스)<br>미입력 → Preview Mode (참고용, 데이터 미저장)',
+    btn_submit:'명반 생성', loading_text:'명반 계산 중',
+    sec_info:'명반 기본 정보', sec_mutagens:'생년 사화', sec_palaces:'12궁 주성', sec_limits:'10년 대한',
+    info_name:'명주', info_wuxing:'오행국', info_lunar:'음력 생일', info_shichen:'시진',
+    info_body:'신궁', info_origin:'래인궁', info_city:'출생 도시', info_relation:'관계 상태',
+    badge_body:'신', badge_origin:'래',
+    rect_approx:'출생 시간은 대략적인 값(±30분)입니다. 분석 전 정반을 권장합니다.',
+    rect_unknown:'출생 시간이 불명확합니다. 완전한 분석을 위해 정반이 필요합니다.',
+    preview_p1:'미리보기 결과입니다. 데이터는 시스템에 저장되지 않습니다.',
+    preview_p2:'완전한 명반 분석을 원하시면 ÆTHNOUS 상담 서비스를 예약하세요.',
+    now_marker:'▶ 현재',
+    age_suffix:'세',
+    limit_fn: n => `제 ${n} 대한`,
+    empty_palace:'(공궁)', no_star:'(주성 없음)',
+    borrowed_prefix:'차성 · ',
+  },
 };
 
 const PALACE_EN = {
@@ -380,13 +407,20 @@ const PALACE_EN = {
   '官祿':'Career','交友':'Friends','遷移':'Travel','疾厄':'Health',
   '財帛':'Wealth','子女':'Children','夫妻':'Spouse','兄弟':'Siblings',
 };
+const PALACE_KO = {
+  '命宮':'명궁','父母':'부모','福德':'복덕','田宅':'전택',
+  '官祿':'관록','交友':'교우','遷移':'천이','疾厄':'질액',
+  '財帛':'재백','子女':'자녀','夫妻':'부처','兄弟':'형제',
+};
 const MUTAGEN_EN = { '化祿':'Fortune','化權':'Power','化科':'Merit','化忌':'Restrict' };
+const MUTAGEN_KO = { '化祿':'화록','化權':'화권','化科':'화과','化忌':'화기' };
 const BRI_EN = { '廟':'Dominant','旺':'Flourishing','得':'Comfortable','利':'Favorable','平':'Neutral','不利':'Unfavorable','陷':'Fallen','不':'Depleted' };
+const BRI_KO = { '廟':'묘','旺':'왕','得':'득','利':'이','平':'평','不利':'불리','陷':'함','不':'불' };
 
-function t(key)        { return I18N[lang][key] ?? I18N['zh'][key] ?? key; }
-function palName(zh)   { return lang === 'en' ? (PALACE_EN[zh] ?? zh) : zh; }
-function muLabel(m)    { return lang === 'en' ? (MUTAGEN_EN[m] ?? m) : m; }
-function briLabel(b)   { return lang === 'en' ? (BRI_EN[b] ?? b) : b; }
+function t(key)        { return I18N[lang]?.[key] ?? I18N['zh'][key] ?? key; }
+function palName(zh)   { if (lang==='en') return PALACE_EN[zh]??zh; if (lang==='ko') return PALACE_KO[zh]??zh; return zh; }
+function muLabel(m)    { if (lang==='en') return MUTAGEN_EN[m]??m;  if (lang==='ko') return MUTAGEN_KO[m]??m;  return m; }
+function briLabel(b)   { if (lang==='en') return BRI_EN[b]??b;      if (lang==='ko') return BRI_KO[b]??b;      return b; }
 
 function applyStaticI18n() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
