@@ -5,6 +5,21 @@ API engine, extending the iztro library with advanced analytical capabilities.
 
 **Live demo:** https://blue-astral-nexus-engine.vercel.app
 
+## Quick Reference
+
+```
+GET /api/chart?date=YYYY-MM-DD&time=HH:MM&gender=男|女[&city=台北]
+GET /api/flow?date=...&year=YYYY[&city=...]
+GET /api/synastry?date1=...&time1=...&gender1=...&date2=...&time2=...&gender2=...
+```
+
+## Stack
+
+- Node.js 20.x + Vercel Serverless Functions
+- [iztro](https://github.com/SylarLong/iztro) ^2.5.8 (MIT)
+- [@resvg/resvg-js](https://github.com/yisibl/resvg-js) for chart image rendering
+- [lunar-typescript](https://github.com/6tail/lunar-typescript) (transitive) for 24-節氣 calculation
+
 ## What this engine does
 
 Built on top of [iztro](https://github.com/SylarLong/iztro), this engine adds:
