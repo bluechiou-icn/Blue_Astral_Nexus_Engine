@@ -321,7 +321,7 @@ function mutRows(list) {
       <span class="mut-type ${TC[m.type]||''}">${m.type}</span>
       <span class="mut-star">${m.star||'—'}</span>
       <span class="mut-arrow">→</span>
-      <span class="mut-palace">${m.targetPalace||'—'}</span>
+      <span class="mut-palace">${m.targetPalaceName||m.targetPalace||'—'}</span>
     </div>`).join('');
 }
 
