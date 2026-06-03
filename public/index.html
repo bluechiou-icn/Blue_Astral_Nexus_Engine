@@ -309,6 +309,7 @@
     <div id="palaces"></div>
     <div class="section-title" data-i18n="sec_limits">十年大限</div>
     <div id="limits"></div>
+    <div id="flow-section" style="margin-top:8px;"></div>
     <div id="preview-cta"></div>
   </div>
 </div>
@@ -440,6 +441,9 @@ async function submit() {
   }
 
   clientData = { name, city, timecert, relation, order };
+  // 儲存目前命主的核心參數，供流年切換按鈕使用
+  _currentChartParams = { date, time, gender, city };
+  _currentFlowYear    = new Date().getFullYear();
   document.getElementById('form-card').style.display = 'none';
   document.getElementById('loading').style.display = 'block';
   document.getElementById('result').style.display = 'none';
@@ -450,6 +454,8 @@ async function submit() {
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     lastData = await res.json();
     renderResult(lastData);
+    // 自動載入本年流年分析
+    loadFlowYear(date, time, gender, _currentFlowYear, city);
   } catch (e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('form-card').style.display = 'block';
@@ -581,6 +587,113 @@ function renderResult(d) {
 
   document.getElementById('loading').style.display = 'none';
   document.getElementById('result').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════════
+// 流年分析 (Phase 2)
+// ════════════════════════════════════════════════════════
+let _currentFlowYear    = new Date().getFullYear();
+let _currentChartParams = {};
+
+async function loadFlowYear(date, time, gender, year, city) {
+  const flowSection = document.getElementById('flow-section');
+  if (!flowSection) return;
+
+  flowSection.innerHTML = `
+    <div class="section-title">流年分析 · ${year}</div>
+    <div style="text-align:center;padding:20px;color:#6a5a3a;font-size:12px;">
+      <div class="spinner" style="margin:0 auto 10px;"></div>流年資料計算中
+    </div>`;
+
+  try {
+    const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+    const res = await fetch(`/api/flow?date=${date}&time=${time}&gender=${encodeURIComponent(gender)}&year=${year}${cityParam}&_t=${Date.now()}`);
+    const f = await res.json();
+    renderFlowYear(f, year, flowSection);
+  } catch(e) {
+    flowSection.innerHTML = `<div class="section-title">流年分析</div>
+      <div style="color:#f87171;font-size:12px;padding:10px;">流年資料載入失敗</div>`;
+  }
+}
+
+function renderFlowYear(f, year, container) {
+  const typeClass = { '化祿':'t-luk','化權':'t-kuen','化科':'t-sci','化忌':'t-chi' };
+
+  const fy  = f.flowYear;
+  const ml  = f.currentMajorLimit;
+  const flp = f.flowYearLifePalace || f.minorLimitPalace;
+
+  // 祿忌交戰摘要（含 severity 樣式）
+  const conflicts = f.luJiConflicts || [];
+  const conflictHtml = conflicts.length > 0
+    ? conflicts.map(c => `
+        <div class="mutagen-row" style="border-left:2px solid ${c.severity==='critical'?'#f87171':c.severity==='high'?'#fbbf24':'#6a6a9a'};padding-left:8px;">
+          <span class="mutagen-type t-chi" style="font-size:10px;">${c.severity}</span>
+          <span class="mutagen-star">${c.star}</span>
+          <span class="mutagen-palace">在${c.palace}</span>
+          <span style="font-size:11px;color:#9a6a6a;">${c.note}</span>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:#4a4a6a;padding:6px 0;">本年無祿忌交戰</div>';
+
+  // 三干疊加
+  const ts = f.tripleStemOverlap;
+  const tsColor = ts?.isTripleOverlap ? '#f87171' : ts?.isDoubleOverlap ? '#fbbf24' : '#4a4a6a';
+  const tsText = ts?.note || '—';
+
+  container.innerHTML = `
+    <div class="section-title">流年分析 · ${year}</div>
+
+    <div class="info-grid" style="margin-bottom:16px;">
+      <div class="info-item">
+        <div class="info-label">流年干支</div>
+        <div class="info-value gold">${fy?.ganZhi || '—'}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">虛歲</div>
+        <div class="info-value">${fy?.chineseAge || '—'} 歲</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">小限宮位</div>
+        <div class="info-value">${flp ? flp.name + '（' + flp.stemBranch + '）' : '—'}
+          ${flp?.isBodyPalace ? '<span class="palace-badge badge-body">身</span>' : ''}
+          ${flp?.isOriginalPalace ? '<span class="palace-badge badge-original">來</span>' : ''}
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">當前大限</div>
+        <div class="info-value">${ml ? ml.palace + '（' + ml.startYear + '–' + ml.endYear + '）' : '—'}</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:0;">流年四化</div>
+    <div style="margin-bottom:16px;">
+      ${(f.flowYearMutagens || []).map(m => `
+        <div class="mutagen-row">
+          <span class="mutagen-type ${typeClass[m.type] || ''}">${m.type}</span>
+          <span class="mutagen-star">${m.star || '—'}</span>
+          <span class="mutagen-arrow">→</span>
+          <span class="mutagen-palace">${m.targetPalace || '—'}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="section-title" style="margin-top:0;">干支疊加</div>
+    <div style="font-size:12px;color:${tsColor};padding:8px 0;margin-bottom:12px;line-height:1.6;">
+      ${tsText}
+    </div>
+
+    <div class="section-title" style="margin-top:0;">祿忌交戰</div>
+    <div style="margin-bottom:8px;">${conflictHtml}</div>
+
+    <div style="text-align:right;margin-top:8px;">
+      <button onclick="changeFlowYear(-1)" style="background:transparent;border:1px solid #2a2550;color:#9a8a6a;padding:4px 10px;font-size:11px;cursor:pointer;border-radius:2px;margin-right:6px;">◀ ${year-1}</button>
+      <button onclick="changeFlowYear(1)" style="background:transparent;border:1px solid #2a2550;color:#9a8a6a;padding:4px 10px;font-size:11px;cursor:pointer;border-radius:2px;">${year+1} ▶</button>
+    </div>`;
+}
+
+function changeFlowYear(delta) {
+  _currentFlowYear += delta;
+  const { date, time, gender, city } = _currentChartParams;
+  if (date) loadFlowYear(date, time, gender, _currentFlowYear, city);
 }
 
 // 初始化靜態 i18n
