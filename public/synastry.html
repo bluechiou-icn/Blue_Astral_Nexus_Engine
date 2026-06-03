@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ÆTHNOUS · 合盤分析</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0d1a; color: #e8dcc8;
+    font-family: "PingFang TC","Microsoft JhengHei",sans-serif;
+    min-height: 100vh; padding: 32px 16px 80px;
+  }
+  .brand { text-align:center; margin-bottom:32px; }
+  .brand-title {
+    font-size: clamp(18px,4vw,28px); letter-spacing:0.35em;
+    color:#d4af37; font-weight:300; margin-bottom:4px;
+  }
+  .brand-sub { font-size:11px; letter-spacing:0.2em; color:#7a6a4a; }
+
+  .card {
+    background:#13132a; border:1px solid #2a2550;
+    border-radius:4px; padding:24px;
+    max-width:900px; margin:0 auto 20px;
+  }
+  .card-title {
+    font-size:10px; letter-spacing:0.25em; color:#7a6a4a;
+    text-transform:uppercase; margin-bottom:16px;
+    padding-bottom:8px; border-bottom:1px solid #1e1e3a;
+  }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .person-col { background:#0d0d1a; border:1px solid #1e1e3a; border-radius:4px; padding:16px; }
+  .person-label {
+    font-size:11px; letter-spacing:0.2em; color:#d4af37;
+    margin-bottom:12px; font-weight:600;
+  }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:11px; color:#9a8a6a; margin-bottom:4px; }
+  .field input, .field select {
+    width:100%; background:#0d0d1a; border:1px solid #2a2550;
+    color:#e8dcc8; padding:8px 10px; font-size:13px;
+    border-radius:2px; outline:none; font-family:inherit;
+  }
+  .field input:focus, .field select:focus { border-color:#d4af37; }
+  .radio-group { display:flex; gap:8px; }
+  .radio-group label {
+    display:flex; align-items:center; gap:4px;
+    font-size:12px; color:#c8b890; cursor:pointer;
+    padding:6px 10px; border:1px solid #2a2550; border-radius:2px;
+  }
+  .radio-group input[type=radio] { width:auto; accent-color:#d4af37; }
+  .radio-group label:has(input:checked) { border-color:#d4af37; color:#d4af37; }
+
+  .btn-submit {
+    width:100%; padding:12px; background:transparent;
+    border:1px solid #d4af37; color:#d4af37; font-size:12px;
+    letter-spacing:0.3em; cursor:pointer; border-radius:2px;
+    margin-top:8px; transition:all 0.2s; font-family:inherit;
+  }
+  .btn-submit:hover { background:#d4af37; color:#0d0d1a; }
+
+  .loading { text-align:center; padding:40px; display:none; }
+  .spinner {
+    width:28px; height:28px; border:2px solid #2a2550;
+    border-top-color:#d4af37; border-radius:50%;
+    animation:spin 0.8s linear infinite; margin:0 auto 12px;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  #result { display:none; }
+
+  .section-title {
+    font-size:10px; letter-spacing:0.25em; color:#7a6a4a;
+    text-transform:uppercase; margin:16px 0 10px;
+    padding-bottom:6px; border-bottom:1px solid #1e1e3a;
+  }
+
+  /* 雙人基本資訊並排 */
+  .persons-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px; }
+  .person-info-box {
+    background:#0d0d1a; border:1px solid #1e1e3a;
+    border-radius:4px; padding:14px;
+  }
+  .person-info-box.a { border-left:2px solid #d4af37; }
+  .person-info-box.b { border-left:2px solid #60a5fa; }
+  .person-name { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .person-name.a { color:#d4af37; }
+  .person-name.b { color:#60a5fa; }
+  .info-line { font-size:12px; color:#9a8a6a; line-height:1.8; }
+  .info-line span { color:#e8dcc8; }
+
+  /* 四化行 */
+  .mut-row {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 0; border-bottom:1px solid #1a1a2e;
+    font-size:12px;
+  }
+  .mut-row:last-child { border-bottom:none; }
+  .mut-type {
+    width:40px; font-size:10px; padding:2px 4px;
+    border-radius:2px; text-align:center; flex-shrink:0;
+  }
+  .t-luk  { background:rgba(74,222,128,.15); color:#4ade80; border:1px solid #1a5a30; }
+  .t-kuen { background:rgba(251,191,36,.15); color:#fbbf24; border:1px solid #5a4a10; }
+  .t-sci  { background:rgba(147,197,253,.15); color:#93c5fd; border:1px solid #1a3a5a; }
+  .t-chi  { background:rgba(248,113,113,.15); color:#f87171; border:1px solid #5a1a1a; }
+  .mut-star { color:#e8dcc8; font-weight:500; flex-shrink:0; }
+  .mut-arrow { color:#2a2550; }
+  .mut-palace { color:#9a8a6a; }
+  .mut-null { color:#3a3a5a; font-style:italic; }
+
+  /* 方向標 */
+  .dir-label {
+    font-size:10px; letter-spacing:0.15em; color:#6a5a3a;
+    margin-bottom:8px; display:flex; align-items:center; gap:6px;
+  }
+  .dir-a { color:#d4af37; }
+  .dir-b { color:#60a5fa; }
+
+  /* 共振卡片 */
+  .resonance-list { display:flex; flex-direction:column; gap:8px; }
+  .resonance-item {
+    background:#0d0d1a; border:1px solid #2a2550;
+    border-radius:4px; padding:10px 14px;
+    font-size:12px; line-height:1.6;
+  }
+  .resonance-type { font-size:10px; color:#d4af37; letter-spacing:0.1em; margin-bottom:2px; }
+  .resonance-note { color:#c8b890; }
+  .resonance-dir {
+    font-size:10px; color:#6a5a3a;
+    margin-top:2px;
+  }
+  .no-resonance { font-size:12px; color:#4a4a6a; padding:8px 0; }
+
+  /* 大限摘要 */
+  .decade-summary {
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:4px;
+  }
+  .decade-badge {
+    padding:6px 12px; border-radius:2px;
+    font-size:12px; line-height:1.4;
+  }
+  .decade-badge.a {
+    background:rgba(212,175,55,.1); border:1px solid rgba(212,175,55,.3);
+    color:#e8dcc8;
+  }
+  .decade-badge.b {
+    background:rgba(96,165,250,.1); border:1px solid rgba(96,165,250,.3);
+    color:#e8dcc8;
+  }
+  .decade-badge .label { font-size:10px; color:#7a6a4a; display:block; margin-bottom:2px; }
+
+  @media(max-width:600px) {
+    .two-col, .persons-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <div class="brand-title">Æ &thinsp;T &thinsp;H &thinsp;N &thinsp;O &thinsp;U &thinsp;S</div>
+  <div class="brand-sub">Synastry Analysis · 合盤分析</div>
+</div>
+
+<!-- 輸入表單 -->
+<div class="card" id="form-card">
+  <div class="card-title">雙人命盤資料</div>
+  <div class="two-col">
+    <!-- 命主 A -->
+    <div class="person-col">
+      <div class="person-label">命主 A</div>
+      <div class="field">
+        <label>姓名代稱</label>
+        <input type="text" id="a-name" placeholder="選填">
+      </div>
+      <div class="field">
+        <label>西曆生日</label>
+        <input type="date" id="a-date" required>
+      </div>
+      <div class="field">
+        <label>出生時間</label>
+        <input type="time" id="a-time" required>
+      </div>
+      <div class="field">
+        <label>性別</label>
+        <div class="radio-group">
+          <label><input type="radio" name="ag" value="男" checked> 男</label>
+          <label><input type="radio" name="ag" value="女"> 女</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>出生城市</label>
+        <input type="text" id="a-city" value="台北" placeholder="台北、香港…">
+      </div>
+    </div>
+    <!-- 命主 B -->
+    <div class="person-col">
+      <div class="person-label">命主 B</div>
+      <div class="field">
+        <label>姓名代稱</label>
+        <input type="text" id="b-name" placeholder="選填">
+      </div>
+      <div class="field">
+        <label>西曆生日</label>
+        <input type="date" id="b-date" required>
+      </div>
+      <div class="field">
+        <label>出生時間</label>
+        <input type="time" id="b-time" required>
+      </div>
+      <div class="field">
+        <label>性別</label>
+        <div class="radio-group">
+          <label><input type="radio" name="bg" value="男" checked> 男</label>
+          <label><input type="radio" name="bg" value="女"> 女</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>出生城市</label>
+        <input type="text" id="b-city" value="台北" placeholder="台北、香港…">
+      </div>
+    </div>
+  </div>
+  <button class="btn-submit" onclick="submit()">起盤 · 合盤分析</button>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div style="font-size:11px;color:#6a5a3a;letter-spacing:0.2em;">合盤計算中</div>
+</div>
+
+<div id="result">
+  <div class="card">
+    <!-- 雙人基本資訊 -->
+    <div class="section-title">命盤基本資訊</div>
+    <div class="persons-grid" id="persons-info"></div>
+
+    <!-- 當前大限 -->
+    <div class="section-title">當前大限</div>
+    <div class="decade-summary" id="decades"></div>
+
+    <!-- A→B 生年四化 -->
+    <div class="section-title">
+      <span class="dir-a">A</span> 生年四化 → <span class="dir-b">B</span> 命盤
+    </div>
+    <div id="a-to-b-birth"></div>
+
+    <!-- B→A 生年四化 -->
+    <div class="section-title">
+      <span class="dir-b">B</span> 生年四化 → <span class="dir-a">A</span> 命盤
+    </div>
+    <div id="b-to-a-birth"></div>
+
+    <!-- A大限→B -->
+    <div class="section-title">
+      <span class="dir-a">A</span> 大限四化 → <span class="dir-b">B</span> 命盤
+    </div>
+    <div id="a-to-b-decade"></div>
+
+    <!-- B大限→A -->
+    <div class="section-title">
+      <span class="dir-b">B</span> 大限四化 → <span class="dir-a">A</span> 命盤
+    </div>
+    <div id="b-to-a-decade"></div>
+
+    <!-- 共振結構 -->
+    <div class="section-title">共振結構</div>
+    <div class="resonance-list" id="resonances"></div>
+  </div>
+</div>
+
+<script>
+const TC = {'化祿':'t-luk','化權':'t-kuen','化科':'t-sci','化忌':'t-chi'};
+
+async function submit() {
+  const aDate = document.getElementById('a-date').value;
+  const aTime = document.getElementById('a-time').value;
+  const aG    = document.querySelector('input[name=ag]:checked')?.value;
+  const bDate = document.getElementById('b-date').value;
+  const bTime = document.getElementById('b-time').value;
+  const bG    = document.querySelector('input[name=bg]:checked')?.value;
+
+  if (!aDate||!aTime||!aG||!bDate||!bTime||!bG) {
+    alert('請填寫雙方的生日、時間和性別');
+    return;
+  }
+
+  const aCity = document.getElementById('a-city').value.trim();
+  const bCity = document.getElementById('b-city').value.trim();
+  const aName = document.getElementById('a-name').value.trim() || 'A';
+  const bName = document.getElementById('b-name').value.trim() || 'B';
+
+  document.getElementById('form-card').style.display = 'none';
+  document.getElementById('loading').style.display   = 'block';
+  document.getElementById('result').style.display    = 'none';
+
+  try {
+    const params = new URLSearchParams({
+      date1: aDate, time1: aTime, gender1: aG,
+      date2: bDate, time2: bTime, gender2: bG,
+      _t: Date.now(),
+    });
+    if (aCity) params.set('city1', aCity);
+    if (bCity) params.set('city2', bCity);
+
+    const res = await fetch('/api/synastry?' + params.toString());
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    render(d, aName, bName);
+  } catch(e) {
+    document.getElementById('loading').style.display   = 'none';
+    document.getElementById('form-card').style.display = 'block';
+    alert('合盤計算失敗：' + e.message);
+  }
+}
+
+function mutRows(list) {
+  if (!list || !list.length) return '<div class="mut-null">無資料</div>';
+  return list.map(m => `
+    <div class="mut-row">
+      <span class="mut-type ${TC[m.type]||''}">${m.type}</span>
+      <span class="mut-star">${m.star||'—'}</span>
+      <span class="mut-arrow">→</span>
+      <span class="mut-palace">${m.targetPalace||'—'}</span>
+    </div>`).join('');
+}
+
+function render(d, aName, bName) {
+  const c1 = d.chart1, c2 = d.chart2, syn = d.synastry;
+
+  // 雙人基本資訊
+  document.getElementById('persons-info').innerHTML = `
+    <div class="person-info-box a">
+      <div class="person-name a">${aName}</div>
+      <div class="info-line">
+        五行局 <span>${c1.fiveElementsClass}</span><br>
+        農曆 <span>${c1.lunarDate}</span><br>
+        時辰 <span>${c1.shichen}</span><br>
+        身宮 <span>${c1.bodyPalace?.name||'—'}（${c1.bodyPalace?.stemBranch||''}）</span><br>
+        來因宮 <span>${c1.originalPalace?.name||'—'}（${c1.originalPalace?.stemBranch||''}）</span>
+      </div>
+    </div>
+    <div class="person-info-box b">
+      <div class="person-name b">${bName}</div>
+      <div class="info-line">
+        五行局 <span>${c2.fiveElementsClass}</span><br>
+        農曆 <span>${c2.lunarDate}</span><br>
+        時辰 <span>${c2.shichen}</span><br>
+        身宮 <span>${c2.bodyPalace?.name||'—'}（${c2.bodyPalace?.stemBranch||''}）</span><br>
+        來因宮 <span>${c2.originalPalace?.name||'—'}（${c2.originalPalace?.stemBranch||''}）</span>
+      </div>
+    </div>`;
+
+  // 當前大限
+  const ml1 = syn.chart1CurrentDecade;
+  const ml2 = syn.chart2CurrentDecade;
+  document.getElementById('decades').innerHTML = `
+    <div class="decade-badge a">
+      <span class="label">${aName} 當前大限</span>
+      ${ml1 ? ml1.palace + ' ' + ml1.stem + '干　' + ml1.range : '—'}
+    </div>
+    <div class="decade-badge b">
+      <span class="label">${bName} 當前大限</span>
+      ${ml2 ? ml2.palace + ' ' + ml2.stem + '干　' + ml2.range : '—'}
+    </div>`;
+
+  // 四化區塊
+  document.getElementById('a-to-b-birth').innerHTML  = mutRows(syn.chart1BirthYearToChart2);
+  document.getElementById('b-to-a-birth').innerHTML  = mutRows(syn.chart2BirthYearToChart1);
+  document.getElementById('a-to-b-decade').innerHTML = mutRows(syn.chart1CurrentDecadeToChart2);
+  document.getElementById('b-to-a-decade').innerHTML = mutRows(syn.chart2CurrentDecadeToChart1);
+
+  // 共振
+  const res = syn.resonances || [];
+  document.getElementById('resonances').innerHTML = res.length
+    ? res.map(r => `
+        <div class="resonance-item">
+          <div class="resonance-type">${r.type}</div>
+          <div class="resonance-note">${r.note}</div>
+          ${r.direction && r.direction !== '對稱'
+            ? `<div class="resonance-dir">方向：${r.direction}</div>` : ''}
+        </div>`).join('')
+    : '<div class="no-resonance">未偵測到特殊共振結構</div>';
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').style.display  = 'block';
+}
+</script>
+</body>
+</html>
