@@ -1,35 +1,6 @@
-========================================================================
-AETHNOUS Blue Astral Nexus Engine - Custom License
-Copyright (c) 2026 Blue.X. All Rights Reserved.
-========================================================================
+MIT License
 
-This software incorporates both original proprietary code developed by Blue.X 
-and third-party open-source software under the MIT License.
-
-------------------------------------------------------------------------
-1. PROPRIETARY CODE & DATA (All Rights Reserved)
-------------------------------------------------------------------------
-All core astronomical corrections, formula re-calculations, multi-language 
-data matrices (Traditional Chinese, English, Korean), psychological shadow 
-work mapping layers, and UI/UX design components developed in 2026 are the 
-exclusive proprietary and confidential property of Blue.X.
-
-Unauthorized copying, reproduction, modification, distribution, transmission, 
-display, or use of this Software, in whole or in part, is strictly prohibited 
-without the prior written permission of Blue.X.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-IMPLIED. IN NO EVENT SHALL BLUE.X BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER 
-LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
-OF THE SOFTWARE.
-
-------------------------------------------------------------------------
-2. THIRD-PARTY OPEN-SOURCE COMPONENTS (MIT License)
-------------------------------------------------------------------------
-Part of the baseline calendar infrastructure is derived from "iztro", 
-which is licensed under the MIT License terms below:
-
-Copyright (c) 2023 All Contributors
+Copyright (c) 2026 Blue Chiou (bluechiou-icn)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,3 +19,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+This project uses iztro (https://github.com/SylarLong/iztro),
+which is also licensed under the MIT License.
+Copyright (c) 2023 SylarLong and contributors.

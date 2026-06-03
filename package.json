@@ -1,14 +1,18 @@
 {
-  "name": "ziwei-engine",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "blue-astral-nexus-engine",
+  "version": "2.0.0",
+  "description": "Professional Zi Wei Dou Shu (紫微斗數) calculation API engine, built on iztro with Blue's Version extensions.",
+  "main": "chart-api.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["紫微斗數", "ziwei", "purple-star-astrology", "iztro", "astrology"],
+  "author": "Blue Chiou (bluechiou-icn)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bluechiou-icn/Blue_Astral_Nexus_Engine.git"
+  },
   "type": "commonjs",
   "engines": {
     "node": "20.x"
