@@ -416,21 +416,24 @@ function calcSuiqianStar(palaceBranch, yearBranch) {
 //   丑：1,13,25,37,49 ✓  卯/父母：3,15,27,39,51 ✓  子/夫妻：12,24,36,48,60 ✓
 //   → 陰男 = 順行（index 遞增）
 // ✓ 水二局陰男 文墨天機驗算：父母[丑]=1,13,25,37,49 → 1歲小限=丑 → 順行起點=丑
-// config = [順行起點（陰男陽女）, 逆行起點（陽男陰女）]
+// config = [陰男起點（順行）, 陽男陰女起點（逆行）, 陽女起點（逆行）]
+// 方向：陰男=順行；陽男/陰女/陽女=逆行
 const MINOR_LIMIT_START = {
-  '水二局': ['丑', '申'],   // ✓ 陰男文墨天機驗算：父母[丑]=1,13,25,37,49；逆行起點'申' 已確認（ClaudeCode ea6e9a4）
-  '木三局': ['巳', '申'],   // ✓ 陽男逆行起點=申 驗算：1956-10-05陽男交友[申]=age1 確認
-  '金四局': ['丑', '申'],   // ✓ 陰男丑位順行 Blue 確認 + 文墨天機驗算
-  '土五局': ['未', '辰'],   // TODO: 待 Blue 確認
-  '火六局': ['申', '寅'],   // TODO: 待 Blue 確認
+  '水二局': ['丑', '申', '戌'],   // ✓ 陰男文墨天機驗算；陽女=戌逆行（2026-06-05確認）
+  '木三局': ['巳', '申', '戌'],   // ✓ 陽男逆行起點=申 驗算：1956-10-05陽男交友[申]=age1 確認；陽女=戌逆行
+  '金四局': ['丑', '申', '戌'],   // ✓ 陰男丑位順行 Blue 確認 + 文墨天機驗算；陽女=戌逆行
+  '土五局': ['未', '辰', '戌'],   // TODO: 陰男/陽男待 Blue 確認；陽女=戌逆行（2026-06-05確認）
+  '火六局': ['申', '寅', '戌'],   // TODO: 陰男/陽男待 Blue 確認；陽女=戌逆行（2026-06-05確認）
 };
 
 function calcFlowYearAges(palaceBranch, fiveElements, yinYang, maxAge = 110) {
   const config = MINOR_LIMIT_START[fiveElements];
   if (!config) return null;
-  // 陰男陽女 = 順行（index 遞增）; 陽男陰女 = 逆行（index 遞減）
-  const isForward  = yinYang === '陰男' || yinYang === '陽女';
-  const startBranch = isForward ? config[0] : config[1];
+  // 陰男 = 順行（index 遞增）; 陽男/陰女/陽女 = 逆行（index 遞減）
+  const isForward  = yinYang === '陰男';
+  const startBranch = yinYang === '陽女' ? config[2]
+                    : isForward           ? config[0]
+                    :                       config[1];
   const startIdx   = BRANCHES_ORDERED.indexOf(startBranch);
   const branchIdx  = BRANCHES_ORDERED.indexOf(palaceBranch);
   if (startIdx === -1 || branchIdx === -1) return null;
