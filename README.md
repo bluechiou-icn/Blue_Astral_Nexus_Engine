@@ -255,6 +255,20 @@ npx vercel --prod    # Deploy to Vercel
 git push origin main # Auto-deploys via Vercel GitHub integration
 ```
 
+## Acknowledgments
+
+This project builds on [iztro](https://github.com/SylarLong/iztro)
+by SylarLong and contributors, which provides the foundational
+solar/lunar date conversion and basic palace structure calculation.
+iztro is licensed under MIT and made this project possible to start.
+
+The calculation corrections, analytical algorithms, and the complete
+interpretive layer in this repository were developed independently
+through 15+ years of professional divination practice combined with
+systematic verification against authoritative reference charts.
+Several errors in iztro's default data tables have been identified
+and corrected in this project (see LICENSE for details).
+
 ## License
 
 This project is licensed under the **MIT License** — see [LICENSE](./LICENSE)

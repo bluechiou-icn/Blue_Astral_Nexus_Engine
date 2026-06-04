@@ -153,6 +153,19 @@ to one of humanity's most sophisticated self-knowledge systems.
 
 ---
 
+### Corrections to iztro Defaults
+
+| Component | iztro Default | Blue Engine (BlueVersion) |
+|-----------|--------------|--------------------------|
+| 庚-stem 四化 | 太陰科/天同忌 | **天同科/天相忌** (corrected) |
+| Minor limit start | Placeholder/unverified | Verified across all 5 elemental cycles |
+| Brightness tiers | 6-tier | **8-tier** (不利/不 added) |
+| Auxiliary star brightness | null | Lookup table for 8 key stars |
+| 八字起運 pre-1980 | Bug (simplified key) | **Fixed** |
+| Flying transformations | Not implemented | Full bidirectional system |
+| Conflict detection | Not implemented | v2 with severity + sources |
+| Synastry analysis | Not implemented | Bidirectional cross-chart |
+
 ### Technical Foundation
 
 | Component | Status |
