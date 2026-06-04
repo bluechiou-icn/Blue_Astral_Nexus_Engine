@@ -1,9 +1,28 @@
 # Blue Astral Nexus Engine
 
-A professional Zi Wei Dou Shu (紫微斗數 / Purple Star Astrology) calculation
-API engine, extending the iztro library with advanced analytical capabilities.
+A professional Zi Wei Dou Shu (紫微斗數 / Purple Star Astrology) calculation API engine.
+Extending the `iztro` library with advanced analytical capabilities
+true solar time correction, and bidirectional synastry calculations.
 
 **Live demo:** https://blue-astral-nexus-engine.vercel.app
+
+## Core Capabilities
+
+This engine wraps and significantly extends the foundational calculations of `iztro`. Key enhancements include:
+- **Corrected Calculation Rules:** Fixes for traditional Zhan Yan school standards (e.g., 庚干四化).
+- **Advanced Astrological Systems:** Bidirectional flying transformations (飛星).
+- Fortune-Restriction conflict detection (祿忌交戰), and True Solar Time correction (真太陽時).
+- **Multi-Chart Analysis:** Synastry (合盤) and flow year (流年) engines.
+
+👉 **For a complete list of algorithm corrections and original domain contributions
+Please see [ORIGINAL_CONTRIBUTIONS.md](./ORIGINAL_CONTRIBUTIONS.md).**
+
+## Stack
+
+- Node.js 20.x + Vercel Serverless Functions
+- [iztro](https://github.com/SylarLong/iztro) ^2.5.8 (MIT)
+- [@resvg/resvg-js](https://github.com/yisibl/resvg-js) for chart image rendering
+- [lunar-typescript](https://github.com/6tail/lunar-typescript) (transitive) for 24-節氣 calculation
 
 ## Quick Reference
 
@@ -20,31 +39,6 @@ GET /api/synastry?date1=...&time1=...&gender1=...&date2=...&time2=...&gender2=..
 - [@resvg/resvg-js](https://github.com/yisibl/resvg-js) for chart image rendering
 - [lunar-typescript](https://github.com/6tail/lunar-typescript) (transitive) for 24-節氣 calculation
 
-## What this engine does
-
-Built on top of [iztro](https://github.com/SylarLong/iztro), this engine adds:
-
-- **Blue's Version 四化表** — Corrected four-transformations table based on
-  traditional Zhan Yan school standards (e.g. 庚干: 太陽祿/武曲權/天同科/天相忌)
-- **8-tier brightness system** — Extended from iztro's 6-tier to 廟/旺/得/利/平/不利/陷/不
-- **Bidirectional palace flying transformations** — Full outgoing and incoming
-  mutation tracking for all 12 palaces
-- **Fortune-Restriction conflict detection v2** — Includes palace-stem flying
-  sources, severity classification (critical/high/medium)
-- **Triple-stem overlap detection** — Birth year stem / Origin palace stem /
-  Decade stem convergence alert
-- **True solar time correction** — 30-city longitude database, auto timeIndex
-  recalculation, crossed-hour warning
-- **Eight Pillars start calculation** — 八字起運 with simplified/traditional
-  Chinese key bug fix for pre-1980 dates
-- **斗君 calculation** — Year bucket start position
-- **Classical formation detection** — Pattern matching with confidence scores
-- **Flow year analysis** — `/api/flow` endpoint with minor limit palace,
-  flow year four transformations, conflict detection
-- **Synastry analysis** — `/api/synastry` endpoint with bidirectional
-  cross-chart flying transformations and resonance detection
-- **Empty palace borrowing** — Correct opposite-palace star inheritance
-- **Chart visualization** — SVG/PNG natal chart generation
 
 ## API Endpoints
 
