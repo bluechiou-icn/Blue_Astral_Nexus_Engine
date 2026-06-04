@@ -123,30 +123,55 @@ function detectResonances(chart1, chart2) {
     });
   }
 
-  // ── 田宅雙向化祿（雙向對稱）──────────────────
+  // ── 田宅四化雙向偵測（祿+權+科+忌各自雙向）─────────────
   function starInPalace(palace, star) {
     if (!palace || !star) return false;
     return palace.majorStars.some(s => s.name === star) ||
            palace.minorStars.some(s => s.name === star);
   }
 
-  const lukStar1 = stem1 ? BLUE_SI_HUA_TABLE[stem1]?.[0] : null;
-  const lukStar2 = stem2 ? BLUE_SI_HUA_TABLE[stem2]?.[0] : null;
+  const MUTAGEN_LABELS = ['化祿','化權','化科','化忌'];
 
-  if (lukStar1 && tian2 && starInPalace(tian2, lukStar1)) {
-    resonances.push({
-      type: 'A生年祿入B田宅',
-      direction: 'A→B',
-      star: lukStar1,
-      note: `A生年干${stem1}化祿（${lukStar1}）→ B田宅宮，A對B居所財庫有化祿`,
-    });
+  for (let mi = 0; mi < 4; mi++) {
+    const star1 = stem1 ? BLUE_SI_HUA_TABLE[stem1]?.[mi] : null;
+    const star2 = stem2 ? BLUE_SI_HUA_TABLE[stem2]?.[mi] : null;
+    const label = MUTAGEN_LABELS[mi];
+
+    // A 的四化星落 B 的田宅
+    if (star1 && tian2 && starInPalace(tian2, star1)) {
+      resonances.push({
+        type: `A生年${label}入B田宅`,
+        direction: 'A→B',
+        star: star1,
+        note: `A生年干${stem1}${label}（${star1}）→ B田宅宮`,
+      });
+    }
+
+    // B 的四化星落 A 的田宅
+    if (star2 && tian1 && starInPalace(tian1, star2)) {
+      resonances.push({
+        type: `B生年${label}入A田宅`,
+        direction: 'B→A',
+        star: star2,
+        note: `B生年干${stem2}${label}（${star2}）→ A田宅宮`,
+      });
+    }
   }
-  if (lukStar2 && tian1 && starInPalace(tian1, lukStar2)) {
+
+  // 田宅雙向祿+權格：A→B 且 B→A 各有祿或權時，合計為格局
+  const aToBLukOrKuen = resonances.filter(r =>
+    r.direction === 'A→B' && r.type.includes('田宅') &&
+    (r.type.includes('化祿') || r.type.includes('化權'))
+  );
+  const bToALukOrKuen = resonances.filter(r =>
+    r.direction === 'B→A' && r.type.includes('田宅') &&
+    (r.type.includes('化祿') || r.type.includes('化權'))
+  );
+  if (aToBLukOrKuen.length > 0 && bToALukOrKuen.length > 0) {
     resonances.push({
-      type: 'B生年祿入A田宅',
-      direction: 'B→A',
-      star: lukStar2,
-      note: `B生年干${stem2}化祿（${lukStar2}）→ A田宅宮`,
+      type: '田宅祿權雙向格',
+      direction: '對稱',
+      note: `雙方互將祿或權化入對方田宅，田宅能量高度交織`,
     });
   }
 

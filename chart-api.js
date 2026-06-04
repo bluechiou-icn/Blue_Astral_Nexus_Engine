@@ -670,6 +670,16 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
   const _origPalName = originalPalace ? modernizePalaceName(toTrad(originalPalace.name)) : null;
   const classicalFormations = detectClassicalFormations(palaces, _bodyPalName, _origPalName, yearMutagens);
 
+  // ── 祿忌交戰靜態偵測（生年四化 vs 宮干飛化）──────────────
+  const staticLuJiConflicts = detectLuJiConflict({
+    palaces,
+    yearMutagens,
+    currentMajorLimit: null,
+    flowYearMutagens:  [],
+    birthYearStem:     yearStem,
+    flowYearStem:      null,
+  });
+
   // ── 組合最終輸出 ───────────────────────────────────────────
   const result = {
     // ── meta（真太陽時校正 + 跨時辰警示）─────────────────
@@ -732,12 +742,83 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
     classicalFormations,
     baziQiyun: calcBaziQiyun(solarDate, birthTime, gender, yearStem),
     yearMutagens,
+    luJiConflicts:    staticLuJiConflicts,
+    hasLuJiConflict:  staticLuJiConflicts.length > 0,
     palaces,
     majorLimits,
   };
 
   // deepToTrad 只掃字串欄位，數字/null/boolean 直接通過
   return deepToTrad(result);
+}
+
+// ── 祿忌交戰偵測（v2 Blue's Version）────────────────────────
+function detectLuJiConflict({
+  palaces,
+  yearMutagens = [],
+  currentMajorLimit = null,
+  flowYearMutagens = [],
+  birthYearStem = null,
+  flowYearStem = null,
+}) {
+  const conflicts = [];
+
+  for (const palace of palaces) {
+    const starMutMap = {};
+    const ensure = (star) => {
+      if (!starMutMap[star]) starMutMap[star] = { lu: [], ji: [] };
+      return starMutMap[star];
+    };
+
+    // 1. 生年四化
+    for (const ym of yearMutagens) {
+      if (ym.palace !== palace.name) continue;
+      const slot = ensure(ym.star);
+      if (ym.type === '化祿') slot.lu.push({ src: '生年', stem: birthYearStem });
+      if (ym.type === '化忌') slot.ji.push({ src: '生年', stem: birthYearStem });
+    }
+
+    // 2. 大限四化
+    for (const mut of (currentMajorLimit?.mutagens || [])) {
+      if (mut.targetPalace !== palace.name) continue;
+      const slot = ensure(mut.star);
+      if (mut.type === '化祿') slot.lu.push({ src: '大限', stem: currentMajorLimit.stem });
+      if (mut.type === '化忌') slot.ji.push({ src: '大限', stem: currentMajorLimit.stem });
+    }
+
+    // 3. 流年四化
+    for (const fm of flowYearMutagens) {
+      if (fm.targetPalace !== palace.name) continue;
+      const slot = ensure(fm.star);
+      if (fm.type === '化祿') slot.lu.push({ src: '流年', stem: flowYearStem });
+      if (fm.type === '化忌') slot.ji.push({ src: '流年', stem: flowYearStem });
+    }
+
+    // 4. 宮干飛化（incoming mutations）
+    for (const inc of (palace.palaceMutagens?.incoming || [])) {
+      const slot = ensure(inc.star);
+      if (inc.type === '化祿') slot.lu.push({ src: inc.fromPalace, stem: inc.fromStem });
+      if (inc.type === '化忌') slot.ji.push({ src: inc.fromPalace, stem: inc.fromStem });
+    }
+
+    // 5. 偵測衝突
+    for (const [star, { lu, ji }] of Object.entries(starMutMap)) {
+      if (lu.length > 0 && ji.length > 0) {
+        const total = lu.length + ji.length;
+        const severity = total >= 4 ? 'critical' : total >= 3 ? 'high' : 'medium';
+        conflicts.push({
+          palace:    palace.name,
+          star,
+          luSources: lu,
+          jiSources: ji,
+          severity,
+          note:      `${star}在${palace.name}：${lu.length}祿 vs ${ji.length}忌`,
+        });
+      }
+    }
+  }
+
+  return conflicts;
 }
 
 // ── 格局檢測（Classical Formation Detection）────────────────
