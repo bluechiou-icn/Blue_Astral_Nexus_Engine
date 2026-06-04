@@ -1,7 +1,7 @@
 # Research Statement
 ## Blue Astral Nexus Engine — Bridging Eastern Divination and Modern Psychology
 
-**Maintainer:** Blue Chiou (bluechiou-icn)
+**Maintainer:** Blue.X (bluechiou-icn)
 **Project:** https://github.com/bluechiou-icn/Blue_Astral_Nexus_Engine
 **Live Engine:** https://blue-astral-nexus-engine.vercel.app
 
@@ -29,7 +29,7 @@ computational humanities.
 
 **This engine sits at the intersection of three traditions:**
 
-#### 1. Zi Wei Dou Shu (紫微斗數) — Purple Star Astrology
+#### 1. Zi Wei Dou Shu (紫微斗數) : Purple Star Astrology
 
 Zi Wei Dou Shu is a millennium-old Chinese astrological system that maps
 an individual's destiny through the precise placement of stars across twelve
@@ -43,23 +43,27 @@ practitioners use to assess life timing, relational dynamics, and psychological
 tendencies with remarkable granularity.
 
 The engine's core computation layer implements:
-- **Four-transformations (四化)** across all 10 heavenly stems, corrected to
-  the Blue's Version standard where existing open-source implementations
-  contain documented errors (notably the 庚-stem transformation: 天同科/天相忌,
-  not the commonly miscalculated variant)
-- **Bidirectional palace flying transformations** — tracking how each palace's
-  heavenly stem activates star transformations throughout the entire chart
-- **Fortune-Restriction conflict detection (祿忌交戰)** with severity
-  classification, including palace-stem flying sources
-- **True solar time correction** across 30 cities in Asia, North America, and
-  Europe, automatically adjusting the time index when the correction crosses
-  a Chinese double-hour boundary
-- **Synastry analysis (合盤)** — bidirectional cross-chart flying transformations
-  for relational and compatibility readings
+**Four-transformations (四化)** : across all 10 heavenly stems, corrected to
+the Blue's Version standard where existing open-source implementations
+contain documented errors (notably the 庚-stem transformation: 天同科/天相忌,
+not the commonly miscalculated variant).
+
+**Bidirectional palace flying transformations** : tracking how each palace's
+heavenly stem activates star transformations throughout the entire chart.
+  
+**Fortune-Restriction conflict detection (祿忌交戰)** with severity
+classification, including palace-stem flying sources.
+
+**True solar time correction** : across 30 cities in Asia, North America, and
+Europe, automatically adjusting the time index when the correction crosses a
+Chinese double-hour boundary.
+
+**Synastry analysis (合盤)** : bidirectional cross-chart flying transformations
+for relational and compatibility readings.
 
 #### 2. I Ching (易經) — The Book of Changes
 
-The I Ching provides the foundational cosmological framework underlying all
+The "I Ching" provides the foundational cosmological framework underlying all
 Chinese metaphysical systems: the dynamic interplay of yin and yang, the
 continuous transformation of hexagrammatic states, and the principle that
 present conditions contain the seeds of future movement.
@@ -180,7 +184,7 @@ to one of humanity's most sophisticated self-knowledge systems.
 | Eight Pillars start calculation (八字起運) | ✅ Production |
 | Classical formation detection | ✅ Production |
 | I Ching integration layer | 🔄 Planned |
-| Multi-language interface (ZH/EN/KO) | 🔄 In Progress |
+| Multi-language interface (ZH/EN/KO...) | 🔄 In Progress |
 
 **Stack:** Node.js 20, Vercel Serverless, iztro ^2.5.8 (MIT)
 
