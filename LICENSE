@@ -25,39 +25,3 @@ SOFTWARE.
 This project uses iztro (https://github.com/SylarLong/iztro),
 which is also licensed under the MIT License.
 Copyright (c) 2023 SylarLong and contributors.
-
----
-
-ORIGINAL CONTRIBUTIONS BY BLUE ENGINE
-
-The following components are original research and implementation
-by Blue Chiou, developed independently of the iztro library:
-
-CALCULATION CORRECTIONS:
-- Complete four-transformations table (BlueVersion), correcting
-  documented errors in iztro defaults across all 10 heavenly stems
-  (critical correction: 庚-stem 天同科/天相忌, not iztro's default)
-- Minor limit (小限) algorithm with verified starting positions
-  and directional logic for all five elemental cycles (金/木/水/土/火)
-  across yin/yang male/female configurations — replacing iztro's
-  placeholder values and unverified starting points
-- Eight Pillars start calculation (八字起運) with pre-1980 date
-  bug fix for iztro's simplified/traditional Chinese key mismatch
-- 8-tier brightness system (廟旺得利平不利陷不), extending iztro's
-  6-tier system with verified auxiliary star brightness tables
-
-ANALYTICAL SYSTEMS (not present in iztro):
-- Bidirectional palace flying transformations (飛入/飛出)
-- Self-transformation detection (自化) with source tracking
-- Fortune-Restriction conflict detection v2 (祿忌交戰)
-  with severity classification and palace-stem flying sources
-- Triple-stem overlap detection (三干疊加)
-- True solar time correction (30-city longitude database)
-- Synastry analysis engine (/api/synastry)
-- Flow year analysis engine (/api/flow)
-- Classical formation detection (格局偵測)
-- 斗君 calculation
-
-These contributions represent the primary analytical value
-of this repository. They are released under the same MIT
-License as the project as a whole.
