@@ -635,7 +635,7 @@ function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, c
       ctx.lineWidth = 1;
       ctx.strokeRect(bx + 0.5, y + 0.5, bw - 1, bh - 1);
       ctx.restore();
-      ctx.fillStyle = '#7a7a7a';
+      ctx.fillStyle = '#9a9a9a';  // 與借星名同色
     } else {
       ctx.fillStyle = palette.bg;
       ctx.fillRect(bx, y, bw, bh);
