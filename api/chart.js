@@ -3,6 +3,7 @@
 "use strict";
 
 const { generateChart } = require("../chart-api.js");
+const { validateBirthData } = require("../lib/validate.js");
 
 /**
  * Vercel Serverless Function
@@ -13,16 +14,8 @@ module.exports = function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-// ── API Key 驗證 ───────────────────────────────────────────
-  // const secret = process.env.API_SECRET;
-  // const provided = req.headers["x-api-key"];
-  // if (!secret || !provided || provided !== secret) {
-  //   return res.status(401).json({ error: "Unauthorized" });
-  // }
-
   const { date, time, gender, city, longitude } = req.query;
 
-  // ── 驗證必填參數 ──────────────────────────────────────────
   if (!date || !time || !gender) {
     return res.status(400).json({
       error: "缺少必填參數",
@@ -31,23 +24,13 @@ module.exports = function handler(req, res) {
     });
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return res.status(400).json({ error: "date 格式錯誤，應為 YYYY-MM-DD" });
-  }
-
-  if (!/^\d{2}:\d{2}$/.test(time)) {
-    return res.status(400).json({ error: "time 格式錯誤，應為 HH:MM" });
-  }
-
-  if (!["男", "女"].includes(gender)) {
-    return res.status(400).json({ error: "gender 只接受 男 或 女" });
-  }
+  const vErr = validateBirthData({ date, time, gender, city, longitude });
+  if (vErr) return res.status(400).json({ error: vErr });
 
   try {
     const lon = longitude ? parseFloat(longitude) : null;
     const chart = generateChart(date, time, gender, city || null, lon);
 
-    // ── Step 6: debug log for baziQiyun（部署後可從 Vercel Function Logs 觀察） ──
     if (process.env.DEBUG_QIYUN === "1") {
       console.log("baziQiyun raw:", JSON.stringify(chart?.baziQiyun || null));
     }
@@ -56,6 +39,7 @@ module.exports = function handler(req, res) {
     res.setHeader("Surrogate-Control", "no-store");
     return res.status(200).json(chart);
   } catch (err) {
-    return res.status(500).json({ error: "命盤計算失敗", message: err.message });
+    console.error("[/api/chart] error:", err);
+    return res.status(500).json({ error: "命盤計算失敗" });
   }
 };

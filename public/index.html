@@ -442,6 +442,13 @@ const MUTAGEN_KO = { '化祿':'화록','化權':'화권','化科':'화과','化�
 const BRI_EN = { '廟':'Dominant','旺':'Flourishing','得':'Comfortable','利':'Favorable','平':'Neutral','不利':'Unfavorable','陷':'Fallen','不':'Depleted' };
 const BRI_KO = { '廟':'묘','旺':'왕','得':'득','利':'이','平':'평','不利':'불리','陷':'함','不':'불' };
 
+// HTML escape — 防止 user-supplied 欄位 (name / city) 在 innerHTML 注入時觸發 XSS
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
 function t(key)        { return I18N[lang]?.[key] ?? I18N['zh'][key] ?? key; }
 function palName(zh)   { if (lang==='en') return PALACE_EN[zh]??zh; if (lang==='ko') return PALACE_KO[zh]??zh; return zh; }
 function muLabel(m)    { if (lang==='en') return MUTAGEN_EN[m]??m;  if (lang==='ko') return MUTAGEN_KO[m]??m;  return m; }
@@ -562,13 +569,13 @@ function renderResult(d) {
   // 基本資訊
   const relKey = 'rel_' + (clientData.relation || 'undisclosed');
   document.getElementById('basic-info').innerHTML = `
-    <div class="info-item"><div class="info-label">${t('info_name')}</div><div class="info-value">${clientData.name || (lang==='en'?'(not filled)':'（未填）')}</div></div>
-    <div class="info-item"><div class="info-label">${t('info_wuxing')}</div><div class="info-value gold">${d.fiveElementsClass}</div></div>
-    <div class="info-item"><div class="info-label">${t('info_lunar')}</div><div class="info-value">${d.lunarDate}</div></div>
-    <div class="info-item"><div class="info-label">${t('info_shichen')}</div><div class="info-value">${d.shichen}</div></div>
-    <div class="info-item"><div class="info-label">${t('info_body')}</div><div class="info-value">${palName(d.bodyPalace?.name ?? '—')}（${d.bodyPalace?.stemBranch ?? ''}）</div></div>
-    <div class="info-item"><div class="info-label">${t('info_origin')}</div><div class="info-value">${palName(d.originalPalace?.name ?? '—')}（${d.originalPalace?.stemBranch ?? ''}）</div></div>
-    <div class="info-item"><div class="info-label">${t('info_city')}</div><div class="info-value">${clientData.city || '—'}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_name')}</div><div class="info-value">${escapeHtml(clientData.name) || (lang==='en'?'(not filled)':'（未填）')}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_wuxing')}</div><div class="info-value gold">${escapeHtml(d.fiveElementsClass)}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_lunar')}</div><div class="info-value">${escapeHtml(d.lunarDate)}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_shichen')}</div><div class="info-value">${escapeHtml(d.shichen)}</div></div>
+    <div class="info-item"><div class="info-label">${t('info_body')}</div><div class="info-value">${escapeHtml(palName(d.bodyPalace?.name ?? '—'))}（${escapeHtml(d.bodyPalace?.stemBranch ?? '')}）</div></div>
+    <div class="info-item"><div class="info-label">${t('info_origin')}</div><div class="info-value">${escapeHtml(palName(d.originalPalace?.name ?? '—'))}（${escapeHtml(d.originalPalace?.stemBranch ?? '')}）</div></div>
+    <div class="info-item"><div class="info-label">${t('info_city')}</div><div class="info-value">${escapeHtml(clientData.city) || '—'}</div></div>
     <div class="info-item"><div class="info-label">真太陽時</div><div class="info-value">${solarTimeDisplay}</div></div>
     <div class="info-item"><div class="info-label">${t('info_relation')}</div><div class="info-value">${t(relKey)}</div></div>
   `;

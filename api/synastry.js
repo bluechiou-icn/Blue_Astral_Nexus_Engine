@@ -3,6 +3,7 @@
 "use strict";
 
 const { generateChart } = require("../chart-api.js");
+const { validateBirthData } = require("../lib/validate.js");
 
 const MUTAGEN_FULL = ['化祿','化權','化科','化忌'];
 
@@ -214,6 +215,11 @@ module.exports = function handler(req, res) {
     });
   }
 
+  const e1 = validateBirthData({ date: date1, time: time1, gender: gender1, city: city1 }, 'A');
+  if (e1) return res.status(400).json({ error: e1 });
+  const e2 = validateBirthData({ date: date2, time: time2, gender: gender2, city: city2 }, 'B');
+  if (e2) return res.status(400).json({ error: e2 });
+
   try {
     const chart1 = generateChart(date1, time1, gender1, city1 || null);
     const chart2 = generateChart(date2, time2, gender2, city2 || null);
@@ -279,6 +285,7 @@ module.exports = function handler(req, res) {
     });
 
   } catch (err) {
-    return res.status(500).json({ error: '合盤分析失敗', message: err.message });
+    console.error('[/api/synastry] error:', err);
+    return res.status(500).json({ error: '合盤分析失敗' });
   }
 };

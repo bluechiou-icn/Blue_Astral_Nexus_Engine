@@ -3,6 +3,7 @@
 "use strict";
 
 const { generateChart } = require("../chart-api.js");
+const { validateBirthData, validateQueryYear } = require("../lib/validate.js");
 
 const HEAVENLY_STEMS    = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const EARTHLY_BRANCHES  = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
@@ -242,10 +243,11 @@ module.exports = function handler(req, res) {
     });
   }
 
-  const queryYear = parseInt(year);
-  if (isNaN(queryYear) || queryYear < 1900 || queryYear > 2100) {
-    return res.status(400).json({ error: 'year 須為 1900–2100 整數' });
-  }
+  const bErr = validateBirthData({ date, time, gender });
+  if (bErr) return res.status(400).json({ error: bErr });
+  const yErr = validateQueryYear(year);
+  if (yErr) return res.status(400).json({ error: yErr });
+  const queryYear = parseInt(year, 10);
 
   try {
     const chart      = generateChart(date, time, gender);
@@ -349,6 +351,7 @@ module.exports = function handler(req, res) {
     });
 
   } catch (err) {
-    return res.status(500).json({ error: '流年分析失敗', message: err.message });
+    console.error('[/api/flow] error:', err);
+    return res.status(500).json({ error: '流年分析失敗' });
   }
 };
