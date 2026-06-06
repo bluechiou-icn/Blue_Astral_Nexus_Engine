@@ -628,6 +628,78 @@ function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, c
   ctx.textAlign = 'left';
 }
 
+// 流年吉凶星顏色：流羊/流陀為凶星(紅)，其他為輔星(紫)/小星(淺藍)
+const FLOW_TRANS_COLOR = {
+  '流祿': '#0a7f5f',   // 祿存色 深綠
+  '流羊': CLR_KILL,
+  '流陀': CLR_KILL,
+  '流馬': '#7a5230',   // 棕
+  '流昌': CLR_AUX,
+  '流曲': CLR_AUX,
+  '流魁': '#b8860b',   // 暗金
+  '流鉞': '#b8860b',
+};
+
+// 在主星下方畫一排：大限四化 (大祿/大權/大科/大忌 + 受影響星名首字)，再接流年吉凶星
+// 字體 = STAR_FS_BASE * 0.5 = 14px
+function drawTransientRow(ctx, cx, cy, palace, decadeMu, flowTrans, yTop, rowH) {
+  const labels = [];
+  // 大限四化（落在這個宮位的本宮星）
+  for (const m of decadeMu) {
+    if (!m || !m.star) continue;
+    // 只在受影響星所在宮位顯示
+    const inThisPalace =
+      (palace.majorStars  || []).some(s => s.name === m.star) ||
+      (palace.minorStars  || []).some(s => s.name === m.star) ||
+      (palace.borrowedStars || []).includes(m.star);
+    if (!inThisPalace) continue;
+    const key = MU_KEY[m.type]; if (!key) continue;
+    labels.push({
+      text:  '大' + key + m.star.charAt(0),
+      color: '#fff',
+      bg:    MU_BY_SRC.decade.bg,
+    });
+  }
+  // 流年吉凶星（依宮位地支）
+  for (const t of flowTrans) {
+    labels.push({ text: t, color: FLOW_TRANS_COLOR[t] || '#444', bg: null });
+  }
+  if (!labels.length) return;
+
+  let FS = Math.round(STAR_FS_BASE * 0.5);  // 14px = 主星 50%
+  const padX = 3, gap = 4;
+
+  // 量測寬度；超過則縮字
+  ctx.font = `bold ${FS}px ${FONT}`;
+  let widths = labels.map(l => ctx.measureText(l.text).width + (l.bg ? padX*2 : 0));
+  let total  = widths.reduce((a,b) => a+b, 0) + gap * (labels.length - 1);
+  const maxW = CELL - 2*PAD;
+  if (total > maxW) {
+    FS = Math.max(10, Math.floor(FS * maxW / total));
+    ctx.font = `bold ${FS}px ${FONT}`;
+    widths = labels.map(l => ctx.measureText(l.text).width + (l.bg ? padX*2 : 0));
+    total  = widths.reduce((a,b) => a+b, 0) + gap * (labels.length - 1);
+  }
+
+  let x = cx + (CELL - total) / 2;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i < labels.length; i++) {
+    const l = labels[i];
+    if (l.bg) {
+      ctx.fillStyle = l.bg;
+      ctx.fillRect(x, yTop, widths[i], FS + 2);
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.text, x + padX, yTop + 1);
+    } else {
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.text, x, yTop + 1);
+    }
+    x += widths[i] + gap;
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
 function drawPalace(ctx, palace, row, col, opts) {
   const { muMap, decadeMing, flowMing, minorLimPalace,
           origPalace, bodyPalace, birthYear,
@@ -730,7 +802,9 @@ function drawPalace(ctx, palace, row, col, opts) {
 
   // ── STARS (vertical columns, evenly distributed) ──
   const starsTop = Math.max(topY + 4, cy + (hasFlow ? 36 : 16));
-  const botStarLim = cy + CELL - BOT - 4;
+  // Reserve a thin strip above bottom info area for 大限四化 / 流年吉凶星 row
+  const TRANSIENT_ROW_H = 18;
+  const botStarLim = cy + CELL - BOT - 4 - TRANSIENT_ROW_H;
   const palMu = muMap[palace.name] || [];
 
   // Reserve right side for stem/branch column (~16px)
@@ -818,6 +892,16 @@ function drawPalace(ctx, palace, row, col, opts) {
     const mu = palMu.filter(m => m.star === star.name);
     drawStarColumn(ctx, centerX, starsTop, botStarLim, star.name, star.brightness, mu, star.color, star.isMajor, FS, star.isBorrowed);
   }
+
+  // ── 大限四化 + 流年吉凶星（橫向一排，字體 = 主星 50%）──
+  drawTransientRow(
+    ctx, cx, cy,
+    palace,
+    opts.decadeMu || [],
+    (opts.flowTransByBranch || {})[palace.branch] || [],
+    botStarLim + 2,
+    TRANSIENT_ROW_H,
+  );
 
   // ── BOTTOM 三層資訊 ──
   // Layer 1（最上）: 該宮位對應的流年「2026年／丙午年」 深灰
@@ -1122,6 +1206,8 @@ function renderChartTo(canvas, fd) {
   if (!d) return;
 
   const muMap      = buildMuMap(d.yearMutagens, fd?.currentMajorLimit?.mutagens, fd?.flowYearMutagens);
+  const flowTransByBranch = fd?.flowYearTransientsByBranch || {};
+  const decadeMu   = fd?.currentMajorLimit?.mutagens || [];
   const decadeMing = fd?.currentMajorLimit?.palace       || null;
   const flowMing   = fd?.flowYearLifePalace?.name        || null;
   const minorLimPalace = fd?.minorLimitPalace?.name      || null;
@@ -1140,6 +1226,7 @@ function renderChartTo(canvas, fd) {
       muMap, decadeMing, flowMing, minorLimPalace,
       origPalace, bodyPalace, birthYear,
       flowYearVal, flowYearBranch, flowYearGZ,
+      flowTransByBranch, decadeMu,
     });
   }
   drawCenterTo(ctx, fd);

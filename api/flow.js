@@ -41,6 +41,53 @@ function chineseAge(birthDate, queryYear) {
   return queryYear - birthGanZhiYear(birthDate) + 1;
 }
 
+// ── 流年吉凶星（流祿/流羊/流陀/流馬/流昌/流曲/流魁/流鉞）─────────
+// 表格依照標準紫微（中州派）口訣
+const LU_BY_STEM    = { '甲':'寅','乙':'卯','丙':'巳','丁':'午','戊':'巳','己':'午','庚':'申','辛':'酉','壬':'亥','癸':'子' };
+const CHANG_BY_STEM = { '甲':'巳','乙':'午','丙':'申','丁':'酉','戊':'申','己':'酉','庚':'亥','辛':'子','壬':'寅','癸':'卯' };
+const QU_BY_STEM    = { '甲':'酉','乙':'申','丙':'午','丁':'巳','戊':'午','己':'巳','庚':'辰','辛':'卯','壬':'寅','癸':'丑' };
+// 甲戊庚 魁丑鉞未；乙己 魁子鉞申；丙丁 魁亥鉞酉；壬癸 魁卯鉞巳；辛 魁午鉞寅
+const KUI_BY_STEM   = { '甲':'丑','乙':'子','丙':'亥','丁':'亥','戊':'丑','己':'子','庚':'丑','辛':'午','壬':'卯','癸':'卯' };
+const YUE_BY_STEM   = { '甲':'未','乙':'申','丙':'酉','丁':'酉','戊':'未','己':'申','庚':'未','辛':'寅','壬':'巳','癸':'巳' };
+// 三合天馬：寅午戌→申、申子辰→寅、巳酉丑→亥、亥卯未→巳
+const MA_BY_BRANCH  = {
+  '寅':'申','午':'申','戌':'申',
+  '申':'寅','子':'寅','辰':'寅',
+  '巳':'亥','酉':'亥','丑':'亥',
+  '亥':'巳','卯':'巳','未':'巳',
+};
+const BRANCH_ORDER = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+function shiftBranch(branch, n) {
+  const i = BRANCH_ORDER.indexOf(branch);
+  if (i < 0) return null;
+  return BRANCH_ORDER[(i + n + 12) % 12];
+}
+
+function getFlowYearTransients(flowStem, flowBranch) {
+  const lu = LU_BY_STEM[flowStem];
+  return {
+    '流祿': lu,
+    '流羊': shiftBranch(lu, +1),  // 祿存後一位
+    '流陀': shiftBranch(lu, -1),  // 祿存前一位
+    '流馬': MA_BY_BRANCH[flowBranch] || null,
+    '流昌': CHANG_BY_STEM[flowStem],
+    '流曲': QU_BY_STEM[flowStem],
+    '流魁': KUI_BY_STEM[flowStem],
+    '流鉞': YUE_BY_STEM[flowStem],
+  };
+}
+
+// 反查：每個地支上有哪些流年吉凶星
+function getFlowTransientsByBranch(flowStem, flowBranch) {
+  const t = getFlowYearTransients(flowStem, flowBranch);
+  const map = {};
+  for (const [name, br] of Object.entries(t)) {
+    if (!br) continue;
+    (map[br] = map[br] || []).push(name);
+  }
+  return map;
+}
+
 function getFlowYearMutagens(yearStem, palaces) {
   const stars = BLUE_SI_HUA_TABLE[yearStem] || [];
   return MUTAGEN_FULL.map((type, i) => {
@@ -208,6 +255,8 @@ module.exports = function handler(req, res) {
     const flowBranch = getYearBranch(queryYear);
 
     const flowYearMutagens  = getFlowYearMutagens(flowStem, chart.palaces);
+    const flowYearTransients         = getFlowYearTransients(flowStem, flowBranch);
+    const flowYearTransientsByBranch = getFlowTransientsByBranch(flowStem, flowBranch);
     const currentMajorLimit = getCurrentMajorLimit(chart.majorLimits, queryYear);
     const minorLimitPalace  = getMinorLimitPalace(chart.palaces, age);
 
@@ -237,6 +286,10 @@ module.exports = function handler(req, res) {
         ganZhi:      flowStem + flowBranch,
         chineseAge:  age,
       },
+
+      // 流年吉凶星：流祿/流羊/流陀/流馬/流昌/流曲/流魁/流鉞
+      flowYearTransients,             // { 流祿: '巳', 流羊: '午', ... }
+      flowYearTransientsByBranch,     // { '巳': ['流祿'], '午': ['流羊'], ... }
 
       // 占驗派流年命宮（Blue's Version 算法覆寫）
       flowYearLifePalace: flowLifePalace ? {
