@@ -644,23 +644,7 @@ const FLOW_TRANS_COLOR = {
 // 字體 = STAR_FS_BASE * 0.5 = 14px
 function drawTransientRow(ctx, cx, cy, palace, decadeMu, flowTrans, yTop, rowH) {
   const labels = [];
-  // 大限四化（落在這個宮位的本宮星）
-  for (const m of decadeMu) {
-    if (!m || !m.star) continue;
-    // 只在受影響星所在宮位顯示
-    const inThisPalace =
-      (palace.majorStars  || []).some(s => s.name === m.star) ||
-      (palace.minorStars  || []).some(s => s.name === m.star) ||
-      (palace.borrowedStars || []).includes(m.star);
-    if (!inThisPalace) continue;
-    const key = MU_KEY[m.type]; if (!key) continue;
-    labels.push({
-      text:  '大' + key + m.star.charAt(0),
-      color: '#fff',
-      bg:    MU_BY_SRC.decade.bg,
-    });
-  }
-  // 流年吉凶星（依宮位地支）
+  // 流年吉凶星（依宮位地支）— 大限四化已透過星旁綠底徽章顯示，此排只放流年凶吉星
   for (const t of flowTrans) {
     labels.push({ text: t, color: FLOW_TRANS_COLOR[t] || '#444', bg: null });
   }
