@@ -23,7 +23,23 @@ const BLUE_SI_HUA_TABLE = {
 
 function getYearStem(year)   { return HEAVENLY_STEMS[(year - 4) % 10]; }
 function getYearBranch(year) { return EARTHLY_BRANCHES[(year - 4) % 12]; }
-function chineseAge(birthYear, queryYear) { return queryYear - birthYear + 1; }
+
+// 立春日（2月幾號），近似公式適用 1900–2100
+function lichunDay(year) {
+  const base = year >= 2000 ? 2000 : 1900;
+  return Math.floor((year - base) * 0.2422 + 4.4475) - Math.floor((year - base) / 4);
+}
+// 出生日對應的干支年（立春前算前一年）
+function birthGanZhiYear(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const lichun = lichunDay(y);
+  if (m < 2 || (m === 2 && d < lichun)) return y - 1;
+  return y;
+}
+// 紫微 / 命理 虛歲：以立春為界的干支年差 + 1
+function chineseAge(birthDate, queryYear) {
+  return queryYear - birthGanZhiYear(birthDate) + 1;
+}
 
 function getFlowYearMutagens(yearStem, palaces) {
   const stars = BLUE_SI_HUA_TABLE[yearStem] || [];
@@ -187,7 +203,7 @@ module.exports = function handler(req, res) {
   try {
     const chart      = generateChart(date, time, gender);
     const birthYear  = parseInt(date.split('-')[0]);
-    const age        = chineseAge(birthYear, queryYear);
+    const age        = chineseAge(date, queryYear);
     const flowStem   = getYearStem(queryYear);
     const flowBranch = getYearBranch(queryYear);
 

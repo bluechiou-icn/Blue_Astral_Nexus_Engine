@@ -191,7 +191,11 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     </div>
   </div>
   <div class="row-2">
-    <div class="field"><label data-i18n="year_label">主流年（西元，留空=本年）</label><input type="number" id="f-year" data-i18n-ph="year_ph" placeholder="e.g. 2026" min="1900" max="2100"></div>
+    <div class="field">
+      <label data-i18n="year_label">主流年（西元，留空=本年）</label>
+      <input type="number" id="f-year" data-i18n-ph="year_ph" placeholder="e.g. 2026" min="1900" max="2100">
+      <div class="city-hint" id="year-hint" style="margin-top:4px;"></div>
+    </div>
     <div class="field"><label data-i18n="name_label">命主姓名（選填）</label><input type="text" id="f-name" data-i18n-ph="name_ph" placeholder=""></div>
   </div>
   <div class="row-2">
@@ -204,10 +208,6 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
       </div>
     </div>
     <div class="field"><label data-i18n="email_label">Email（選填）</label><input type="email" id="f-email" data-i18n-ph="email_ph" placeholder=""></div>
-  </div>
-  <div class="field">
-    <label data-i18n="extra_years_label">額外流年命盤（最多選 2 個）</label>
-    <div id="extra-years" class="extra-years"></div>
   </div>
   <div class="err-box" id="form-err"></div>
   <button class="btn-primary" onclick="handleSubmit()" data-i18n="btn_submit">起　盤</button>
@@ -366,6 +366,29 @@ const EARTHLY_BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申',
 // 取得某年的天干地支
 function getYearStem(year)   { return HEAVENLY_STEMS[(year - 4) % 10]; }
 function getYearBranch(year) { return EARTHLY_BRANCHES[(year - 4) % 12]; }
+
+// 立春日（2月幾號），近似公式，適用 1900–2100
+function lichunDay(year) {
+  const base = year >= 2000 ? 2000 : 1900;
+  return Math.floor((year - base) * 0.2422 + 4.4475) - Math.floor((year - base) / 4);
+}
+// 農曆（紫微）干支年起訖（立春→次年立春前一日）
+function lunarYearRange(year) {
+  const sd = lichunDay(year);
+  const ed = new Date(year + 1, 1, lichunDay(year + 1));  // 次年立春
+  ed.setDate(ed.getDate() - 1);                            // 前一日
+  return {
+    start: `${year}/2/${sd}`,
+    end:   `${ed.getFullYear()}/${ed.getMonth() + 1}/${ed.getDate()}`,
+  };
+}
+// 出生日對應的干支年（立春前算前一年）
+function birthGanZhiYear(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const lichun = lichunDay(y);
+  if (m < 2 || (m === 2 && d < lichun)) return y - 1;
+  return y;
+}
 
 // 計算某宮位地支對應的「流年資訊」（依當前流年所在的太歲輪）
 // 例：流年 2026 丙午年 → 寅位=2022壬寅, 卯位=2023癸卯, ... 丑位=2033癸丑
@@ -1167,7 +1190,8 @@ function updateFlowBar() {
   document.getElementById('fc-year').textContent = S.currentYear;
   if (!fd) return;
   const fy = fd.flowYear, ml = fd.currentMajorLimit;
-  document.getElementById('fc-gz').textContent  = fy.ganZhi+'年';
+  const { start, end } = lunarYearRange(S.currentYear);
+  document.getElementById('fc-gz').textContent  = `${fy.ganZhi}年　${start}〜${end}`;
   document.getElementById('fc-age').textContent = `${t('age_prefix')}${fy.chineseAge}${t('age_suffix')}`;
   document.getElementById('fc-limit').textContent = ml
     ? `${t('limit_label')}${ml.palace}${t('limit_palace')}　${ml.startYear}~${ml.endYear}` : '';
@@ -1177,35 +1201,16 @@ function updateFlowBar() {
 // HANDLERS
 // ════════════════════════════════════════════════════════
 
-// Populate the "額外流年" checkbox list (current year + 1 ... + 10)
-function populateExtraYears() {
-  const container = document.getElementById('extra-years');
-  if (!container) return;
-  // Anchor year: use the value in #f-year if present, else current calendar year
+// Update the helper text under #f-year showing 干支年 + 起訖日
+function updateYearHint() {
+  const hint = document.getElementById('year-hint');
+  if (!hint) return;
   const yv = document.getElementById('f-year').value.trim();
-  const anchor = yv ? parseInt(yv) : new Date().getFullYear();
-  const items = [];
-  for (let i = 1; i <= 10; i++) {
-    const y = anchor + i;
-    const gz = getYearStem(y) + getYearBranch(y);
-    items.push(`<label data-year="${y}"><input type="checkbox" value="${y}" onchange="enforceMax2()"> ${y}<br>${gz}</label>`);
-  }
-  container.innerHTML = items.join('');
-}
-
-function enforceMax2() {
-  const boxes = [...document.querySelectorAll('#extra-years input[type=checkbox]')];
-  const checked = boxes.filter(b => b.checked);
-  if (checked.length > 2) {
-    // Uncheck the most recently clicked beyond limit (event ordering not exposed; just keep first 2)
-    boxes.forEach(b => { if (b.checked && checked.indexOf(b) >= 2) b.checked = false; });
-  }
-  // Disable unchecked when limit reached
-  const limit = boxes.filter(b => b.checked).length >= 2;
-  boxes.forEach(b => {
-    b.disabled = limit && !b.checked;
-    b.closest('label').classList.toggle('disabled', b.disabled);
-  });
+  const y  = yv ? parseInt(yv) : new Date().getFullYear();
+  if (isNaN(y) || y < 1900 || y > 2100) { hint.textContent = ''; return; }
+  const gz = getYearStem(y) + getYearBranch(y);
+  const { start, end } = lunarYearRange(y);
+  hint.textContent = `${gz}年　${start}〜${end}`;
 }
 
 async function handleSubmit() {
@@ -1224,9 +1229,7 @@ async function handleSubmit() {
   }
 
   const mainYear = yv ? parseInt(yv) : new Date().getFullYear();
-  const extras = [...document.querySelectorAll('#extra-years input[type=checkbox]:checked')]
-    .slice(0, 2).map(el => parseInt(el.value));
-  const allYears = [mainYear, ...extras];
+  const allYears = [mainYear];
 
   Object.assign(S, { birthDate:date, birthTime:time, gender, name, city, currentYear:mainYear });
 
@@ -1268,8 +1271,9 @@ function buildChartBlocks() {
     const div = document.createElement('div');
     div.className = 'chart-block';
     const isMain = blk.year === S.currentYear;
+    const { start, end } = lunarYearRange(blk.year);
     div.innerHTML = `
-      <div class="chart-block-title">${isMain ? t('block_main') : t('block_extra')}　${blk.year}年　${blk.gz}年</div>
+      <div class="chart-block-title">${isMain ? t('block_main') : t('block_extra')}　${blk.year}　${blk.gz}年　${start}〜${end}</div>
       <div class="canvas-wrap"><canvas id="${blk.canvasId}"></canvas></div>
       <div class="chart-block-actions">
         <button onclick="exportPNGForYear(${blk.year})">${t('btn_export')} ${blk.year} ${t('btn_export_suffix')}</button>
@@ -1297,10 +1301,8 @@ async function changeYear(delta) {
     const newFd = await apiFlow(S.birthDate, S.birthTime, S.gender, S.currentYear, S.city);
     S.flowDataByYear[S.currentYear] = newFd;
     S.flowData = newFd;
-    // Rebuild yearBlocks: replace the FIRST block (main) with new year; keep extras
-    const extras = S.yearBlocks.slice(1).map(b => b.year);
-    const allYears = [S.currentYear, ...extras];
-    S.yearBlocks = allYears.map(y => {
+    // Rebuild yearBlocks: main year only
+    S.yearBlocks = [S.currentYear].map(y => {
       const gz = getYearStem(y) + getYearBranch(y);
       return { year: y, gz, canvasId: `chart-canvas-${y}` };
     });
@@ -1329,12 +1331,12 @@ function resetChart() {
 // Recompute extra years list whenever main flow year input changes
 document.addEventListener('DOMContentLoaded', () => {
   applyI18n();
-  populateExtraYears();
+  updateYearHint();
   const fy = document.getElementById('f-year');
-  if (fy) fy.addEventListener('change', populateExtraYears);
+  if (fy) fy.addEventListener('input', updateYearHint);
 });
 // Also run immediately in case DOMContentLoaded already fired
-populateExtraYears();
+updateYearHint();
 
 window.addEventListener('resize', () => { if (S.yearBlocks.length) renderAllCharts(); });
 
