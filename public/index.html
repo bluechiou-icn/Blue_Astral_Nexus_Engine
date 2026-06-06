@@ -213,6 +213,31 @@
   .preview-cta p { font-size: 12px; color: #6a5a3a; line-height: 1.8; }
 
   .error-box { background: rgba(180,50,50,0.1); border: 1px solid #5a1a1a; border-radius: 2px; padding: 14px; color: #f87171; font-size: 13px; display: none; }
+
+  /* ── Responsive (tablet / phone) ─────────────────────────── */
+  @media (max-width: 768px) {
+    body { padding: 24px 12px 60px; }
+    .card { padding: 22px 16px; }
+    .row-2 { grid-template-columns: 1fr; gap: 12px; }
+    .info-grid { grid-template-columns: 1fr 1fr; }
+    .palace-item { grid-template-columns: 76px 1fr; gap: 8px; }
+    .limit-row {
+      grid-template-columns: 22px 56px 70px 1fr;
+      gap: 6px; font-size: 11px;
+    }
+    .field input, .field select { font-size: 16px; padding: 11px 12px; } /* 16px 防 iOS Safari 自動縮放 */
+  }
+  @media (max-width: 480px) {
+    body { padding: 18px 10px 50px; }
+    .brand { margin-bottom: 28px; }
+    .brand-sub { font-size: 10px; letter-spacing: 0.15em; }
+    .card { padding: 18px 12px; }
+    .info-grid { grid-template-columns: 1fr; gap: 8px; }
+    .palace-item { grid-template-columns: 1fr; gap: 4px; }
+    .mutagen-row { font-size: 12px; gap: 8px; }
+    .limit-row { grid-template-columns: 20px 50px 64px 1fr; font-size: 10.5px; }
+    .lang-btn { padding: 4px 10px; font-size: 10px; }
+  }
 </style>
 </head>
 
