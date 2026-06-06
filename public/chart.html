@@ -709,14 +709,7 @@ function drawPalace(ctx, palace, row, col, opts) {
     ctx.strokeRect(cx+6, cy+6, CELL-12, CELL-12);
   }
 
-  // ── Top-right: 限 marker (小限) ──
-  if (isMinorLim) {
-    ctx.font = `bold 13px ${FONT}`;
-    ctx.fillStyle = RED_BOX;
-    ctx.textAlign = 'right';
-    ctx.fillText('限', cx + CELL - PAD, cy + 16);
-    ctx.textAlign = 'left';
-  }
+  // ── 小限 marker：與 來因宮/身宮 同款直書紅框（位於 bottom-right slot 系統）──
 
   // ── Bottom-right (left of stem/branch): 身宮 / 來因宮 直書紅框 ──
   // 位置：cx+CELL-40 左右，cy+CELL-58 ~ cy+CELL-10
@@ -743,10 +736,11 @@ function drawPalace(ctx, palace, row, col, opts) {
     }
     ctx.textAlign = 'left';
   };
-  // 多重標記時：身宮 inner, 來因宮 outer
+  // 多重標記時：身宮 inner, 來因宮 next, 小限 outer
   let slot = 0;
   if (palace.name === bodyPalace) { drawVertRedBox('身宮', slot); slot++; }
   if (palace.name === origPalace) { drawVertRedBox('來因宮', slot); slot++; }
+  if (isMinorLim)                  { drawVertRedBox('小限', slot); slot++; }
 
   // ── TOP-LEFT: Three-layer names 流X｜大X｜本命名 ──
   let topY = cy + 14;
@@ -798,14 +792,18 @@ function drawPalace(ctx, palace, row, col, opts) {
   const STEM_BR_RESERVE = 20;
   // Reserve left side for empty-palace text block
   const isEmptyP = palace.isEmpty && palace.borrowedFromPalace;
-  const LEFT_RESERVE = isEmptyP ? 50 : 0;
+  const LEFT_RESERVE = isEmptyP ? 58 : 0;
 
-  // Empty palace label (small "空" stamp top-left)
+  // Empty palace label (top-left)：「空宮 / 借X宮」字級統一
   if (isEmptyP) {
-    ctx.font = `bold 11px ${FONT}`; ctx.fillStyle = '#aaa';
-    ctx.fillText('空', cx+PAD, starsTop + 11);
-    ctx.font = `9px ${FONT}`; ctx.fillStyle = '#bbb';
-    ctx.fillText('借' + palace.borrowedFromPalace.charAt(0), cx+PAD, starsTop + 22);
+    const EFS = 11;
+    const src = palace.borrowedFromPalace;
+    const srcFull = src.endsWith('宮') ? src : src + '宮';
+    ctx.font = `bold ${EFS}px ${FONT}`;
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('空宮', cx + PAD, starsTop + EFS);
+    ctx.fillStyle = '#bbb';
+    ctx.fillText('借' + srcFull, cx + PAD, starsTop + EFS * 2 + 3);
   }
 
   // Look up brightness for borrowed stars from the source palace
