@@ -453,6 +453,10 @@ const S = {
   yearBlocks: [],                  // [{year, gz, canvasId}]
   birthDate: '', birthTime: '', gender: '', name: '', city: '',
   currentYear: new Date().getFullYear(),
+  // 三方四正互動：點擊宮位後高亮對宮+三合
+  selectedBranch: null,
+  dashOffset: 0,
+  trineRaf: null,
 };
 
 // ════════════════════════════════════════════════════════
@@ -611,6 +615,7 @@ function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, c
   }
 
   // Mutagen badges - 顏色按來源（生年紅/大限綠/流年藍），實心方框 + 白字
+  // 借星：四化方塊也轉灰 + 虛線外框
   const mFS = Math.max(FS - 4, 18);
   for (const mu of mutagens) {
     if (y + mFS + 2 > bottom) break;
@@ -620,9 +625,22 @@ function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, c
     const bw = mFS + 2, bh = mFS + 2;
     const bx = centerX - bw/2;
 
-    ctx.fillStyle = palette.bg;
-    ctx.fillRect(bx, y, bw, bh);
-    ctx.fillStyle = palette.fg;
+    if (isBorrowed) {
+      // 灰底 + 虛線框
+      ctx.fillStyle = '#e8e8e8';
+      ctx.fillRect(bx, y, bw, bh);
+      ctx.save();
+      ctx.strokeStyle = '#9a9a9a';
+      ctx.setLineDash([2, 2]);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx + 0.5, y + 0.5, bw - 1, bh - 1);
+      ctx.restore();
+      ctx.fillStyle = '#7a7a7a';
+    } else {
+      ctx.fillStyle = palette.bg;
+      ctx.fillRect(bx, y, bw, bh);
+      ctx.fillStyle = palette.fg;
+    }
     ctx.font = `bold ${mFS}px ${FONT}`;
     ctx.fillText(key, centerX, y + bh - 4);
     y += bh + 2;
@@ -820,12 +838,12 @@ function drawPalace(ctx, palace, row, col, opts) {
   // Collect all stars (priority order): major, aux, kill, small
   const stars = [];
   if (isEmptyP) {
-    // Borrowed major stars - keep deep blue color (still 主星), with dashed border
+    // Borrowed major stars — 灰色 + 虛線外框（連同四化也轉灰）
     for (const sname of (palace.borrowedStars || [])) {
       stars.push({
         name: sname,
         brightness: borrowBrightness[sname] || '',
-        color: CLR_MAJOR,
+        color: '#9a9a9a',
         isMajor: true,
         isBorrowed: true,
       });
@@ -1228,6 +1246,108 @@ function renderChartTo(canvas, fd) {
     });
   }
   drawCenterTo(ctx, fd);
+
+  // 三方四正動態高亮（點擊宮位後）
+  if (S.selectedBranch) drawTrineLines(ctx, S.selectedBranch, S.dashOffset);
+
+  // 綁定一次點擊事件
+  bindPalaceClick(canvas);
+}
+
+// 地支位移：B + n (mod 12)
+function shiftBranch(b, n) {
+  const i = EARTHLY_BRANCHES.indexOf(b);
+  if (i < 0) return null;
+  return EARTHLY_BRANCHES[(i + n + 12) % 12];
+}
+
+// 取得宮位中心點 (BASE 座標)
+function branchCenter(b) {
+  const pos = BRANCH_POS[b]; if (!pos) return null;
+  return { x: pos[1] * CELL + CELL/2, y: pos[0] * CELL + CELL/2 };
+}
+
+// 三方四正：對宮 (+6) + 三合 (+4, +8)
+function drawTrineLines(ctx, branch, dashOffset) {
+  const src = branchCenter(branch); if (!src) return;
+  const targets = [
+    shiftBranch(branch, 6),  // 對宮
+    shiftBranch(branch, 4),  // 三合
+    shiftBranch(branch, 8),  // 三合
+  ].map(branchCenter).filter(Boolean);
+
+  ctx.save();
+  // 點亮選中宮位四角
+  const sp = BRANCH_POS[branch];
+  if (sp) {
+    ctx.strokeStyle = GOLD_HIGHLIGHT;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+    ctx.strokeRect(sp[1]*CELL+3, sp[0]*CELL+3, CELL-6, CELL-6);
+  }
+  // 三條虛線
+  ctx.strokeStyle = GOLD_HIGHLIGHT;
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([10, 6]);
+  ctx.lineDashOffset = -dashOffset;  // 負值 → 虛線往外（src→dst）移動
+  for (const t of targets) {
+    ctx.beginPath();
+    ctx.moveTo(src.x, src.y);
+    ctx.lineTo(t.x, t.y);
+    ctx.stroke();
+  }
+  // 端點圓點
+  ctx.setLineDash([]);
+  ctx.fillStyle = GOLD_HIGHLIGHT;
+  ctx.beginPath(); ctx.arc(src.x, src.y, 5, 0, Math.PI*2); ctx.fill();
+  for (const t of targets) {
+    ctx.beginPath(); ctx.arc(t.x, t.y, 4, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function startTrineAnim() {
+  stopTrineAnim();
+  const tick = () => {
+    if (!S.selectedBranch) return;
+    S.dashOffset = (S.dashOffset + 0.6) % 32;
+    renderAllCharts();
+    S.trineRaf = requestAnimationFrame(tick);
+  };
+  S.trineRaf = requestAnimationFrame(tick);
+}
+function stopTrineAnim() {
+  if (S.trineRaf) cancelAnimationFrame(S.trineRaf);
+  S.trineRaf = null;
+}
+
+function bindPalaceClick(canvas) {
+  if (canvas.dataset.trineBound) return;
+  canvas.dataset.trineBound = '1';
+  canvas.style.cursor = 'pointer';
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scale = BASE / rect.width;
+    const x = (e.clientX - rect.left) * scale;
+    const y = (e.clientY - rect.top)  * scale;
+    const col = Math.floor(x / CELL);
+    const row = Math.floor(y / CELL);
+    let branch = null;
+    for (const b of Object.keys(BRANCH_POS)) {
+      const [r, c] = BRANCH_POS[b];
+      if (r === row && c === col) { branch = b; break; }
+    }
+    // 點中央資訊區或同一宮位 → 清除
+    if (!branch || S.selectedBranch === branch) {
+      S.selectedBranch = null;
+      stopTrineAnim();
+      renderAllCharts();
+      return;
+    }
+    S.selectedBranch = branch;
+    S.dashOffset = 0;
+    startTrineAnim();
+  });
 }
 
 // Backward-compat: render the primary canvas (used by changeYear which still
@@ -1378,6 +1498,7 @@ function renderAllCharts() {
 }
 
 async function changeYear(delta) {
+  S.selectedBranch = null; stopTrineAnim();
   S.currentYear += delta;
   document.getElementById('fc-year').textContent = S.currentYear;
   ['fc-gz','fc-age','fc-limit'].forEach(id => document.getElementById(id).textContent='');
@@ -1408,6 +1529,8 @@ function exportPNGForYear(year) {
 }
 
 function resetChart() {
+  stopTrineAnim();
+  S.selectedBranch = null;
   S.chartData=null; S.flowData=null; S.flowDataByYear={}; S.yearBlocks=[];
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('input-panel').style.display = 'block';
