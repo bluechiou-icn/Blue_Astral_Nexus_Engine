@@ -486,7 +486,10 @@ function ts() { return new Date().toISOString().replace(/\D/g,'').slice(0,8); }
 function setupCanvas(canvas) {
   canvas.width  = BASE * DPR;
   canvas.height = BASE * DPR;
-  const disp = Math.min(BASE, window.innerWidth - 32);
+  // 使用實際父容器 (canvas-wrap) 寬度，避免被 body / chart-block padding 推出邊界
+  const wrap   = canvas.parentElement;
+  const wrapW  = wrap ? wrap.clientWidth : (window.innerWidth - 32);
+  const disp   = Math.min(BASE, wrapW);
   canvas.style.width  = disp + 'px';
   canvas.style.height = disp + 'px';
   const ctx = canvas.getContext('2d');
