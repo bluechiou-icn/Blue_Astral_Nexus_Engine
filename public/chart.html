@@ -1709,6 +1709,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+(function autoFillFromUrl() {
+  const p = new URLSearchParams(window.location.search);
+  const date   = p.get('date');
+  const time   = p.get('time');
+  const gender = p.get('gender');
+  if (!date || !time || !gender) return;
+  function fill() {
+    const fd = document.getElementById('f-date');
+    const ft = document.getElementById('f-time');
+    const fg = document.querySelector(`input[name=g][value="${gender}"]`);
+    const fc = document.getElementById('f-city');
+    if (!fd || !ft || !fg) return;
+    fd.value = date;
+    ft.value = time;
+    fg.checked = true;
+    const city = p.get('city');
+    if (city && fc) fc.value = city;
+    handleSubmit();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fill);
+  } else {
+    fill();
+  }
+})();
 </script>
 </body>
 </html>

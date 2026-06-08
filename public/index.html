@@ -664,7 +664,7 @@ function renderResult(d) {
       date: p.date, time: p.time, gender: p.gender,
       ...(p.city ? { city: p.city } : {}),
     }).toString();
-    const visUrl = 'https://chart.aethnous.co/?' + qs;
+    const visUrl = 'https://chart.aethnous.co/chart.html?' + qs;
     document.getElementById('chart-vis-cta').innerHTML = `
       <div class="vis-cta">
         <div class="vis-title">✦ ${t('vis_title')} ✦</div>
