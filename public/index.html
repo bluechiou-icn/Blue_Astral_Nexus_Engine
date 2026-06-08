@@ -212,6 +212,13 @@
   .preview-cta { text-align: center; padding: 20px; border: 1px dashed #2a2550; border-radius: 2px; margin-top: 20px; }
   .preview-cta p { font-size: 12px; color: #6a5a3a; line-height: 1.8; }
 
+  /* Generate visualization CTA — leads to chart.aethnous.co */
+  .vis-cta { text-align: center; padding: 24px 20px; margin-top: 20px; border: 1px solid rgba(155, 89, 255, 0.25); border-radius: 2px; background: linear-gradient(180deg, rgba(155, 89, 255, 0.06), rgba(212, 175, 55, 0.03)); }
+  .vis-cta .vis-title { font-size: 11px; letter-spacing: 0.32em; color: #9b8aff; text-transform: uppercase; margin-bottom: 6px; }
+  .vis-cta .vis-sub { font-size: 12px; color: #6a5a8a; line-height: 1.7; margin-bottom: 16px; }
+  .vis-cta .vis-btn { display: inline-block; padding: 12px 28px; background: transparent; border: 1px solid #9b59ff; border-radius: 999px; color: #c8a8ff; font-family: inherit; font-size: 13px; letter-spacing: 0.28em; text-transform: uppercase; cursor: pointer; transition: all 0.4s ease; text-decoration: none; }
+  .vis-cta .vis-btn:hover { background: rgba(155, 89, 255, 0.12); color: #e8d4ff; box-shadow: 0 0 30px rgba(155, 89, 255, 0.3); }
+
   .error-box { background: rgba(180,50,50,0.1); border: 1px solid #5a1a1a; border-radius: 2px; padding: 14px; color: #f87171; font-size: 13px; display: none; }
 
   /* ── Responsive (tablet / phone) ─────────────────────────── */
@@ -336,6 +343,7 @@
     <div id="limits"></div>
     <div id="flow-section" style="margin-top:8px;"></div>
     <div id="preview-cta"></div>
+    <div id="chart-vis-cta"></div>
   </div>
 </div>
 
@@ -365,6 +373,9 @@ const I18N = {
     rect_unknown:'出生時間不確定，需定盤後方可進行完整論斷。',
     preview_p1:'這是預覽結果，資料不會進入分析系統。',
     preview_p2:'如需完整命盤解析報告，請透過 ÆTHNOUS 預約諮詢服務。',
+    vis_title:'生成動態命盤',
+    vis_sub:'進入互動式命盤視覺化，本命數據將自動帶入。',
+    vis_btn:'Active Your Life Map',
     now_marker:'▶ 現在',
     age_suffix:'歲',
     limit_fn: n => `第 ${n} 大限`,
@@ -392,6 +403,9 @@ const I18N = {
     rect_unknown:'Birth time is unknown. Rectification required for full analysis.',
     preview_p1:'Preview only — data not entered into the system.',
     preview_p2:'For a full chart reading, book a consultation via ÆTHNOUS.',
+    vis_title:'Generate Dynamic Chart',
+    vis_sub:'Enter the interactive visualization — your birth data will carry over.',
+    vis_btn:'Active Your Life Map',
     now_marker:'▶ Now',
     age_suffix:'yrs',
     limit_fn: n => `Limit ${n}`,
@@ -419,6 +433,9 @@ const I18N = {
     rect_unknown:'출생 시간이 불명확합니다. 완전한 분석을 위해 정반이 필요합니다.',
     preview_p1:'미리보기 결과입니다. 데이터는 시스템에 저장되지 않습니다.',
     preview_p2:'완전한 명반 분석을 원하시면 ÆTHNOUS 상담 서비스를 예약하세요.',
+    vis_title:'동적 명반 생성',
+    vis_sub:'인터랙티브 명반 시각화로 이동하며, 입력 데이터가 자동으로 전달됩니다.',
+    vis_btn:'Active Your Life Map',
     now_marker:'▶ 현재',
     age_suffix:'세',
     limit_fn: n => `제 ${n} 대한`,
@@ -639,6 +656,22 @@ function renderResult(d) {
   document.getElementById('preview-cta').innerHTML = !isAnalysis
     ? `<div class="preview-cta"><p>${t('preview_p1')}<br>${t('preview_p2')}</p></div>`
     : '';
+
+  // Generate Visualization CTA → chart.aethnous.co with URL params
+  if (_currentChartParams) {
+    const p = _currentChartParams;
+    const qs = new URLSearchParams({
+      date: p.date, time: p.time, gender: p.gender,
+      ...(p.city ? { city: p.city } : {}),
+    }).toString();
+    const visUrl = 'https://chart.aethnous.co/?' + qs;
+    document.getElementById('chart-vis-cta').innerHTML = `
+      <div class="vis-cta">
+        <div class="vis-title">✦ ${t('vis_title')} ✦</div>
+        <div class="vis-sub">${t('vis_sub')}</div>
+        <a class="vis-btn" href="${visUrl}" rel="noopener">${t('vis_btn')} →</a>
+      </div>`;
+  }
 
   // Analysis Mode：附加真太陽時技術註記
   if (isAnalysis && d.meta?.trueSolarTimeNote) {
