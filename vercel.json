@@ -5,11 +5,12 @@
     "api/flow.js":     { "maxDuration": 10 },
     "api/synastry.js": { "maxDuration": 15 }
   },
-  "rewrites": [
+  "redirects": [
     {
       "source": "/",
       "has": [{ "type": "host", "value": "chart.aethnous.co" }],
-      "destination": "/chart.html"
+      "destination": "/chart.html",
+      "permanent": false
     }
   ],
   "headers": [
