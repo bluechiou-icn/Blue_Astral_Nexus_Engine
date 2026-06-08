@@ -5,16 +5,12 @@
     "api/flow.js":     { "maxDuration": 10 },
     "api/synastry.js": { "maxDuration": 15 }
   },
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/chart.html", "dest": "/public/chart.html" },
-    { "src": "/(.+\\.(png|jpg|jpeg|svg|webp|ico|gif))", "dest": "/public/$1" },
+  "rewrites": [
     {
-      "src": "/",
+      "source": "/",
       "has": [{ "type": "host", "value": "chart.aethnous.co" }],
-      "dest": "/public/chart.html"
-    },
-    { "src": "/(.*)", "dest": "/public/index.html" }
+      "destination": "/chart.html"
+    }
   ],
   "headers": [
     {
