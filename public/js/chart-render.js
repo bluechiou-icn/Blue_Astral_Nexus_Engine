@@ -466,8 +466,6 @@ function drawCenterTo(ctx, fd) {
   ctx.fillStyle = '#f9f8f4';
   ctx.fillRect(cx, cy, cw, ch);
 
-  // Watermark removed per design update
-
   ctx.textAlign = 'center';
 
   if (!d) { ctx.textAlign='left'; return; }
@@ -481,33 +479,34 @@ function drawCenterTo(ctx, fd) {
   const pillarLabels = ['年','月','日','時'];
   const pillarKeys = ['yearly','monthly','daily','hourly'];
 
-  // ── 動態計算內容總高度，垂直置中（不含底部 brand 行） ──
-  const FSPillar = 17;
-  const SEP_BLANK = 14;  // 每條 sep 之下增加一行空白
-
-  // 真太陽時是否需要顯示（需在 heights 計算前判斷，以便精確垂直置中）
   const tst    = d.meta?.trueSolarTime;
   const ckt    = d.meta?.clockTime;
   const offset = d.meta?.trueSolarTimeOffsetMinutes;
   const hasTST = !!(tst && ckt && tst !== ckt);
 
-  // 元素高度清單
+  // ── 統一行距常數 ──
+  const LINE_H   = 28;  // 所有內容行：baseline 到下一行 baseline 的距離
+  const SEP_SLOT = 20;  // 所有分隔線：佔用同等高度，線畫在正中央（iy + 10）
+
+  // ── 動態計算內容總高度，垂直置中（不含底部 brand 行） ──
   const heights = [];
-  if (S.name) heights.push(32);     // 姓名
-  heights.push(28);                  // 生日（Row 2）
-  if (hasTST) heights.push(28);     // 真太陽時行（含上下各等距留白 8px + 12px font）
-  heights.push(30);                  // 農曆（Row 3）
-  heights.push(16 + SEP_BLANK);      // sep1 + 空白
-  heights.push(15);                  // 八字 label
-  heights.push(FSPillar + 4);        // 八字 stem
-  heights.push(FSPillar + 8);        // 八字 branch
-  heights.push(14 + SEP_BLANK);      // sep2 + 空白
-  heights.push(22);                  // 命主行
-  if (d.baziQiyun) heights.push(22); // 起運行
-  heights.push(16 + SEP_BLANK);      // sep3 + 空白
+  if (S.name)        heights.push(LINE_H);   // 姓名
+  heights.push(LINE_H);                       // 生日
+  if (hasTST)        heights.push(LINE_H);   // 真太陽時
+  heights.push(LINE_H);                       // 農曆
+  heights.push(SEP_SLOT);                     // sep1
+  heights.push(LINE_H);                       // 八字 label
+  heights.push(LINE_H);                       // 八字天干
+  heights.push(LINE_H);                       // 八字地支
+  heights.push(SEP_SLOT);                     // sep2
+  heights.push(LINE_H);                       // 命主行
+  if (d.baziQiyun)   heights.push(LINE_H);   // 起運行
+  heights.push(SEP_SLOT);                     // sep3
   if (fy) {
-    heights.push(24 + 26);           // 流年 1
-    heights.push(24 + 26);           // 流年 2
+    heights.push(LINE_H);                     // 流年1 title
+    heights.push(LINE_H);                     // 流年1 detail
+    heights.push(LINE_H);                     // 流年2 title
+    heights.push(LINE_H);                     // 流年2 detail
   }
 
   const totalContent = heights.reduce((a, b) => a + b, 0);
@@ -516,109 +515,107 @@ function drawCenterTo(ctx, fd) {
   const topMargin = Math.max(20, (availableH - totalContent) / 2);
   let iy = cy + topMargin;
 
-  // Row 1: 姓名 (large bold)
+  // 姓名
   if (S.name) {
     ctx.font = `bold 24px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-    ctx.fillText(S.name, mx, iy); iy += 32;
+    ctx.fillText(S.name, mx, iy); iy += LINE_H;
   }
 
-  // Row 2: 西元生日 + 時間 + 時辰 + 陰陽 (1.5×, 20px bold)
+  // 西元生日 + 時間 + 時辰 + 陰陽
   ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   ctx.fillText(`${S.birthDate}　${S.birthTime}　${d.shichen||''}　${d.yinYang||''}`, mx, iy);
-  iy += 28;
+  iy += LINE_H;
 
-  // 真太陽時行：置於 Row2（生日）與 Row3（農曆）正中間，上下留白等距（各 8px）
+  // 真太陽時
   if (hasTST) {
-    iy += 8;  // 上方等距空白
     ctx.font = `12px ${FONT}`; ctx.fillStyle = '#9a6a3a';
     ctx.fillText(`真太陽時 ${tst}（${offset >= 0 ? '+' : ''}${offset}分）`, mx, iy);
-    iy += 12 + 8;  // 字高 + 下方等距空白
+    iy += LINE_H;
   }
 
-  // Row 3: 農曆 + 生肖 + 五行局 (1.5×, 20px bold)
+  // 農曆 + 生肖 + 五行局
   ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   ctx.fillText(`${d.lunarDate}　${zodiac ? '屬'+zodiac+'　' : ''}${d.fiveElementsClass||''}`, mx, iy);
-  iy += 30;
+  iy += LINE_H;
 
-  // Separator 1（之後加一行空白）
+  // ── 分隔線 1 ──
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
-  iy += 16 + SEP_BLANK;
+  ctx.beginPath(); ctx.moveTo(cx+30, iy + SEP_SLOT/2); ctx.lineTo(cx+cw-30, iy + SEP_SLOT/2); ctx.stroke();
+  iy += SEP_SLOT;
 
   // ── 八字四柱（直書） ──
   const colSpacing = 38;
   const totalW     = colSpacing * 4;
   const pStartX    = mx - totalW/2 + colSpacing/2;
 
-  // Label row (年/月/日/時)
+  // Label row（年/月/日/時柱）
   ctx.font = `11px ${FONT}`; ctx.fillStyle = '#888';
   for (let i = 0; i < 4; i++) {
     ctx.fillText(pillarLabels[i] + '柱', pStartX + i * colSpacing, iy);
   }
-  iy += 15;
+  iy += LINE_H;
 
-  // Stem row (天干)
-  ctx.font = `bold ${FSPillar}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  // 天干
+  ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   for (let i = 0; i < 4; i++) {
     const stem = pillars[pillarKeys[i]]?.[0] || '－';
-    ctx.fillText(stem, pStartX + i * colSpacing, iy + FSPillar);
+    ctx.fillText(stem, pStartX + i * colSpacing, iy);
   }
-  iy += FSPillar + 4;
+  iy += LINE_H;
 
-  // Branch row (地支)
-  ctx.font = `bold ${FSPillar}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  // 地支
+  ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   for (let i = 0; i < 4; i++) {
     const branch = pillars[pillarKeys[i]]?.[1] || '－';
-    ctx.fillText(branch, pStartX + i * colSpacing, iy + FSPillar);
+    ctx.fillText(branch, pStartX + i * colSpacing, iy);
   }
-  iy += FSPillar + 8;
+  iy += LINE_H;
 
-  // Separator 2（之後加一行空白）
+  // ── 分隔線 2 ──
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
-  iy += 14 + SEP_BLANK;
+  ctx.beginPath(); ctx.moveTo(cx+30, iy + SEP_SLOT/2); ctx.lineTo(cx+cw-30, iy + SEP_SLOT/2); ctx.stroke();
+  iy += SEP_SLOT;
 
-  // Row: 命主 身主 身宮 來因
+  // 命主 身主 身宮 來因
   ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#333';
   ctx.fillText(
     `命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}　身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`,
     mx, iy
   );
-  iy += 22;
+  iy += LINE_H;
 
-  // Row: 降世後 X 歲 Y 月 Z 天 八字起運
+  // 八字起運
   const qy = d.baziQiyun;
   if (qy) {
     ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#555';
     ctx.fillText(`降世後 ${qy.years} 歲 ${qy.months} 月 ${qy.days} 天　八字起運`, mx, iy);
-    iy += 22;
+    iy += LINE_H;
   }
 
-  // Separator 3（之後加一行空白）
+  // ── 分隔線 3 ──
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
-  iy += 16 + SEP_BLANK;
+  ctx.beginPath(); ctx.moveTo(cx+30, iy + SEP_SLOT/2); ctx.lineTo(cx+cw-30, iy + SEP_SLOT/2); ctx.stroke();
+  iy += SEP_SLOT;
 
   // ── 流年疊盤（當前流年 + 次年） ──
-  const printOverlay = (year, gz, branchOfPalace) => {
-    const flowPal = d.palaces.find(p => p.branch === branchOfPalace);
-    if (!flowPal) return;
-    const flowMingName = flowPal.name;
-    const dpName = ml ? palOffset(flowMingName, ml.palace) : null;
-    const dpStr  = dpName ? '大' + dpName.charAt(0) : '大命';
-
-    ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-    ctx.fillText(`${gz}年（${year}）流年疊盤`, mx, iy);
-    iy += 24;
-
-    ctx.font = `15px ${FONT}`; ctx.fillStyle = '#444';
-    ctx.fillText(`年命　${dpStr}　本命${flowMingName}宮`, mx, iy);
-    iy += 26;
-  };
-
   if (fy) {
+    const printOverlay = (year, gz, branchOfPalace) => {
+      const flowPal = d.palaces.find(p => p.branch === branchOfPalace);
+      if (!flowPal) return;
+      const flowMingName = flowPal.name;
+      const dpName = ml ? palOffset(flowMingName, ml.palace) : null;
+      const dpStr  = dpName ? '大' + dpName.charAt(0) : '大命';
+
+      ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+      ctx.fillText(`${gz}年（${year}）流年疊盤`, mx, iy);
+      iy += LINE_H;
+
+      ctx.font = `15px ${FONT}`; ctx.fillStyle = '#444';
+      ctx.fillText(`年命　${dpStr}　本命${flowMingName}宮`, mx, iy);
+      iy += LINE_H;
+    };
+
     printOverlay(fy.year, fy.ganZhi, fy.branch);
-    iy += 4;
     const ny  = fy.year + 1;
     const nb  = getYearBranch(ny);
     const ngz = getYearStem(ny) + nb;
@@ -631,9 +628,9 @@ function drawCenterTo(ctx, fd) {
     ctx.fillText('⚠ 真太陽時校正後時辰已變更，請確認定盤', mx, cy + ch - 44);
   }
 
-  // ── Bottom brand: Midnight Blue + Crystibee® ──
+  // ── Bottom brand ──
   ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#0C6170';
-  ctx.fillText("Blue's 紫微斗數命理顧問排盤系統 V2.0", mx, cy + ch - 28);
+  ctx.fillText("Blue's 紫微斗數命理顧問排盤系統 V3.0", mx, cy + ch - 28);
 
   ctx.font = `bold 12px ${FONT}`; ctx.fillStyle = '#0C6170';
   ctx.fillText('Crystibee ®', mx, cy + ch - 12);
