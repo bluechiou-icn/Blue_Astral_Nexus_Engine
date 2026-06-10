@@ -6,11 +6,11 @@ function updateMetaBar() {
   const d = S.chartData; if (!d) return;
   const mingPal = d.palaces.find(p=>p.name==='命宮');
   document.getElementById('meta-bar').innerHTML = [
-    [t('meta_wuxing'),  d.fiveElementsClass],
-    [t('meta_yinyang'), d.yinYang],
-    [t('meta_ming'),    mingPal?.stemBranch||'—'],
-    [t('meta_body'),    d.bodyPalace?.name||'—'],
-    [t('meta_origin'),  d.originalPalace?.name||'—'],
+    [t('meta_wuxing'),  tWuXingJu(d.fiveElementsClass)],
+    [t('meta_yinyang'), tYinYang(d.yinYang)],
+    [t('meta_ming'),    tGZ(mingPal?.stemBranch)||'—'],
+    [t('meta_body'),    tPalaceName(d.bodyPalace?.name)||'—'],
+    [t('meta_origin'),  tPalaceName(d.originalPalace?.name)||'—'],
   ].map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
    .join('<span class="msep">·</span>');
 }
@@ -21,10 +21,12 @@ function updateFlowBar() {
   if (!fd) return;
   const fy = fd.flowYear, ml = fd.currentMajorLimit;
   const { start, end } = lunarYearRange(S.currentYear);
-  document.getElementById('fc-gz').textContent  = `${fy.ganZhi}年　${start}〜${end}`;
+  document.getElementById('fc-gz').textContent  = isEn()
+    ? `${tGZ(fy.ganZhi)}　${start}〜${end}`
+    : `${fy.ganZhi}年　${start}〜${end}`;
   document.getElementById('fc-age').textContent = `${t('age_prefix')}${fy.chineseAge}${t('age_suffix')}`;
   document.getElementById('fc-limit').textContent = ml
-    ? `${t('limit_label')}${ml.palace}${t('limit_palace')}　${ml.startYear}~${ml.endYear}` : '';
+    ? `${t('limit_label')}${tPalaceName(ml.palace)}${t('limit_palace')}　${ml.startYear}~${ml.endYear}` : '';
 }
 
 // ════════════════════════════════════════════════════════
@@ -75,7 +77,7 @@ function renderDecadeAxis() {
       const active = cur && l.order === cur.order;
       return `<button class="chip${active ? ' active' : ''}" onclick="gotoDecade(${l.order})">` +
         `<span class="chip-main">${l.startAge}-${l.endAge}${t('age_suffix')}</span>` +
-        `<span class="chip-sub">${l.stemBranch}　${l.palace}</span>` +
+        `<span class="chip-sub">${tGZ(l.stemBranch)}　${tPalaceName(l.palace)}</span>` +
       `</button>`;
     }).join('') +
     `</div>`;
@@ -98,7 +100,7 @@ function renderYearAxis() {
       const gz = getYearStem(y) + getYearBranch(y);
       const active = y === S.currentYear;
       return `<button class="chip chip-year${active ? ' active' : ''}" onclick="gotoYear(${y})">` +
-        `<span class="chip-main">${gz}</span>` +
+        `<span class="chip-main">${tGZ(gz)}</span>` +
         `<span class="chip-sub">${y}</span>` +
       `</button>`;
     }).join('') +
@@ -222,7 +224,7 @@ function updateYearHint() {
   if (isNaN(y) || y < 1900 || y > 2100) { hint.textContent = ''; return; }
   const gz = getYearStem(y) + getYearBranch(y);
   const { start, end } = lunarYearRange(y);
-  hint.textContent = `${gz}年　${start}〜${end}`;
+  hint.textContent = isEn() ? `${tGZ(gz)}　${start}〜${end}` : `${gz}年　${start}〜${end}`;
 }
 
 async function handleSubmit() {
@@ -269,6 +271,9 @@ async function handleSubmit() {
     renderViewModeBar(); renderAxes();
     buildChartBlocks();
     renderAllCharts();
+
+    // Sprint 3：起盤成功 → 自動存入命例庫（cloud.js 提供；可由 UI 關閉）
+    if (typeof librarySaveCurrent === 'function') librarySaveCurrent();
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('input-panel').style.display = 'block';
@@ -285,8 +290,9 @@ function buildChartBlocks() {
     div.className = 'chart-block';
     const isMain = blk.year === S.currentYear;
     const { start, end } = lunarYearRange(blk.year);
+    const gzDisp = isEn() ? tGZ(blk.gz) : `${blk.gz}年`;
     div.innerHTML = `
-      <div class="chart-block-title">${isMain ? t('block_main') : t('block_extra')}　${blk.year}　${blk.gz}年　${start}〜${end}</div>
+      <div class="chart-block-title">${isMain ? t('block_main') : t('block_extra')}　${blk.year}　${gzDisp}　${start}〜${end}</div>
       <div class="canvas-wrap"><canvas id="${blk.canvasId}"></canvas></div>
       <div class="chart-block-actions">
         <button onclick="exportPNGForYear(${blk.year})">${t('btn_export')} ${blk.year} ${t('btn_export_suffix')}</button>
@@ -310,7 +316,7 @@ function exportPNGForYear(year) {
   if (!canvas) return;
   const link = document.createElement('a');
   const n = S.name ? S.name+'_' : '';
-  link.download = `${n}${S.birthDate}_流年${year}.png`;
+  link.download = `${n}${S.birthDate}_${t('file_flow')}${year}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }

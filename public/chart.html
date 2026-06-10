@@ -198,6 +198,36 @@ h1.page-title {
 .seg-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; font-weight: 600; }
 .kbd-hint { font-size: 10px; color: #b5b2aa; text-align: center; margin: 2px 0 10px; letter-spacing: 0.05em; }
 
+/* ── 命例庫（Sprint 3）──────────────────────────────────── */
+.lib-status { font-size: 10px; color: #999; margin-bottom: 10px; letter-spacing: 0.03em; }
+.lib-list { max-height: 220px; overflow-y: auto; margin-bottom: 10px; }
+.lib-row {
+  display: flex; justify-content: space-between; align-items: center;
+  border: 1px solid #e4e2dc; border-radius: 3px;
+  padding: 7px 10px; margin-bottom: 6px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lib-row:hover { border-color: #aaa; background: #faf9f6; }
+.lib-info { flex: 1; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.lib-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.lib-meta { font-size: 11px; color: #888; }
+.lib-del {
+  background: transparent; border: none; color: #bbb; cursor: pointer;
+  font-size: 13px; padding: 2px 6px; border-radius: 2px; font-family: inherit;
+}
+.lib-del:hover { color: #c0392b; background: #fdf0ef; }
+.lib-empty { font-size: 11px; color: #aaa; padding: 8px 2px; }
+.lib-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lib-auto { font-size: 11px; color: #666; display: flex; align-items: center; gap: 4px; cursor: pointer; margin-right: auto; }
+.lib-auto input { accent-color: #0C6170; }
+.lib-btn {
+  background: #fff; border: 1px solid #ccc; color: #333;
+  padding: 5px 12px; border-radius: 2px; cursor: pointer;
+  font-size: 11px; font-family: inherit; transition: background 0.15s;
+}
+.lib-btn:hover { background: #f5f4f0; }
+.lib-btn-google { border-color: #0C6170; color: #0C6170; font-weight: 600; }
+
 .canvas-wrap { display: flex; justify-content: center; margin-bottom: 10px; overflow-x: auto; }
 canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -285,6 +315,9 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   <button class="btn-primary" onclick="handleSubmit()" data-i18n="btn_submit">起　盤</button>
 </div>
 
+<!-- 命例庫（Sprint 3）：內容由 cloud.js renderLibrary() 動態生成 -->
+<div class="panel" id="library-panel"></div>
+
 <div class="loading" id="loading">
   <div class="spinner"></div>
   <div id="loading-text" style="font-size:11px;color:#888;letter-spacing:0.15em;" data-i18n="loading_text">命盤計算中</div>
@@ -311,10 +344,17 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   </div>
 </div>
 
+<script>
+// Google OAuth Client ID（公開值，CLAUDE.md Rule 2）。
+// Blue 於 GCP Console 建立後填入；留空 = 隱藏登入按鈕，命例庫走純 localStorage。
+window.AETHNOUS_GOOGLE_CLIENT_ID = '';
+</script>
 <script src="/js/i18n.js"></script>
 <script src="/js/chart-state.js"></script>
 <script src="/js/api.js"></script>
 <script src="/js/chart-render.js"></script>
+<script src="/js/cloud.js"></script>
 <script src="/js/app.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="initGIS()"></script>
 </body>
 </html>

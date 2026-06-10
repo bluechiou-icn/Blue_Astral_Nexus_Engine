@@ -130,6 +130,109 @@ function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, c
   ctx.textAlign = 'left';
 }
 
+// ── EN 模式：星曜橫排（拉丁字串不適合直書，改一星一列）──
+// 主星：粗體意譯 + 小字 pinyin；其他星：pinyin。亮度、四化徽章接在列尾。
+// 超寬等比縮字、超高等比縮列，沿用 zh 模式的 shrink-to-fit 原則。
+function drawStarsEn(ctx, stars, palMu, xL, xR, top, bottom) {
+  if (!stars.length) return;
+  const maxW = xR - xL;
+  let fs = 13;
+  // 垂直 fit：列高 = fs + 5
+  const availH = bottom - top;
+  if (stars.length * (fs + 5) > availH) {
+    fs = Math.max(7, Math.floor(availH / stars.length) - 5);
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  let y = top;
+  for (const star of stars) {
+    if (y + fs > bottom) break;
+    const mu = palMu.filter(m => m.star === star.name);
+    const meaning = star.isMajor ? (STAR_EN[star.name]?.m || '') : '';
+    const pinyin  = STAR_EN[star.name]?.p || star.name;
+    const small = Math.max(6, fs - 3);
+
+    // 段落組裝：[主名(粗)] [pinyin(小)] [亮度(小)] [四化chips]
+    const segs = [];
+    if (star.isMajor && meaning) {
+      segs.push({ txt: meaning, fs, bold: true, color: star.color });
+      segs.push({ txt: ' ' + pinyin, fs: small, bold: false, color: star.isBorrowed ? star.color : '#8a8a8a' });
+    } else {
+      segs.push({ txt: pinyin, fs, bold: star.isMajor, color: star.color });
+    }
+    if (star.brightness) {
+      segs.push({ txt: ' ·' + tBright(star.brightness), fs: small, bold: false,
+                  color: star.isBorrowed ? star.color : (BRIGHT_CLR[star.brightness] || '#666') });
+    }
+
+    // 量測：文字段 + chips（chip 寬 = 字寬 + padding 4，間距 3）
+    const measure = (scale = 1) => {
+      let w = 0;
+      for (const sg of segs) {
+        ctx.font = `${sg.bold ? 'bold ' : ''}${Math.max(6, Math.round(sg.fs * scale))}px ${FONT_EN}`;
+        w += ctx.measureText(sg.txt).width;
+      }
+      for (const m of mu) {
+        const key = MU_KEY[m.type]; if (!key) continue;
+        const cfs = Math.max(6, Math.round((fs - 3) * scale));
+        ctx.font = `bold ${cfs}px ${FONT_EN}`;
+        w += ctx.measureText(tMuBadge(key)).width + 4 + 3;
+      }
+      return w;
+    };
+    let scale = 1;
+    const w0 = measure(1);
+    if (w0 > maxW) scale = Math.max(0.5, maxW / w0);
+
+    // 借星：整列灰化 + 虛線外框
+    if (star.isBorrowed) {
+      ctx.save();
+      ctx.strokeStyle = '#999';
+      ctx.setLineDash([3, 2]);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(xL - 2, y - 1, Math.min(maxW, measure(scale)) + 4, fs + 4);
+      ctx.restore();
+    }
+
+    let x = xL;
+    for (const sg of segs) {
+      const sfs = Math.max(6, Math.round(sg.fs * scale));
+      ctx.font = `${sg.bold ? 'bold ' : ''}${sfs}px ${FONT_EN}`;
+      ctx.fillStyle = sg.color;
+      ctx.fillText(sg.txt, x, y + (fs - sfs));
+      x += ctx.measureText(sg.txt).width;
+    }
+    // 四化 chips（顏色依來源：生年紅/大限綠/流年藍；借星 → 灰）
+    for (const m of mu) {
+      const key = MU_KEY[m.type]; if (!key) continue;
+      const palette = MU_BY_SRC[m.src]; if (!palette) continue;
+      const cfs = Math.max(6, Math.round((fs - 3) * scale));
+      ctx.font = `bold ${cfs}px ${FONT_EN}`;
+      const label = tMuBadge(key);
+      const cw = ctx.measureText(label).width + 4;
+      const chH = cfs + 3;
+      x += 3;
+      if (star.isBorrowed) {
+        ctx.fillStyle = '#e8e8e8';
+        ctx.fillRect(x, y, cw, chH);
+        ctx.save();
+        ctx.strokeStyle = '#9a9a9a'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, cw - 1, chH - 1);
+        ctx.restore();
+        ctx.fillStyle = '#9a9a9a';
+      } else {
+        ctx.fillStyle = palette.bg;
+        ctx.fillRect(x, y, cw, chH);
+        ctx.fillStyle = palette.fg;
+      }
+      ctx.fillText(label, x + 2, y + 1);
+      x += cw;
+    }
+    y += fs + 5;
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
 // 流年吉凶星顏色：流羊/流陀為凶星(紅)，其他為輔星(紫)/小星(淺藍)
 const FLOW_TRANS_COLOR = {
   '流祿': '#0a7f5f',   // 祿存色 深綠
@@ -147,8 +250,9 @@ const FLOW_TRANS_COLOR = {
 function drawTransientRow(ctx, cx, cy, palace, decadeMu, flowTrans, yTop, rowH) {
   const labels = [];
   // 流年吉凶星（依宮位地支）— 大限四化已透過星旁綠底徽章顯示，此排只放流年凶吉星
-  for (const t of flowTrans) {
-    labels.push({ text: t, color: FLOW_TRANS_COLOR[t] || '#444', bg: null });
+  // 注意：迴圈變數不可命名為 t（會遮蔽 i18n 的 t()）
+  for (const ft of flowTrans) {
+    labels.push({ text: tFlowTrans(ft), color: FLOW_TRANS_COLOR[ft] || '#444', bg: null });
   }
   if (!labels.length) return;
 
@@ -244,11 +348,34 @@ function drawPalace(ctx, palace, row, col, opts) {
     }
     ctx.textAlign = 'left';
   };
+  // EN 模式：橫排小紅框（拉丁字不直書），由右向左堆疊
+  let redBoxRight = cx + CELL - PAD - 22;
+  const drawHorizRedBox = (text) => {
+    const FSr = 9;
+    ctx.font = `bold ${FSr}px ${FONT_EN}`;
+    const bw = ctx.measureText(text).width + 8, bh = 14;
+    const bx = redBoxRight - bw;
+    const by = cy + CELL - 12 - bh;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = RED_BOX; ctx.lineWidth = 1.5;
+    ctx.strokeRect(bx + 0.75, by + 0.75, bw - 1.5, bh - 1.5);
+    ctx.fillStyle = RED_BOX;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, bx + bw / 2, by + bh - 4);
+    ctx.textAlign = 'left';
+    redBoxRight = bx - 4;
+  };
+
   // 多重標記時：身宮 inner, 來因宮 next, 小限 outer
   let slot = 0;
-  if (palace.name === bodyPalace) { drawVertRedBox('身宮', slot); slot++; }
-  if (palace.name === origPalace) { drawVertRedBox('來因宮', slot); slot++; }
-  if (isMinorLim)                  { drawVertRedBox('小限', slot); slot++; }
+  const markBox = (text) => {
+    if (isEn()) drawHorizRedBox(text);
+    else { drawVertRedBox(text, slot); slot++; }
+  };
+  if (palace.name === bodyPalace) markBox(t('cv_body_box'));
+  if (palace.name === origPalace) markBox(t('cv_origin_box'));
+  if (isMinorLim)                 markBox(t('cv_minor_box'));
 
   // ── TOP-LEFT: Three-layer names 流X｜大X｜本命名 ──
   let topY = cy + 14;
@@ -261,21 +388,24 @@ function drawPalace(ctx, palace, row, col, opts) {
     const segments = [];
     if (flowMing) {
       const fp = palOffset(palace.name, flowMing);
-      if (fp) segments.push({ text:'流'+fp.charAt(0), color:'#c47800' });
+      if (fp) segments.push({ text: isEn() ? 'F·'+tPalaceShort(fp) : '流'+fp.charAt(0), color:'#c47800' });
     }
     if (decadeMing) {
       const dp = palOffset(palace.name, decadeMing);
-      if (dp) segments.push({ text:'大'+dp.charAt(0), color:'#555' });
+      if (dp) segments.push({ text: isEn() ? 'D·'+tPalaceShort(dp) : '大'+dp.charAt(0), color:'#555' });
     }
-    segments.push({ text: palace.name, color:'#888' });
+    segments.push({ text: isEn() ? tPalaceName(palace.name) : palace.name, color:'#888' });
 
+    const sepCh = isEn() ? ' | ' : '｜';
+    const segFont = isEn() ? `${FS-1}px ${FONT_EN}` : `${FS}px ${FONT}`;
     for (let i = 0; i < segments.length; i++) {
       if (i > 0) {
+        ctx.font = segFont;
         ctx.fillStyle = '#ddd';
-        ctx.fillText('｜', tx, ty);
-        tx += ctx.measureText('｜').width;
+        ctx.fillText(sepCh, tx, ty);
+        tx += ctx.measureText(sepCh).width;
       }
-      ctx.font = `${FS}px ${FONT}`;
+      ctx.font = segFont;
       ctx.fillStyle = segments[i].color;
       ctx.fillText(segments[i].text, tx, ty);
       tx += ctx.measureText(segments[i].text).width;
@@ -284,9 +414,15 @@ function drawPalace(ctx, palace, row, col, opts) {
   }
 
   // ── Decorative large dim branch glyph (background) ──
-  ctx.font = `bold 56px ${FONT}`; ctx.fillStyle = '#f3f1ed';
-  ctx.textAlign = 'right';
-  ctx.fillText(palace.branch, cx+CELL-6, cy+60);
+  if (isEn()) {
+    ctx.font = `bold 30px ${FONT_EN}`; ctx.fillStyle = '#f3f1ed';
+    ctx.textAlign = 'right';
+    ctx.fillText(tBranch(palace.branch), cx+CELL-6, cy+38);
+  } else {
+    ctx.font = `bold 56px ${FONT}`; ctx.fillStyle = '#f3f1ed';
+    ctx.textAlign = 'right';
+    ctx.fillText(palace.branch, cx+CELL-6, cy+60);
+  }
   ctx.textAlign = 'left';
 
   // ── STARS (vertical columns, evenly distributed) ──
@@ -298,20 +434,31 @@ function drawPalace(ctx, palace, row, col, opts) {
 
   // Reserve right side for stem/branch column (~16px)
   const STEM_BR_RESERVE = 20;
-  // Reserve left side for empty-palace text block
+  // Reserve left side for empty-palace text block（EN 改橫排標示於星列上方，不佔左欄）
   const isEmptyP = palace.isEmpty && palace.borrowedFromPalace;
-  const LEFT_RESERVE = isEmptyP ? 58 : 0;
+  const LEFT_RESERVE = (isEmptyP && !isEn()) ? 58 : 0;
+  let enStarsTop = starsTop;
 
-  // Empty palace label (top-left)：「空宮 / 借X宮」字級統一
+  // Empty palace label：zh「空宮 / 借X宮」左欄直書；en「Empty ← Travel」橫排一行
   if (isEmptyP) {
     const EFS = 11;
     const src = palace.borrowedFromPalace;
-    const srcFull = src.endsWith('宮') ? src : src + '宮';
-    ctx.font = `bold ${EFS}px ${FONT}`;
-    ctx.fillStyle = '#aaa';
-    ctx.fillText('空宮', cx + PAD, starsTop + EFS);
-    ctx.fillStyle = '#bbb';
-    ctx.fillText('借' + srcFull, cx + PAD, starsTop + EFS * 2 + 3);
+    if (isEn()) {
+      ctx.font = `bold ${EFS}px ${FONT_EN}`;
+      ctx.fillStyle = '#aaa';
+      const emptyTxt = t('cv_empty');
+      ctx.fillText(emptyTxt, cx + PAD, enStarsTop + EFS);
+      ctx.fillStyle = '#bbb';
+      ctx.fillText(' ← ' + tPalaceName(src), cx + PAD + ctx.measureText(emptyTxt).width, enStarsTop + EFS);
+      enStarsTop += EFS + 6;
+    } else {
+      const srcFull = src.endsWith('宮') ? src : src + '宮';
+      ctx.font = `bold ${EFS}px ${FONT}`;
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('空宮', cx + PAD, starsTop + EFS);
+      ctx.fillStyle = '#bbb';
+      ctx.fillText('借' + srcFull, cx + PAD, starsTop + EFS * 2 + 3);
+    }
   }
 
   // Look up brightness for borrowed stars from the source palace
@@ -368,35 +515,40 @@ function drawPalace(ctx, palace, row, col, opts) {
   const N = stars.length;
   const usableW = CELL - 2*PAD - LEFT_RESERVE - STEM_BR_RESERVE;
 
-  // 字級規則：主/輔/凶 = FS_MAIN（即「天相」字級）；小星(淺藍) = FS_SMALL（即「龍池」字級）
-  const FS_MAIN  = 22;
-  const FS_SMALL = 16;
-  for (const s of stars) s.fs = (s.color === CLR_SMALL) ? FS_SMALL : FS_MAIN;
+  if (isEn()) {
+    // EN 模式：橫排一星一列
+    drawStarsEn(ctx, stars, palMu, cx + PAD, cx + CELL - PAD - STEM_BR_RESERVE, enStarsTop, botStarLim);
+  } else {
+    // 字級規則：主/輔/凶 = FS_MAIN（即「天相」字級）；小星(淺藍) = FS_SMALL（即「龍池」字級）
+    const FS_MAIN  = 22;
+    const FS_SMALL = 16;
+    for (const s of stars) s.fs = (s.color === CLR_SMALL) ? FS_SMALL : FS_MAIN;
 
-  // 每顆星的欄寬（緊湊配置，避免主星溢出宮位）
-  const colWFor = fs => fs + 4;
-  let colWs = stars.map(s => colWFor(s.fs));
-  let totalW = colWs.reduce((a, b) => a + b, 0);
+    // 每顆星的欄寬（緊湊配置，避免主星溢出宮位）
+    const colWFor = fs => fs + 4;
+    let colWs = stars.map(s => colWFor(s.fs));
+    let totalW = colWs.reduce((a, b) => a + b, 0);
 
-  // 若總寬超過可用寬度則等比縮字（最小 10px）
-  if (totalW > usableW && totalW > 0) {
-    const ratio = usableW / totalW;
-    for (let i = 0; i < stars.length; i++) {
-      stars[i].fs = Math.max(10, Math.floor(stars[i].fs * ratio));
-      colWs[i] = colWFor(stars[i].fs);
+    // 若總寬超過可用寬度則等比縮字（最小 10px）
+    if (totalW > usableW && totalW > 0) {
+      const ratio = usableW / totalW;
+      for (let i = 0; i < stars.length; i++) {
+        stars[i].fs = Math.max(10, Math.floor(stars[i].fs * ratio));
+        colWs[i] = colWFor(stars[i].fs);
+      }
+      totalW = colWs.reduce((a, b) => a + b, 0);
     }
-    totalW = colWs.reduce((a, b) => a + b, 0);
-  }
 
-  const startX = cx + PAD + LEFT_RESERVE + Math.max(0, (usableW - totalW) / 2);
-  let cursorX = startX;
-  for (let i = 0; i < N; i++) {
-    const star = stars[i];
-    const cw = colWs[i];
-    const centerX = cursorX + cw / 2;
-    const mu = palMu.filter(m => m.star === star.name);
-    drawStarColumn(ctx, centerX, starsTop, botStarLim, star.name, star.brightness, mu, star.color, star.isMajor, star.fs, star.isBorrowed);
-    cursorX += cw;
+    const startX = cx + PAD + LEFT_RESERVE + Math.max(0, (usableW - totalW) / 2);
+    let cursorX = startX;
+    for (let i = 0; i < N; i++) {
+      const star = stars[i];
+      const cw = colWs[i];
+      const centerX = cursorX + cw / 2;
+      const mu = palMu.filter(m => m.star === star.name);
+      drawStarColumn(ctx, centerX, starsTop, botStarLim, star.name, star.brightness, mu, star.color, star.isMajor, star.fs, star.isBorrowed);
+      cursorX += cw;
+    }
   }
 
   // ── 流年吉凶星（橫向一排，字體 = 主星 50%）──
@@ -421,35 +573,40 @@ function drawPalace(ctx, palace, row, col, opts) {
   if (opts.flowYearVal && opts.flowYearBranch) {
     const py = getPalaceFlowYear(palace.branch, opts.flowYearVal, opts.flowYearBranch);
     const palaceGZ = py.stem + py.branch;
-    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#555';
-    ctx.fillText(`${py.year}年／${palaceGZ}年`, centerBx, cy + CELL - 56);
+    ctx.font = isEn() ? `10px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#555';
+    ctx.fillText(isEn() ? `${py.year} · ${tGZ(palaceGZ)}` : `${py.year}年／${palaceGZ}年`, centerBx, cy + CELL - 56);
   }
 
   if (palace.decadeRange && birthYear) {
     const startAge = palace.decadeRange[0];
     // 第10/11/12 大限（94歲+）顯示「胎兒命」取代太遙遠的西元年
     if (startAge >= 94) {
-      ctx.font = `11px ${FONT}`; ctx.fillStyle = '#bbb';
-      ctx.fillText('胎兒命', centerBx, cy + CELL - 38);
+      ctx.font = isEn() ? `10px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#bbb';
+      ctx.fillText(t('cv_fetal'), centerBx, cy + CELL - 38);
     } else {
       const sy0 = birthYear + startAge - 1;
       const ey0 = birthYear + palace.decadeRange[1] - 1;
-      ctx.font = `11px ${FONT}`; ctx.fillStyle = '#aaa';
-      ctx.fillText(`${sy0} ~ ${ey0} 年`, centerBx, cy + CELL - 38);
+      ctx.font = isEn() ? `10px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#aaa';
+      ctx.fillText(isEn() ? `${sy0}–${ey0}` : `${sy0} ~ ${ey0} 年`, centerBx, cy + CELL - 38);
     }
   }
 
-  // 宮位名（加大加粗，加「宮」後綴）
-  ctx.font = `bold 18px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-  const palaceLabel = palace.name + (palace.name.endsWith('宮') ? '' : '宮');
-  ctx.fillText(palaceLabel, centerBx, cy + CELL - 14);
+  // 宮位名（加大加粗，zh 加「宮」後綴；en 用意譯）
+  if (isEn()) {
+    ctx.font = `bold 15px ${FONT_EN}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(tPalaceName(palace.name), centerBx, cy + CELL - 14);
+  } else {
+    ctx.font = `bold 18px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+    const palaceLabel = palace.name + (palace.name.endsWith('宮') ? '' : '宮');
+    ctx.fillText(palaceLabel, centerBx, cy + CELL - 14);
+  }
   ctx.textAlign = 'left';
 
   // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ ──
-  ctx.font = `11px ${FONT}`; ctx.fillStyle = '#666';
+  ctx.font = isEn() ? `9px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#666';
   ctx.textAlign = 'right';
-  ctx.fillText(palace.stem,   cx+CELL-PAD, cy+CELL-26);
-  ctx.fillText(palace.branch, cx+CELL-PAD, cy+CELL-12);
+  ctx.fillText(tStem(palace.stem),     cx+CELL-PAD, cy+CELL-26);
+  ctx.fillText(tBranch(palace.branch), cx+CELL-PAD, cy+CELL-12);
   ctx.textAlign = 'left';
 }
 
@@ -466,6 +623,8 @@ function drawCenterTo(ctx, fd) {
   ctx.fillStyle = '#f9f8f4';
   ctx.fillRect(cx, cy, cw, ch);
 
+  // Watermark removed per design update
+
   ctx.textAlign = 'center';
 
   if (!d) { ctx.textAlign='left'; return; }
@@ -479,34 +638,33 @@ function drawCenterTo(ctx, fd) {
   const pillarLabels = ['年','月','日','時'];
   const pillarKeys = ['yearly','monthly','daily','hourly'];
 
+  // ── 動態計算內容總高度，垂直置中（不含底部 brand 行） ──
+  const FSPillar = 17;
+  const SEP_BLANK = 14;  // 每條 sep 之下增加一行空白
+
+  // 真太陽時是否需要顯示（需在 heights 計算前判斷，以便精確垂直置中）
   const tst    = d.meta?.trueSolarTime;
   const ckt    = d.meta?.clockTime;
   const offset = d.meta?.trueSolarTimeOffsetMinutes;
   const hasTST = !!(tst && ckt && tst !== ckt);
 
-  // ── 統一行距常數 ──
-  const LINE_H   = 28;  // 所有內容行：baseline 到下一行 baseline 的距離
-  const SEP_SLOT = 20;  // 所有分隔線：佔用同等高度，線畫在正中央（iy + 10）
-
-  // ── 動態計算內容總高度，垂直置中（不含底部 brand 行） ──
+  // 元素高度清單
   const heights = [];
-  if (S.name)        heights.push(LINE_H);   // 姓名
-  heights.push(LINE_H);                       // 生日
-  if (hasTST)        heights.push(LINE_H);   // 真太陽時
-  heights.push(LINE_H);                       // 農曆
-  heights.push(SEP_SLOT);                     // sep1
-  heights.push(LINE_H);                       // 八字 label
-  heights.push(LINE_H);                       // 八字天干
-  heights.push(LINE_H);                       // 八字地支
-  heights.push(SEP_SLOT);                     // sep2
-  heights.push(LINE_H);                       // 命主行
-  if (d.baziQiyun)   heights.push(LINE_H);   // 起運行
-  heights.push(SEP_SLOT);                     // sep3
+  if (S.name) heights.push(32);     // 姓名
+  heights.push(28);                  // 生日（Row 2）
+  if (hasTST) heights.push(28);     // 真太陽時行（含上下各等距留白 8px + 12px font）
+  heights.push(30);                  // 農曆（Row 3）
+  heights.push(16 + SEP_BLANK);      // sep1 + 空白
+  heights.push(15);                  // 八字 label
+  heights.push(FSPillar + 4);        // 八字 stem
+  heights.push(FSPillar + 8);        // 八字 branch
+  heights.push(14 + SEP_BLANK);      // sep2 + 空白
+  heights.push(22);                  // 命主行
+  if (d.baziQiyun) heights.push(22); // 起運行
+  heights.push(16 + SEP_BLANK);      // sep3 + 空白
   if (fy) {
-    heights.push(LINE_H);                     // 流年1 title
-    heights.push(LINE_H);                     // 流年1 detail
-    heights.push(LINE_H);                     // 流年2 title
-    heights.push(LINE_H);                     // 流年2 detail
+    heights.push(24 + 26);           // 流年 1
+    heights.push(24 + 26);           // 流年 2
   }
 
   const totalContent = heights.reduce((a, b) => a + b, 0);
@@ -515,107 +673,145 @@ function drawCenterTo(ctx, fd) {
   const topMargin = Math.max(20, (availableH - totalContent) / 2);
   let iy = cy + topMargin;
 
-  // 姓名
+  // Row 1: 姓名 (large bold)
   if (S.name) {
     ctx.font = `bold 24px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-    ctx.fillText(S.name, mx, iy); iy += LINE_H;
+    ctx.fillText(S.name, mx, iy); iy += 32;
   }
 
-  // 西元生日 + 時間 + 時辰 + 陰陽
-  ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-  ctx.fillText(`${S.birthDate}　${S.birthTime}　${d.shichen||''}　${d.yinYang||''}`, mx, iy);
-  iy += LINE_H;
+  // Row 2: 西元生日 + 時間 + 時辰 + 陰陽 (1.5×, 20px bold)
+  if (isEn()) {
+    ctx.font = `bold 16px ${FONT_EN}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(`${S.birthDate}  ${S.birthTime}  ${tShichen(d.shichen||'')}  ${tYinYang(d.yinYang||'')}`, mx, iy);
+  } else {
+    ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(`${S.birthDate}　${S.birthTime}　${d.shichen||''}　${d.yinYang||''}`, mx, iy);
+  }
+  iy += 28;
 
-  // 真太陽時
+  // 真太陽時行：置於 Row2（生日）與 Row3（農曆）正中間，上下留白等距（各 8px）
   if (hasTST) {
-    ctx.font = `12px ${FONT}`; ctx.fillStyle = '#9a6a3a';
-    ctx.fillText(`真太陽時 ${tst}（${offset >= 0 ? '+' : ''}${offset}分）`, mx, iy);
-    iy += LINE_H;
+    iy += 8;  // 上方等距空白
+    ctx.font = isEn() ? `12px ${FONT_EN}` : `12px ${FONT}`; ctx.fillStyle = '#9a6a3a';
+    const offStr = `${offset >= 0 ? '+' : ''}${offset}`;
+    ctx.fillText(
+      isEn() ? `${t('cv_tst_label')} ${tst} (${offStr} min)` : `真太陽時 ${tst}（${offStr}分）`,
+      mx, iy);
+    iy += 12 + 8;  // 字高 + 下方等距空白
   }
 
-  // 農曆 + 生肖 + 五行局
-  ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
-  ctx.fillText(`${d.lunarDate}　${zodiac ? '屬'+zodiac+'　' : ''}${d.fiveElementsClass||''}`, mx, iy);
-  iy += LINE_H;
+  // Row 3: 農曆 + 生肖 + 五行局 (1.5×, 20px bold)
+  if (isEn()) {
+    ctx.font = `bold 15px ${FONT_EN}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(`${tLunarDate(d.lunarDate)}${zodiac ? ' · '+tZodiac(zodiac) : ''} · ${tWuXingJu(d.fiveElementsClass||'')}`, mx, iy);
+  } else {
+    ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(`${d.lunarDate}　${zodiac ? '屬'+zodiac+'　' : ''}${d.fiveElementsClass||''}`, mx, iy);
+  }
+  iy += 30;
 
-  // ── 分隔線 1 ──
+  // Separator 1（之後加一行空白）
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+30, iy + SEP_SLOT/2); ctx.lineTo(cx+cw-30, iy + SEP_SLOT/2); ctx.stroke();
-  iy += SEP_SLOT;
+  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
+  iy += 16 + SEP_BLANK;
 
   // ── 八字四柱（直書） ──
   const colSpacing = 38;
   const totalW     = colSpacing * 4;
   const pStartX    = mx - totalW/2 + colSpacing/2;
 
-  // Label row（年/月/日/時柱）
-  ctx.font = `11px ${FONT}`; ctx.fillStyle = '#888';
+  // Label row (年/月/日/時)
+  const enPillarLabels = ['Yr', 'Mo', 'Day', 'Hr'];
+  ctx.font = isEn() ? `10px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#888';
   for (let i = 0; i < 4; i++) {
-    ctx.fillText(pillarLabels[i] + '柱', pStartX + i * colSpacing, iy);
+    ctx.fillText(isEn() ? enPillarLabels[i] : pillarLabels[i] + '柱', pStartX + i * colSpacing, iy);
   }
-  iy += LINE_H;
+  iy += 15;
 
-  // 天干
-  ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  // Stem row (天干)
+  ctx.font = isEn() ? `bold 12px ${FONT_EN}` : `bold ${FSPillar}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   for (let i = 0; i < 4; i++) {
-    const stem = pillars[pillarKeys[i]]?.[0] || '－';
-    ctx.fillText(stem, pStartX + i * colSpacing, iy);
+    const stem = pillars[pillarKeys[i]]?.[0] || (isEn() ? '—' : '－');
+    ctx.fillText(tStem(stem), pStartX + i * colSpacing, iy + FSPillar);
   }
-  iy += LINE_H;
+  iy += FSPillar + 4;
 
-  // 地支
-  ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+  // Branch row (地支)
+  ctx.font = isEn() ? `bold 12px ${FONT_EN}` : `bold ${FSPillar}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
   for (let i = 0; i < 4; i++) {
-    const branch = pillars[pillarKeys[i]]?.[1] || '－';
-    ctx.fillText(branch, pStartX + i * colSpacing, iy);
+    const branch = pillars[pillarKeys[i]]?.[1] || (isEn() ? '—' : '－');
+    ctx.fillText(tBranch(branch), pStartX + i * colSpacing, iy + FSPillar);
   }
-  iy += LINE_H;
+  iy += FSPillar + 8;
 
-  // ── 分隔線 2 ──
+  // Separator 2（之後加一行空白）
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+30, iy + SEP_SLOT/2); ctx.lineTo(cx+cw-30, iy + SEP_SLOT/2); ctx.stroke();
-  iy += SEP_SLOT;
+  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
+  iy += 14 + SEP_BLANK;
 
-  // 命主 身主 身宮 來因
-  ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#333';
-  ctx.fillText(
-    `命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}　身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`,
-    mx, iy
-  );
-  iy += LINE_H;
+  // Row: 命主 身主 身宮 來因
+  if (isEn()) {
+    ctx.font = `bold 11px ${FONT_EN}`; ctx.fillStyle = '#333';
+    ctx.fillText(
+      `${t('cv_ming_lord')} ${tStar(d.lifeStars?.mingZhu)||'—'} · ${t('cv_shen_lord')} ${tStar(d.lifeStars?.shenZhu)||'—'} · ${t('cv_body_label')} ${tPalaceName(d.bodyPalace?.name)||'—'} · ${t('cv_origin_label')} ${tPalaceName(d.originalPalace?.name)||'—'}`,
+      mx, iy
+    );
+  } else {
+    ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#333';
+    ctx.fillText(
+      `命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}　身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`,
+      mx, iy
+    );
+  }
+  iy += 22;
 
-  // 八字起運
+  // Row: 降世後 X 歲 Y 月 Z 天 八字起運
   const qy = d.baziQiyun;
   if (qy) {
-    ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#555';
-    ctx.fillText(`降世後 ${qy.years} 歲 ${qy.months} 月 ${qy.days} 天　八字起運`, mx, iy);
-    iy += LINE_H;
+    if (isEn()) {
+      ctx.font = `bold 11px ${FONT_EN}`; ctx.fillStyle = '#555';
+      ctx.fillText(`BaZi luck cycle starts ${qy.years}y ${qy.months}m ${qy.days}d after birth`, mx, iy);
+    } else {
+      ctx.font = `bold 13px ${FONT}`; ctx.fillStyle = '#555';
+      ctx.fillText(`降世後 ${qy.years} 歲 ${qy.months} 月 ${qy.days} 天　八字起運`, mx, iy);
+    }
+    iy += 22;
   }
 
-  // ── 分隔線 3 ──
+  // Separator 3（之後加一行空白）
   ctx.strokeStyle = '#d4d0c4'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx+30, iy + SEP_SLOT/2); ctx.lineTo(cx+cw-30, iy + SEP_SLOT/2); ctx.stroke();
-  iy += SEP_SLOT;
+  ctx.beginPath(); ctx.moveTo(cx+30,iy); ctx.lineTo(cx+cw-30,iy); ctx.stroke();
+  iy += 16 + SEP_BLANK;
 
   // ── 流年疊盤（當前流年 + 次年） ──
-  if (fy) {
-    const printOverlay = (year, gz, branchOfPalace) => {
-      const flowPal = d.palaces.find(p => p.branch === branchOfPalace);
-      if (!flowPal) return;
-      const flowMingName = flowPal.name;
-      const dpName = ml ? palOffset(flowMingName, ml.palace) : null;
-      const dpStr  = dpName ? '大' + dpName.charAt(0) : '大命';
+  const printOverlay = (year, gz, branchOfPalace) => {
+    const flowPal = d.palaces.find(p => p.branch === branchOfPalace);
+    if (!flowPal) return;
+    const flowMingName = flowPal.name;
+    const dpName = ml ? palOffset(flowMingName, ml.palace) : null;
 
+    if (isEn()) {
+      const dpStr = dpName ? 'D·' + tPalaceShort(dpName) : 'D·Life';
+      ctx.font = `bold 14px ${FONT_EN}`; ctx.fillStyle = '#1a1a1a';
+      ctx.fillText(`${tGZ(gz)} (${year}) Flow Overlay`, mx, iy);
+      iy += 24;
+      ctx.font = `12px ${FONT_EN}`; ctx.fillStyle = '#444';
+      ctx.fillText(`${t('cv_year_life')} · ${dpStr} · Natal ${tPalaceName(flowMingName)}`, mx, iy);
+      iy += 26;
+    } else {
+      const dpStr = dpName ? '大' + dpName.charAt(0) : '大命';
       ctx.font = `bold 17px ${FONT}`; ctx.fillStyle = '#1a1a1a';
       ctx.fillText(`${gz}年（${year}）流年疊盤`, mx, iy);
-      iy += LINE_H;
-
+      iy += 24;
       ctx.font = `15px ${FONT}`; ctx.fillStyle = '#444';
       ctx.fillText(`年命　${dpStr}　本命${flowMingName}宮`, mx, iy);
-      iy += LINE_H;
-    };
+      iy += 26;
+    }
+  };
 
+  if (fy) {
     printOverlay(fy.year, fy.ganZhi, fy.branch);
+    iy += 4;
     const ny  = fy.year + 1;
     const nb  = getYearBranch(ny);
     const ngz = getYearStem(ny) + nb;
@@ -624,13 +820,13 @@ function drawCenterTo(ctx, fd) {
 
   // ── 跨時辰警示（brand 上方） ──
   if (d.meta?.trueSolarTimeCrossedHour) {
-    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#e08040';
-    ctx.fillText('⚠ 真太陽時校正後時辰已變更，請確認定盤', mx, cy + ch - 44);
+    ctx.font = isEn() ? `11px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#e08040';
+    ctx.fillText(t('cv_tst_warn'), mx, cy + ch - 44);
   }
 
-  // ── Bottom brand ──
-  ctx.font = `bold 14px ${FONT}`; ctx.fillStyle = '#0C6170';
-  ctx.fillText("Blue's 紫微斗數命理顧問排盤系統 V3.0", mx, cy + ch - 28);
+  // ── Bottom brand: Midnight Blue + Crystibee® ──
+  ctx.font = isEn() ? `bold 13px ${FONT_EN}` : `bold 14px ${FONT}`; ctx.fillStyle = '#0C6170';
+  ctx.fillText(t('cv_brand'), mx, cy + ch - 28);
 
   ctx.font = `bold 12px ${FONT}`; ctx.fillStyle = '#0C6170';
   ctx.fillText('Crystibee ®', mx, cy + ch - 12);
@@ -865,4 +1061,22 @@ function bindPalaceClick(canvas) {
 function renderChart() {
   // Rerender all blocks (covers multi-year mode + handles WATERMARK_IMG reload)
   if (S.yearBlocks && S.yearBlocks.length) renderAllCharts();
+}
+
+// ════════════════════════════════════════════════════════
+// Sprint 2 驗收工具：掃描 Canvas 渲染文字中殘留的 CJK 字元。
+// DevTools 切到 EN 後執行 __scanCanvasCJK()，回傳 [] 即通過。
+// ════════════════════════════════════════════════════════
+function __scanCanvasCJK() {
+  const drawn = [];
+  const orig = CanvasRenderingContext2D.prototype.fillText;
+  CanvasRenderingContext2D.prototype.fillText = function (text, ...rest) {
+    drawn.push(String(text));
+    return orig.call(this, text, ...rest);
+  };
+  try { renderAllCharts(); }
+  finally { CanvasRenderingContext2D.prototype.fillText = orig; }
+  const cjk = /[㐀-鿿豈-﫿]/;
+  // 命主姓名為使用者輸入，不在翻譯範圍
+  return [...new Set(drawn.filter(s => cjk.test(s) && s !== S.name))];
 }
