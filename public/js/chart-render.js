@@ -466,9 +466,7 @@ function drawCenterTo(ctx, fd) {
   ctx.fillStyle = '#f9f8f4';
   ctx.fillRect(cx, cy, cw, ch);
 
-  // ── Watermark Crystibee logo (drawn FIRST so text overlays on top) ──
-  // Crystibee logo watermark: 放大 20% (280→336), 顏色淡 30% (alpha 0.18→0.126)
-  drawCrystibeeLogo(ctx, mx, cy + ch/2 - 10, 336, '#e6e3dc');
+  // Watermark removed per design update
 
   ctx.textAlign = 'center';
 
@@ -487,11 +485,18 @@ function drawCenterTo(ctx, fd) {
   const FSPillar = 17;
   const SEP_BLANK = 14;  // 每條 sep 之下增加一行空白
 
+  // 真太陽時是否需要顯示（需在 heights 計算前判斷，以便精確垂直置中）
+  const tst    = d.meta?.trueSolarTime;
+  const ckt    = d.meta?.clockTime;
+  const offset = d.meta?.trueSolarTimeOffsetMinutes;
+  const hasTST = !!(tst && ckt && tst !== ckt);
+
   // 元素高度清單
   const heights = [];
   if (S.name) heights.push(32);     // 姓名
-  heights.push(28);                  // 生日
-  heights.push(30);                  // 農曆
+  heights.push(28);                  // 生日（Row 2）
+  if (hasTST) heights.push(28);     // 真太陽時行（含上下各等距留白 8px + 12px font）
+  heights.push(30);                  // 農曆（Row 3）
   heights.push(16 + SEP_BLANK);      // sep1 + 空白
   heights.push(15);                  // 八字 label
   heights.push(FSPillar + 4);        // 八字 stem
@@ -522,14 +527,12 @@ function drawCenterTo(ctx, fd) {
   ctx.fillText(`${S.birthDate}　${S.birthTime}　${d.shichen||''}　${d.yinYang||''}`, mx, iy);
   iy += 28;
 
-  // Row 2.5: 真太陽時（若有偏差才顯示）
-  const tst    = d.meta?.trueSolarTime;
-  const ckt    = d.meta?.clockTime;
-  const offset = d.meta?.trueSolarTimeOffsetMinutes;
-  if (tst && ckt && tst !== ckt) {
+  // 真太陽時行：置於 Row2（生日）與 Row3（農曆）正中間，上下留白等距（各 8px）
+  if (hasTST) {
+    iy += 8;  // 上方等距空白
     ctx.font = `12px ${FONT}`; ctx.fillStyle = '#9a6a3a';
     ctx.fillText(`真太陽時 ${tst}（${offset >= 0 ? '+' : ''}${offset}分）`, mx, iy);
-    iy += 20;
+    iy += 12 + 8;  // 字高 + 下方等距空白
   }
 
   // Row 3: 農曆 + 生肖 + 五行局 (1.5×, 20px bold)
