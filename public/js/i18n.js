@@ -47,7 +47,7 @@ const I18N = {
     cv_body_label: '身宮', cv_origin_label: '來因',
     cv_year_life: '年命',
     cv_tst_warn: '⚠ 真太陽時校正後時辰已變更，請確認定盤',
-    cv_brand: "Blue's 紫微斗數命理顧問排盤系統 V2.0",
+    cv_brand: "Blue's 紫微斗數命理顧問排盤系統 V3.0",
     // 命例庫（Sprint 3）
     lib_title: '命例庫',
     lib_signin: '使用 Google 登入',
@@ -105,7 +105,7 @@ const I18N = {
     cv_body_label: 'Body', cv_origin_label: 'Origin',
     cv_year_life: 'Flow Life',
     cv_tst_warn: '⚠ Hour changed after true-solar-time correction — please confirm',
-    cv_brand: "Blue's Zi Wei Dou Shu Chart System V2.0",
+    cv_brand: "Blue's Zi Wei Dou Shu Chart System V3.0",
     // chart library (Sprint 3)
     lib_title: 'Saved Charts',
     lib_signin: 'Sign in with Google',
