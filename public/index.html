@@ -254,16 +254,31 @@
     top: 0; left: 0; right: 0; bottom: 0;
     width: 100%; height: 100%;
     z-index: 0;
+    overflow: hidden;
+    background: #000;
     cursor: grab;
-    display: block;
   }
   #nebula-bg.dragging { cursor: grabbing; }
+  #nebula-vid {
+    position: absolute;
+    top: 50%; left: 50%;
+    /* 220vw × 220vh: larger than viewport in all directions for drag-pan room */
+    width: 220vw; height: 220vh;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    will-change: transform;
+    pointer-events: none;
+  }
   body > div { position: relative; z-index: 1; }
 </style>
 </head>
 
 <body>
-<canvas id="nebula-bg"></canvas>
+<div id="nebula-bg">
+  <video id="nebula-vid" autoplay muted loop playsinline>
+    <source src="/nebula.mp4" type="video/mp4">
+  </video>
+</div>
 
 <div style="text-align:center;margin-bottom:16px;">
   <a href="https://www.aethnous.co/" style="display:inline-flex;align-items:center;gap:8px;padding:8px 22px;border:1px solid #2a2550;border-radius:999px;color:#7a6a9a;font-size:11px;letter-spacing:0.22em;text-decoration:none;text-transform:uppercase;font-family:inherit;transition:border-color 0.2s,color 0.2s;" onmouseover="this.style.borderColor='#9b59ff';this.style.color='#c8a8ff';" onmouseout="this.style.borderColor='#2a2550';this.style.color='#7a6a9a';">← Back to the Universe</a>
@@ -819,205 +834,99 @@ applyStaticI18n();
 </script>
 
 <script>
-// ── Nebula background (WebGL) ──────────────────────────────
+// ── Nebula background (video pan) ─────────────────────────
 (function () {
-  const cv = document.getElementById('nebula-bg');
-  const gl = cv.getContext('webgl') || cv.getContext('experimental-webgl');
-  if (!gl) { cv.remove(); return; }
+  const bg  = document.getElementById('nebula-bg');
+  const vid = document.getElementById('nebula-vid');
+  if (!vid) return;
 
-  const VERT = `
-attribute vec2 a;
-void main() { gl_Position = vec4(a, 0.0, 1.0); }`;
+  // Pan state
+  var tx = 0, ty = 0;      // current offset (px from center)
+  var vx = 0, vy = 0;      // momentum velocity
+  var dragging = false, lastX = 0, lastY = 0;
+  var maxX = 0, maxY = 0;
+  var autoT = 0;
 
-  const FRAG = `
-precision highp float;
-uniform vec2  u_res;
-uniform float u_time;
-uniform float u_rot;
-
-float hash(vec2 p) {
-  p = fract(p * vec2(234.34, 435.345));
-  p += dot(p, p + 34.23);
-  return fract(p.x * p.y);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i),                hash(i + vec2(1.0, 0.0)), f.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
-    f.y
-  );
-}
-
-float fbm(vec2 p) {
-  float v = 0.0;
-  float amp = 0.5;
-  mat2 m = mat2(1.7, 1.2, -1.2, 1.7);
-  for (int i = 0; i < 5; i++) {
-    v  += amp * noise(p);
-    p   = m * p;
-    amp *= 0.5;
+  function updateBounds() {
+    // video is 220vw × 220vh; extra overhang per side = 60% of viewport
+    maxX = window.innerWidth  * 0.60;
+    maxY = window.innerHeight * 0.60;
   }
-  return v;
-}
+  window.addEventListener('resize', updateBounds);
+  updateBounds();
 
-void main() {
-  vec2 fc = gl_FragCoord.xy;
-  vec2 uv = (fc - 0.5 * u_res) / min(u_res.x, u_res.y);
-
-  // combined auto + manual rotation
-  float rot = u_time * 0.05 + u_rot;
-  float cr = cos(rot), sr = sin(rot);
-  uv = mat2(cr, -sr, sr, cr) * uv;
-
-  float t = u_time * 0.04;
-  float r = length(uv);
-
-  // domain warp — gives nebula its organic, twisting shape
-  vec2 wx  = vec2(fbm(uv * 1.8 + t), fbm(uv * 1.8 + t + vec2(5.2, 1.3)));
-  vec2 wuv = uv + 0.28 * wx;
-
-  float n1 = fbm(wuv * 2.2 + t * 0.8);
-  float n2 = fbm(wuv * 3.8 - t * 0.6 + vec2(2.1, 8.4));
-  float n3 = fbm(wuv * 6.1 + t * 0.5 + vec2(7.1, 2.8));
-  float n4 = fbm(wuv * 3.2 - t * 0.5 + vec2(3.7, 9.1));
-
-  // spiral galaxy arms
-  float spA = cos(atan(uv.y, uv.x) * 2.0 - r * 6.0 + u_time * 0.3);
-  spA = pow(max(spA, 0.0), 3.0) * exp(-r * r * 2.5);
-
-  // ── colour layers ──
-  vec3 col = vec3(0.012, 0.006, 0.022);
-  float f1 = exp(-r * r * 0.45);
-  float f2 = exp(-r * r * 0.80);
-
-  col += vec3(0.04, 0.10, 0.38) * pow(n1, 1.6) * f1;         // deep blue
-  col += vec3(0.22, 0.04, 0.45) * pow(n2, 2.2) * f1;         // violet
-  col += vec3(0.00, 0.26, 0.32) * n3 * f2 * 0.55;            // cyan wisps
-  col += vec3(0.40, 0.06, 0.22) * pow(n4, 2.8) * f1 * 0.7;  // rose/pink
-  col += vec3(0.65, 0.38, 0.06) * spA * 1.4;                  // gold arm
-  col += vec3(0.90, 0.60, 0.18) * spA * spA;                  // bright arm core
-  col += vec3(0.55, 0.45, 0.85) * exp(-r * r * 10.0);        // galactic glow
-  col += vec3(0.95, 0.88, 1.00) * exp(-r * r * 60.0);        // central star
-
-  // ── large stars with diffraction spikes ──
-  vec2  lg  = fc / 240.0;
-  vec2  lgi = floor(lg);
-  float lh  = hash(lgi + 0.5);
-  if (lh > 0.91) {
-    vec2  lgf = fract(lg) - 0.5;
-    float ld  = length(lgf);
-    float lb  = (lh - 0.91) / 0.09;
-    float bl  = exp(-ld * ld * 70.0) * lb * 3.0;
-    float sH  = exp(-abs(lgf.x) * 14.0 - lgf.y * lgf.y * 70.0);
-    float sV  = exp(-abs(lgf.y) * 14.0 - lgf.x * lgf.x * 70.0);
-    vec3  sc  = mix(vec3(0.70, 0.82, 1.0), vec3(1.0, 0.90, 0.72), step(0.95, lh));
-    col += (bl + (sH + sV) * 0.35 * lb) * sc;
+  function clamp() {
+    tx = Math.max(-maxX, Math.min(maxX, tx));
+    ty = Math.max(-maxY, Math.min(maxY, ty));
   }
 
-  // ── medium stars ──
-  vec2  mg = fc / 95.0;
-  float mh = hash(floor(mg) + 23.7);
-  if (mh > 0.86) {
-    vec2 mgf = fract(mg) - 0.5;
-    col += exp(-dot(mgf, mgf) * 100.0) * (mh - 0.86) * 9.0 * vec3(0.82, 0.88, 1.0);
+  function applyTransform(ox, oy) {
+    vid.style.transform =
+      'translate(calc(-50% + ' + ox + 'px), calc(-50% + ' + oy + 'px))';
   }
 
-  // ── fine starfield ──
-  float fh = hash(floor(fc / 38.0) + 71.0);
-  col += smoothstep(0.962, 1.0, fh) * 0.32 * vec3(0.78, 0.84, 1.0);
-
-  // vignette + tone map + gamma
-  col *= 0.6 + 0.4 * smoothstep(1.4, 0.6, r);
-  col  = col / (1.0 + col);
-  col  = pow(col, vec3(0.78));
-
-  gl_FragColor = vec4(col, 1.0);
-}`;
-
-  function mkSh(type, src) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return s;
-  }
-  const prog = gl.createProgram();
-  gl.attachShader(prog, mkSh(gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, mkSh(gl.FRAGMENT_SHADER, FRAG));
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.warn('Nebula shader link error:', gl.getProgramInfoLog(prog));
-    cv.remove(); return;
-  }
-  gl.useProgram(prog);
-
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER,
-    new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-  const aLoc = gl.getAttribLocation(prog, 'a');
-  gl.enableVertexAttribArray(aLoc);
-  gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
-
-  const uRes  = gl.getUniformLocation(prog, 'u_res');
-  const uTime = gl.getUniformLocation(prog, 'u_time');
-  const uRot  = gl.getUniformLocation(prog, 'u_rot');
-
-  function resize() {
-    cv.width  = window.innerWidth;
-    cv.height = window.innerHeight;
-    gl.viewport(0, 0, cv.width, cv.height);
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  // manual rotation with momentum
-  let rot = 0, rotVel = 0, dragging = false, lastX = 0;
-
-  cv.addEventListener('mousedown', function (e) {
-    dragging = true; lastX = e.clientX; rotVel = 0;
-    cv.classList.add('dragging');
+  // ── Drag (manual pan) ──────────────────────────────────────
+  bg.addEventListener('mousedown', function (e) {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    vx = 0; vy = 0;
+    bg.classList.add('dragging');
     e.preventDefault();
   });
   window.addEventListener('mousemove', function (e) {
     if (!dragging) return;
-    var dx = e.clientX - lastX;
-    rotVel = dx * 0.005;
-    rot += rotVel;
-    lastX = e.clientX;
+    vx = e.clientX - lastX;
+    vy = e.clientY - lastY;
+    tx += vx; ty += vy;
+    lastX = e.clientX; lastY = e.clientY;
+    clamp();
+    applyTransform(tx, ty);
   });
   window.addEventListener('mouseup', function () {
     dragging = false;
-    cv.classList.remove('dragging');
+    bg.classList.remove('dragging');
   });
-  cv.addEventListener('touchstart', function (e) {
-    dragging = true; lastX = e.touches[0].clientX; rotVel = 0;
+  bg.addEventListener('touchstart', function (e) {
+    dragging = true;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    vx = 0; vy = 0;
   }, { passive: true });
   window.addEventListener('touchmove', function (e) {
     if (!dragging) return;
-    var dx = e.touches[0].clientX - lastX;
-    rotVel = dx * 0.005;
-    rot += rotVel;
-    lastX = e.touches[0].clientX;
+    vx = e.touches[0].clientX - lastX;
+    vy = e.touches[0].clientY - lastY;
+    tx += vx; ty += vy;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    clamp();
+    applyTransform(tx, ty);
   }, { passive: true });
   window.addEventListener('touchend', function () { dragging = false; });
 
-  var t0 = performance.now();
+  // ── Momentum + gentle ambient drift ───────────────────────
   (function frame() {
     if (!dragging) {
-      rotVel *= 0.94;  // momentum decay
-      rot    += rotVel;
+      vx *= 0.92; vy *= 0.92;
+      tx += vx;   ty += vy;
+      autoT += 0.00022;
+      var driftX = Math.sin(autoT)        * window.innerWidth  * 0.035;
+      var driftY = Math.cos(autoT * 0.67) * window.innerHeight * 0.025;
+      clamp();
+      applyTransform(tx + driftX, ty + driftY);
     }
-    var t = (performance.now() - t0) * 0.001;
-    gl.uniform2f(uRes,  cv.width, cv.height);
-    gl.uniform1f(uTime, t);
-    gl.uniform1f(uRot,  rot);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     requestAnimationFrame(frame);
   })();
+
+  // ── Smooth crossfade at loop boundary ─────────────────────
+  vid.addEventListener('timeupdate', function () {
+    if (!vid.duration) return;
+    var pct = vid.currentTime / vid.duration;
+    if (pct > 0.94) {
+      vid.style.opacity = ((1 - pct) / 0.06).toFixed(3);
+    } else if (pct < 0.06) {
+      vid.style.opacity = (pct / 0.06).toFixed(3);
+    } else {
+      vid.style.opacity = '1';
+    }
+  });
 })();
 </script>
 </body>
