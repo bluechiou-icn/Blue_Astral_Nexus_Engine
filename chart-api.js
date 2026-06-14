@@ -981,7 +981,7 @@ function detectClassicalFormations(palaces, bodyPalName, origPalName, yearMutage
   return result;
 }
 
-module.exports = { generateChart };
+module.exports = { generateChart, BLUE_SI_HUA_TABLE };
 
 // ── CLI ──────────────────────────────────────────────────────
 if (require.main === module) {

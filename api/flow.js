@@ -4,6 +4,7 @@
 
 const { generateChart } = require("../chart-api.js");
 const { validateBirthData, validateQueryYear } = require("../lib/validate.js");
+const L = require("../lib/liushi.js");
 
 const HEAVENLY_STEMS    = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const EARTHLY_BRANCHES  = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
@@ -231,8 +232,122 @@ function detectLuJiConflict({
   return conflicts;
 }
 
+// ── /api/flow?level=hour：本日吉凶時辰盤（汎天派流月/流日/流時順數）──────
+const HOUR_BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+
+function handleHourLevel(req, res) {
+  const { date, time, gender, targetDate } = req.query;
+  if (!date || !time || !gender || !targetDate) {
+    return res.status(400).json({
+      error: '缺少必填參數',
+      required: { date: 'YYYY-MM-DD', time: 'HH:MM', gender: '男|女', level: 'hour', targetDate: 'YYYY-MM-DD' },
+      example: '/api/flow?date=2000-01-01&time=06:00&gender=男&level=hour&targetDate=2026-06-13',
+    });
+  }
+  const bErr = validateBirthData({ date, time, gender });
+  if (bErr) return res.status(400).json({ error: bErr });
+  const tErr = validateBirthData({ date: targetDate, time: '12:00', gender }); // 借用日期格式/範圍檢查
+  if (tErr) return res.status(400).json({ error: 'targetDate 格式錯誤，應為 YYYY-MM-DD（1900–2100）' });
+
+  try {
+    const chart   = generateChart(date, time, gender);
+    const palaces  = chart.palaces;
+    const lunar    = L.getTargetLunar(targetDate);
+
+    // 四層命宮（順數法）
+    const flowYearMing = palaces.find(p => p.branch === lunar.yearBranch) || null;
+    if (!flowYearMing) return res.status(500).json({ error: '流年命宮定位失敗' });
+
+    const monthStem  = L.flowMonthStem(lunar.yearStem, lunar.lunarMonth);
+    const monthBr    = L.flowMonthPalace(flowYearMing.branch, lunar.lunarMonth);
+    const monthMing  = palaces.find(p => p.branch === monthBr);
+
+    const dayStem    = lunar.dayStem;
+    const dayBr      = L.flowDayPalace(monthBr, lunar.lunarDay);
+    const dayMing    = palaces.find(p => p.branch === dayBr);
+
+    // 大限干（依目標年）
+    const targetYear      = parseInt(targetDate.split('-')[0], 10);
+    const currentMajorLimit = getCurrentMajorLimit(chart.majorLimits, targetYear);
+    const birthYearStem   = chart.fourPillars?.raw?.yearly?.[0] || null;
+
+    const hours = HOUR_BRANCHES.map(hb => {
+      const hourStem  = L.flowHourStem(dayStem, hb);
+      const hourBr    = L.flowHourPalace(dayBr, hb);
+      const hourMing  = palaces.find(p => p.branch === hourBr);
+      const layerStems = {
+        生年: birthYearStem,
+        大限: currentMajorLimit?.stem || null,
+        流年: lunar.yearStem,
+        流月: monthStem,
+        流日: dayStem,
+        流時: hourStem,
+      };
+      const sc = L.scoreHourPalace(palaces, hourBr, layerStems);
+      const dir = L.hourDirections(palaces, hourBr, hourStem);
+      return {
+        hourBranch:      hb,
+        timeRange:       L.HOUR_TIME_RANGE[hb],
+        stem:            hourStem,
+        ganZhi:          hourStem + hb,
+        mingPalaceBranch: hourBr,
+        mingPalaceName:  hourMing?.name || null,
+        score:           sc.score,
+        grade:           sc.grade,
+        symbol:          sc.symbol,
+        factors:         sc.factors,
+        directions:      dir,
+      };
+    });
+
+    const ranked = [...hours].sort((a, b) => b.score - a.score);
+    const best  = ranked[0];
+    const worst = ranked[ranked.length - 1];
+
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Surrogate-Control', 'no-store');
+    return res.status(200).json({
+      query: { solarDate: date, birthTime: time, gender, targetDate, level: 'hour' },
+      meta: {
+        lunarMonth:  lunar.lunarMonth,
+        lunarDay:    lunar.lunarDay,
+        isLeapMonth: lunar.isLeapMonth,
+        targetYearGanZhi: lunar.yearGanZhi,
+        targetDayGanZhi:  lunar.dayGanZhi,
+        method: '順數法（汎天派定盤鎖定）',
+        note: '流時起法為汎天派順數法；近時辰邊界命主請先校正真太陽時',
+      },
+      flowYear: {
+        ganZhi: lunar.yearGanZhi,
+        mingPalaceBranch: flowYearMing.branch,
+        mingPalaceName:   flowYearMing.name,
+      },
+      flowMonth: {
+        lunarMonth: lunar.lunarMonth, stem: monthStem,
+        mingPalaceBranch: monthBr, mingPalaceName: monthMing?.name || null,
+      },
+      flowDay: {
+        ganZhi: lunar.dayGanZhi, lunarDay: lunar.lunarDay,
+        mingPalaceBranch: dayBr, mingPalaceName: dayMing?.name || null,
+      },
+      hours,
+      summary: {
+        bestHour:  `${best.hourBranch}時`,
+        worstHour: `${worst.hourBranch}時`,
+        bestGrade: best.grade,
+        worstGrade: worst.grade,
+      },
+    });
+  } catch (err) {
+    console.error('[/api/flow level=hour] error:', err);
+    return res.status(500).json({ error: '流時分析失敗' });
+  }
+}
+
 module.exports = function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  if (req.query.level === 'hour') return handleHourLevel(req, res);
 
   const { date, time, gender, year } = req.query;
   if (!date || !time || !gender || !year) {
