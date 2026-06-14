@@ -130,6 +130,20 @@ function drawStarColumn(ctx, centerX, top, bottom, name, brightness, mutagens, c
   ctx.textAlign = 'left';
 }
 
+// 小星專用：僅直書星名（淺藍小星無亮度／四化），lineH 可控字間空檔。
+// 用於「>3 顆折兩行」的小星區塊。
+function drawStarColumnSmall(ctx, centerX, top, name, color, fs, lineH) {
+  ctx.textAlign = 'center';
+  ctx.font = `${fs}px ${FONT}`;
+  ctx.fillStyle = color;
+  let y = top;
+  for (const ch of name) {
+    ctx.fillText(ch, centerX, y + fs);
+    y += lineH;
+  }
+  ctx.textAlign = 'left';
+}
+
 // ── EN 模式：星曜橫排（拉丁字串不適合直書，改一星一列）──
 // 主星：粗體意譯 + 小字 pinyin；其他星：pinyin。亮度、四化徽章接在列尾。
 // 超寬等比縮字、超高等比縮列，沿用 zh 模式的 shrink-to-fit 原則。
@@ -388,11 +402,11 @@ function drawPalace(ctx, palace, row, col, opts) {
     const segments = [];
     if (flowMing) {
       const fp = palOffset(palace.name, flowMing);
-      if (fp) segments.push({ text: isEn() ? 'F·'+tPalaceShort(fp) : '流'+fp.charAt(0), color:'#c47800' });
+      if (fp) segments.push({ text: isEn() ? 'F·'+tPalaceShort(fp) : '流'+palaceCharZh(fp), color:'#c47800' });
     }
     if (decadeMing) {
       const dp = palOffset(palace.name, decadeMing);
-      if (dp) segments.push({ text: isEn() ? 'D·'+tPalaceShort(dp) : '大'+dp.charAt(0), color:'#555' });
+      if (dp) segments.push({ text: isEn() ? 'D·'+tPalaceShort(dp) : '大'+palaceCharZh(dp), color:'#555' });
     }
     segments.push({ text: isEn() ? tPalaceName(palace.name) : palace.name, color:'#888' });
 
@@ -434,31 +448,23 @@ function drawPalace(ctx, palace, row, col, opts) {
 
   // Reserve right side for stem/branch column (~16px)
   const STEM_BR_RESERVE = 20;
-  // Reserve left side for empty-palace text block（EN 改橫排標示於星列上方，不佔左欄）
+  // 空宮借星改置滿欄（不再佔左欄）；zh 的「空宮／借X宮」標示移到宮位下方（位置讓給星曜）
   const isEmptyP = palace.isEmpty && palace.borrowedFromPalace;
-  const LEFT_RESERVE = (isEmptyP && !isEn()) ? 58 : 0;
+  const LEFT_RESERVE = 0;
   let enStarsTop = starsTop;
 
-  // Empty palace label：zh「空宮 / 借X宮」左欄直書；en「Empty ← Travel」橫排一行
-  if (isEmptyP) {
+  // Empty palace label（EN 版）：「Empty ← Travel」橫排於星列上方一行
+  // zh 版移至宮位下方左側繪製（見 BOTTOM 區）
+  if (isEmptyP && isEn()) {
     const EFS = 11;
     const src = palace.borrowedFromPalace;
-    if (isEn()) {
-      ctx.font = `bold ${EFS}px ${FONT_EN}`;
-      ctx.fillStyle = '#aaa';
-      const emptyTxt = t('cv_empty');
-      ctx.fillText(emptyTxt, cx + PAD, enStarsTop + EFS);
-      ctx.fillStyle = '#bbb';
-      ctx.fillText(' ← ' + tPalaceName(src), cx + PAD + ctx.measureText(emptyTxt).width, enStarsTop + EFS);
-      enStarsTop += EFS + 6;
-    } else {
-      const srcFull = src.endsWith('宮') ? src : src + '宮';
-      ctx.font = `bold ${EFS}px ${FONT}`;
-      ctx.fillStyle = '#aaa';
-      ctx.fillText('空宮', cx + PAD, starsTop + EFS);
-      ctx.fillStyle = '#bbb';
-      ctx.fillText('借' + srcFull, cx + PAD, starsTop + EFS * 2 + 3);
-    }
+    ctx.font = `bold ${EFS}px ${FONT_EN}`;
+    ctx.fillStyle = '#aaa';
+    const emptyTxt = t('cv_empty');
+    ctx.fillText(emptyTxt, cx + PAD, enStarsTop + EFS);
+    ctx.fillStyle = '#bbb';
+    ctx.fillText(' ← ' + tPalaceName(src), cx + PAD + ctx.measureText(emptyTxt).width, enStarsTop + EFS);
+    enStarsTop += EFS + 6;
   }
 
   // Look up brightness for borrowed stars from the source palace
@@ -519,35 +525,72 @@ function drawPalace(ctx, palace, row, col, opts) {
     // EN 模式：橫排一星一列
     drawStarsEn(ctx, stars, palMu, cx + PAD, cx + CELL - PAD - STEM_BR_RESERVE, enStarsTop, botStarLim);
   } else {
-    // 字級規則：主/輔/凶 = FS_MAIN（即「天相」字級）；小星(淺藍) = FS_SMALL（即「龍池」字級）
+    // 字級規則（固定，不隨星數縮放）：
+    //   主/輔/凶（重要星）= FS_MAIN（官祿宮「太陽」字級）
+    //   淺藍小星          = FS_SMALL（田宅宮「天才」字級）
     const FS_MAIN  = 22;
     const FS_SMALL = 16;
-    for (const s of stars) s.fs = (s.color === CLR_SMALL) ? FS_SMALL : FS_MAIN;
 
-    // 每顆星的欄寬（緊湊配置，避免主星溢出宮位）
+    // 重要星（主/輔/凶，含借星）走整欄直書；淺藍小星另成區塊（>3 顆折兩行）
+    const importantStars = stars.filter(s => s.color !== CLR_SMALL);
+    const smallStars2    = stars.filter(s => s.color === CLR_SMALL);
+    for (const s of importantStars) s.fs = FS_MAIN;
+
     const colWFor = fs => fs + 4;
-    let colWs = stars.map(s => colWFor(s.fs));
-    let totalW = colWs.reduce((a, b) => a + b, 0);
+    const impColW   = colWFor(FS_MAIN);
+    const smallColW = colWFor(FS_SMALL);
 
-    // 若總寬超過可用寬度則等比縮字（最小 10px）
+    // 小星區塊：≤3 一行；>3 兩行（上行 ceil(n/2) 欄，下行其餘）
+    const smallN    = smallStars2.length;
+    const smallCols = smallN > 3 ? Math.ceil(smallN / 2) : smallN;
+    const smallBlockW = smallCols * smallColW;
+
+    let impW   = importantStars.length * impColW;
+    let totalW = impW + smallBlockW;
+
+    // 折兩行後仍溢出才等比縮字（保底，正常情況不觸發 → 主星維持太陽字級）
+    let scale = 1;
     if (totalW > usableW && totalW > 0) {
-      const ratio = usableW / totalW;
-      for (let i = 0; i < stars.length; i++) {
-        stars[i].fs = Math.max(10, Math.floor(stars[i].fs * ratio));
-        colWs[i] = colWFor(stars[i].fs);
-      }
-      totalW = colWs.reduce((a, b) => a + b, 0);
+      scale = Math.max(0.6, usableW / totalW);
+    }
+    const impCW   = impColW   * scale;
+    const smCW    = smallColW * scale;
+    const impFS   = Math.max(12, Math.round(FS_MAIN  * scale));
+    const smFS    = Math.max(10, Math.round(FS_SMALL * scale));
+    const drawnW  = importantStars.length * impCW + smallCols * smCW;
+
+    let cursorX = cx + PAD + Math.max(0, (usableW - drawnW) / 2);
+
+    // 1) 重要星：整欄直書
+    for (const star of importantStars) {
+      const centerX = cursorX + impCW / 2;
+      const mu = palMu.filter(m => m.star === star.name);
+      drawStarColumn(ctx, centerX, starsTop, botStarLim, star.name, star.brightness, mu, star.color, star.isMajor, impFS, star.isBorrowed);
+      cursorX += impCW;
     }
 
-    const startX = cx + PAD + LEFT_RESERVE + Math.max(0, (usableW - totalW) / 2);
-    let cursorX = startX;
-    for (let i = 0; i < N; i++) {
-      const star = stars[i];
-      const cw = colWs[i];
-      const centerX = cursorX + cw / 2;
-      const mu = palMu.filter(m => m.star === star.name);
-      drawStarColumn(ctx, centerX, starsTop, botStarLim, star.name, star.brightness, mu, star.color, star.isMajor, star.fs, star.isBorrowed);
-      cursorX += cw;
+    // 2) 淺藍小星：≤3 同一行；>3 折兩行（龍池下方排天傷，天傷右邊年解）
+    if (smallN > 0) {
+      const smLineH = smFS + 4;             // 兩字間留空檔，不黏一起
+      const smColH  = smLineH * 2 + 2;      // 單欄（兩字）高度
+      const rowGap  = 8;                    // 兩行之間留空檔
+      const row1Top = starsTop;
+      const row2Top = starsTop + smColH + rowGap;
+      for (let c = 0; c < smallCols; c++) {
+        const centerX = cursorX + smCW / 2;
+        // 上行
+        const s1 = smallStars2[c];
+        if (s1) {
+          const mu1 = palMu.filter(m => m.star === s1.name);
+          drawStarColumnSmall(ctx, centerX, row1Top, s1.name, s1.color, smFS, smLineH);
+        }
+        // 下行（折行時才有）
+        const s2 = smallStars2[smallCols + c];
+        if (s2) {
+          drawStarColumnSmall(ctx, centerX, row2Top, s2.name, s2.color, smFS, smLineH);
+        }
+        cursorX += smCW;
+      }
     }
   }
 
@@ -601,6 +644,18 @@ function drawPalace(ctx, palace, row, col, opts) {
     ctx.fillText(palaceLabel, centerBx, cy + CELL - 14);
   }
   ctx.textAlign = 'left';
+
+  // 空宮「空宮／借X宮」標示（zh）：移至宮位下方左側，把上方位置讓給借入星曜
+  if (isEmptyP && !isEn()) {
+    const EFS = 11;
+    const src = palace.borrowedFromPalace;
+    const srcFull = src.endsWith('宮') ? src : src + '宮';
+    ctx.font = `bold ${EFS}px ${FONT}`;
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('空宮', cx + PAD, cy + CELL - 44);
+    ctx.fillStyle = '#bbb';
+    ctx.fillText('借' + srcFull, cx + PAD, cy + CELL - 30);
+  }
 
   // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ ──
   ctx.font = isEn() ? `9px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#666';
@@ -765,7 +820,7 @@ function drawCenterTo(ctx, fd) {
       const flowMingName = flowPal.name;
       const dpName   = ml ? palOffset(flowMingName, ml.palace) : null;
       const dpStrEn  = dpName ? 'D·'+tPalaceShort(dpName) : 'D·Life';
-      const dpStrZh  = dpName ? '大'+dpName.charAt(0) : '大命';
+      const dpStrZh  = dpName ? '大'+palaceCharZh(dpName) : '大命';
 
       items.push({ size: FS.ov_title, draw: y => {
         if (isEn()) {
@@ -953,8 +1008,12 @@ function renderChartTo(canvas, fdRaw) {
   }
   drawCenterTo(ctx, fd);
 
-  // 三方四正動態高亮（點擊宮位後）
-  if (S.selectedBranch) drawTrineLines(ctx, S.selectedBranch, S.dashOffset);
+  // 三方四正動態高亮（點擊宮位後）。
+  // 顏色：一般宮位 → 銀灰；若點選的正是本流年命宮 → 維持金色（與流年高亮一致）
+  if (S.selectedBranch) {
+    const fmBranch = flowMing ? (d.palaces.find(p => p.name === flowMing)?.branch || null) : null;
+    drawTrineLines(ctx, S.selectedBranch, S.dashOffset, fmBranch);
+  }
 
   // 綁定一次點擊事件
   bindPalaceClick(canvas);
@@ -974,7 +1033,8 @@ function branchCenter(b) {
 }
 
 // 三方四正：對宮 (+6) + 三合 (+4, +8)
-function drawTrineLines(ctx, branch, dashOffset) {
+// flowMingBranch：本流年命宮地支。若點選的正是該宮 → 用金色，否則用銀灰。
+function drawTrineLines(ctx, branch, dashOffset, flowMingBranch) {
   const src = branchCenter(branch); if (!src) return;
   const targets = [
     shiftBranch(branch, 6),  // 對宮
@@ -982,17 +1042,19 @@ function drawTrineLines(ctx, branch, dashOffset) {
     shiftBranch(branch, 8),  // 三合
   ].map(branchCenter).filter(Boolean);
 
+  const COLOR = (flowMingBranch && branch === flowMingBranch) ? GOLD_HIGHLIGHT : SILVER_HIGHLIGHT;
+
   ctx.save();
   // 點亮選中宮位四角
   const sp = BRANCH_POS[branch];
   if (sp) {
-    ctx.strokeStyle = GOLD_HIGHLIGHT;
+    ctx.strokeStyle = COLOR;
     ctx.lineWidth = 3;
     ctx.setLineDash([]);
     ctx.strokeRect(sp[1]*CELL+3, sp[0]*CELL+3, CELL-6, CELL-6);
   }
   // 三條虛線
-  ctx.strokeStyle = GOLD_HIGHLIGHT;
+  ctx.strokeStyle = COLOR;
   ctx.lineWidth = 2.5;
   ctx.setLineDash([10, 6]);
   ctx.lineDashOffset = -dashOffset;  // 負值 → 虛線往外（src→dst）移動
@@ -1004,7 +1066,7 @@ function drawTrineLines(ctx, branch, dashOffset) {
   }
   // 端點圓點
   ctx.setLineDash([]);
-  ctx.fillStyle = GOLD_HIGHLIGHT;
+  ctx.fillStyle = COLOR;
   ctx.beginPath(); ctx.arc(src.x, src.y, 5, 0, Math.PI*2); ctx.fill();
   for (const t of targets) {
     ctx.beginPath(); ctx.arc(t.x, t.y, 4, 0, Math.PI*2); ctx.fill();
@@ -1049,12 +1111,14 @@ function bindPalaceClick(canvas) {
     if (!branch || S.selectedBranch === branch) {
       S.selectedBranch = null;
       stopTrineAnim();
+      if (typeof renderMonthAxis === 'function') renderMonthAxis();
       renderAllCharts();
       return;
     }
     S.selectedBranch = branch;
     S.dashOffset = 0;
     startTrineAnim();
+    if (typeof renderMonthAxis === 'function') renderMonthAxis();
   });
 }
 

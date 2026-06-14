@@ -62,6 +62,7 @@ function renderViewModeBar() {
 function renderAxes() {
   renderDecadeAxis();
   renderYearAxis();
+  renderMonthAxis();
 }
 
 function renderDecadeAxis() {
@@ -107,6 +108,60 @@ function renderYearAxis() {
     `</div>`;
   const act = el.querySelector('.chip.active');
   if (act) act.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+// ── 流月軸（汎天派順數法）：預設顯示該年十二個農曆月（正月…臘月）──
+// 點某月 → 高亮該流月命宮的三方四正（沿用 selectedBranch 機制，銀灰線）
+function renderMonthAxis() {
+  const el = document.getElementById('month-axis');
+  if (!el) return;
+  const fd = S.flowData;
+  const mingBranch = fd?.flowYearLifePalace?.branch;
+  const yearStem   = fd?.flowYear?.stem;
+  if (!mingBranch || !yearStem) { el.innerHTML = ''; return; }
+
+  let chips = '';
+  for (let m = 1; m <= 12; m++) {
+    // 月干支：五虎遁月干 + 節氣月地支（正月=寅，順數）
+    const stem = flowMonthStemOf(yearStem, m);
+    const monthBranch = EARTHLY_BRANCHES[(EARTHLY_BRANCHES.indexOf('寅') + (m - 1)) % 12];
+    const gz   = (stem || '') + monthBranch;
+    // 流月命宮地支（順數法，供高亮與宮名顯示）
+    const mingBr = flowMonthBranch(mingBranch, m);
+    const palace = S.chartData?.palaces.find(p => p.branch === mingBr);
+    const palName = palace ? tPalaceShort(palace.name) : '';
+    const active = S.selectedBranch === mingBr;
+    chips += `<button class="chip chip-month${active ? ' active' : ''}" onclick="gotoMonth(${m})">` +
+      `<span class="chip-main">${tMonthName(m)}</span>` +
+      `<span class="chip-sub">${tGZ(gz)}${palName ? '　' + palName : ''}</span>` +
+    `</button>`;
+  }
+  el.innerHTML =
+    `<span class="axis-label">${t('month_axis_label')}</span>` +
+    `<div class="chips-scroll">${chips}</div>`;
+
+  const act = el.querySelector('.chip.active');
+  if (act) act.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+// 點流月 chip → 高亮該流月命宮三方四正（再點同月可取消）
+function gotoMonth(m) {
+  const fd = S.flowData;
+  const mingBranch = fd?.flowYearLifePalace?.branch;
+  if (!mingBranch) return;
+  const br = flowMonthBranch(mingBranch, m);
+  if (!br) return;
+  if (S.selectedBranch === br) {
+    S.selectedBranch = null;
+    stopTrineAnim();
+    renderMonthAxis();
+    renderAllCharts();
+    return;
+  }
+  S.selectedBranch = br;
+  S.dashOffset = 0;
+  startTrineAnim();
+  renderMonthAxis();
 }
 
 // 點大限 chip → 跳到該大限第一年（引擎為唯一真實來源，疊盤由 /api/flow 回算）

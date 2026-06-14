@@ -52,6 +52,35 @@ function getPalaceFlowYear(palaceBranch, flowYear, flowBranch) {
   return { year, stem: getYearStem(year), branch: palaceBranch };
 }
 
+// 五虎遁：年干／大限干 → 正月(寅月)天干起點（與 lib/liushi.js 同步，前端流月用）
+const WUHU_DUN = {
+  '甲':'丙','己':'丙',  '乙':'戊','庚':'戊',  '丙':'庚','辛':'庚',
+  '丁':'壬','壬':'壬',  '戊':'甲','癸':'甲',
+};
+
+// 流月命宮：流年命宮為正月，順數至目標農曆月（汎天派順數法）
+function flowMonthBranch(flowYearMingBranch, lunarMonth) {
+  const i = EARTHLY_BRANCHES.indexOf(flowYearMingBranch);
+  if (i < 0) return null;
+  return EARTHLY_BRANCHES[(i + (lunarMonth - 1)) % 12];
+}
+// 流月天干：五虎遁定正月天干，順推至目標月
+function flowMonthStemOf(flowYearStem, lunarMonth) {
+  const i = HEAVENLY_STEMS.indexOf(WUHU_DUN[flowYearStem]);
+  if (i < 0) return null;
+  return HEAVENLY_STEMS[(i + (lunarMonth - 1)) % 10];
+}
+
+// 農曆月名（正月…臘月）
+const LUNAR_MONTH_NAMES = ['正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','臘月'];
+
+// 宮名單字縮寫（zh）：交友 → 友（其餘取首字）
+function palaceCharZh(n) {
+  if (!n) return n;
+  const base = n.replace(/宮$/, '');
+  return base === '交友' ? '友' : base.charAt(0);
+}
+
 // Mutagen color by SOURCE
 const MU_BY_SRC = {
   year:   { bg:'#c0392b', fg:'#fff' },  // 生年 紅
@@ -69,6 +98,7 @@ const CLR_SMALL = '#60a5fa';   // 小星 淺藍
 // Brand & accent colors
 const BRAND_TIFFANY = '#0abab5';
 const GOLD_HIGHLIGHT = '#d4af37';
+const SILVER_HIGHLIGHT = '#9aa0a6';  // 手動點擊三方四正：偏銀色的灰（與流年金色區隔）
 const RED_BOX = '#c0392b';
 const DECADE_HIGHLIGHT = '#16542d';  // 大限命宮高亮（檢視模式：本命＋大限）
 

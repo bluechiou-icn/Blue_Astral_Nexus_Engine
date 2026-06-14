@@ -36,6 +36,7 @@ const I18N = {
     view_flow: '本命＋大限＋流年',
     decade_axis_label: '大限',
     year_axis_label: '流年',
+    month_axis_label: '流月',
     kbd_hint: '←→ 切流年　Shift+←→ 切大限　左右滑動亦可',
     file_flow: '流年',
     // canvas 標籤（Sprint 2）
@@ -94,6 +95,7 @@ const I18N = {
     view_flow: '+ Flow Year',
     decade_axis_label: 'Decade Limits',
     year_axis_label: 'Flow Years',
+    month_axis_label: 'Flow Months',
     kbd_hint: '←→ year　Shift+←→ decade　swipe also works',
     file_flow: 'flow',
     // canvas labels (Sprint 2)
@@ -152,6 +154,7 @@ const I18N = {
     view_flow: '본명＋대한＋유년',
     decade_axis_label: '대한',
     year_axis_label: '유년',
+    month_axis_label: '유월',
     kbd_hint: '←→ 유년　Shift+←→ 대한　스와이프 가능',
     // 명례 보관함（Sprint 3）
     lib_title: '명례 보관함',
@@ -299,7 +302,13 @@ function tPalaceFull(n) {
 function tPalaceShort(n) {
   if (!n) return n;
   if (isEn()) return PALACE_EN_S[n] || PALACE_EN_S[n.replace(/宮$/, '')] || tPalaceName(n);
-  return n.replace(/宮$/, '').charAt(0) || n.charAt(0);
+  // zh：交友 → 友（palaceCharZh 統一處理），其餘取首字
+  return (typeof palaceCharZh === 'function' ? palaceCharZh(n) : (n.replace(/宮$/, '').charAt(0))) || n.charAt(0);
+}
+// 流月農曆月名（zh: 正月…臘月；en: M1…M12）
+function tMonthName(m) {
+  if (isEn()) return 'M' + m;
+  return (typeof LUNAR_MONTH_NAMES !== 'undefined' && LUNAR_MONTH_NAMES[m - 1]) || (m + '月');
 }
 function tZodiac(z)   { return isEn() ? (ZODIAC_EN[z] || z) : z; }
 function tWuXingJu(s) {
