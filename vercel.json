@@ -3,7 +3,8 @@
   "functions": {
     "api/chart.js":    { "maxDuration": 10 },
     "api/flow.js":     { "maxDuration": 10 },
-    "api/synastry.js": { "maxDuration": 15 }
+    "api/synastry.js": { "maxDuration": 15 },
+    "api/info.js":     { "maxDuration": 5  }
   },
   "redirects": [
     {

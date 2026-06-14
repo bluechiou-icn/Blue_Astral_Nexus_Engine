@@ -733,13 +733,19 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
     yinYang,
 
     bodyPalace: bodyPalace ? {
+      label:      "身宮",
       name:       modernizePalaceName(toTrad(bodyPalace.name)),
       stemBranch: bodyPalace.heavenlyStem + bodyPalace.earthlyBranch,
+      stem:       toTrad(bodyPalace.heavenlyStem),
+      branch:     bodyPalace.earthlyBranch,
     } : null,
 
     originalPalace: originalPalace ? {
+      label:      "來因宮",
       name:       modernizePalaceName(toTrad(originalPalace.name)),
       stemBranch: originalPalace.heavenlyStem + originalPalace.earthlyBranch,
+      stem:       toTrad(originalPalace.heavenlyStem),
+      branch:     originalPalace.earthlyBranch,
     } : null,
 
     classicalFormations,

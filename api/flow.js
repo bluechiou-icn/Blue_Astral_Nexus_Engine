@@ -283,20 +283,22 @@ function handleHourLevel(req, res) {
         流日: dayStem,
         流時: hourStem,
       };
-      const sc = L.scoreHourPalace(palaces, hourBr, layerStems);
+      const sc  = L.scoreHourPalace(palaces, hourBr, layerStems);
       const dir = L.hourDirections(palaces, hourBr, hourStem);
+      const m6  = L.buildMutagens6Layers(palaces, hourBr, layerStems);
       return {
-        hourBranch:      hb,
-        timeRange:       L.HOUR_TIME_RANGE[hb],
-        stem:            hourStem,
-        ganZhi:          hourStem + hb,
+        hourBranch:       hb,
+        timeRange:        L.HOUR_TIME_RANGE[hb],
+        stem:             hourStem,
+        ganZhi:           hourStem + hb,
         mingPalaceBranch: hourBr,
-        mingPalaceName:  hourMing?.name || null,
-        score:           sc.score,
-        grade:           sc.grade,
-        symbol:          sc.symbol,
-        factors:         sc.factors,
-        directions:      dir,
+        mingPalaceName:   hourMing?.name || null,
+        score:            sc.score,
+        grade:            sc.grade,
+        symbol:           sc.symbol,
+        factors:          sc.factors,
+        directions:       dir,
+        mutagens6layers:  m6,
       };
     });
 
