@@ -16,6 +16,9 @@
 const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email';
 const CLOUD_FILENAME = 'aethnous-charts.json';
 const LOCAL_KEY      = 'aethnous_charts_v1';
+// 非敏感旗標：上次曾成功登入過。token 仍只在記憶體（CLAUDE.md Rule 2 不變），
+// 此旗標僅供 silent re-auth 判斷是否值得嘗試無 UI 取 token。
+const SIGNIN_HINT_KEY = 'aethnous_signin_hint';
 
 const Cloud = {
   // Blue 於 GCP Console 建立 OAuth Client ID（Web）後，
@@ -64,19 +67,40 @@ function saveLocalStore(store) {
 // 合併兩份 store：同 id（或同生辰參數）取 updatedAt 較新者。
 // library-level 欄位（除 charts 外）以較新 updatedAt 那一份為準保留，
 // 確保未來 schema evolution（額外的 store-level 欄位）不會在合併時被丟棄。
-function mergeStores(a, b) {
+function mergeStores(a, b) { return mergeStoresWithDiff(a, b).merged; }
+
+// 帶 diff 的合併：回報雲端覆蓋本機（cloudWins）與本機覆蓋雲端（localWins）的筆數，
+// 給 UI 在登入後 toast 告知使用者。多裝置情境下避免「靜默覆蓋」的不安感。
+function mergeStoresWithDiff(local, cloud) {
   const keyOf = c => c.id || `${c.date}|${c.time}|${c.gender}|${c.name || ''}`;
-  const map = new Map();
-  for (const c of [...(a?.charts || []), ...(b?.charts || [])]) {
-    const k = keyOf(c);
-    const prev = map.get(k);
-    if (!prev || (c.updatedAt || '') > (prev.updatedAt || '')) map.set(k, c);
+  const localMap = new Map();
+  const cloudMap = new Map();
+  for (const c of (local?.charts || [])) localMap.set(keyOf(c), c);
+  for (const c of (cloud?.charts || [])) cloudMap.set(keyOf(c), c);
+
+  const mergedMap = new Map();
+  let cloudWins = 0;  // 雲端版本較新，覆蓋本機（remote-newer-than-local）
+  let localWins = 0;  // 本機版本較新或僅本機獨有（local-newer-or-only）
+  let cloudOnly = 0;  // 僅雲端有（首次跨裝置拉回）
+
+  const allKeys = new Set([...localMap.keys(), ...cloudMap.keys()]);
+  for (const k of allKeys) {
+    const l = localMap.get(k);
+    const c = cloudMap.get(k);
+    if (l && !c) { mergedMap.set(k, l); localWins++; continue; }
+    if (c && !l) { mergedMap.set(k, c); cloudOnly++; continue; }
+    const lt = l.updatedAt || '';
+    const ct = c.updatedAt || '';
+    if (lt === ct) { mergedMap.set(k, c); }            // 同步狀態，不算衝突
+    else if (lt > ct) { mergedMap.set(k, l); localWins++; }
+    else { mergedMap.set(k, c); cloudWins++; }
   }
-  const newer = ((a?.updatedAt || '') > (b?.updatedAt || '')) ? a : b;
+
+  const newer = ((local?.updatedAt || '') > (cloud?.updatedAt || '')) ? local : cloud;
   const merged = { ...emptyStore(), ...(newer || {}) };
-  merged.charts = [...map.values()]
+  merged.charts = [...mergedMap.values()]
     .sort((x, y) => (y.updatedAt || '').localeCompare(x.updatedAt || ''));
-  return merged;
+  return { merged, cloudWins, localWins, cloudOnly };
 }
 
 // 寫入：登入時上雲，localStorage 永遠保留離線鏡像
@@ -99,8 +123,25 @@ function initGIS() {
     client_id: Cloud.clientId,
     scope: DRIVE_SCOPE,
     callback: onCloudToken,
+    // silent re-auth 失敗（Google session 不在 / 使用者拒絕等）由此攔截，
+    // 維持目前未登入 UX，不彈錯誤對話。
+    error_callback: () => { /* silent fail; user can click 登入 鈕 */ },
   });
   renderLibrary();
+  trySilentReauth();
+}
+
+// Silent re-auth：refresh 後若上次曾登入且 Google session 還在，
+// 無 UI 自動取 token 復原 Drive 連線（不存 token，只看記憶體旗標）。
+function trySilentReauth() {
+  if (Cloud.signedIn) return;
+  if (!Cloud.tokenClient) return;
+  let hint = null;
+  try { hint = localStorage.getItem(SIGNIN_HINT_KEY); } catch { /* private mode */ }
+  if (hint !== '1') return;
+  try {
+    Cloud.tokenClient.requestAccessToken({ prompt: '' });
+  } catch { /* GIS not ready; will retry on user click */ }
 }
 
 function cloudSignIn() {
@@ -112,10 +153,14 @@ async function onCloudToken(resp) {
   if (!resp || !resp.access_token) return;
   Cloud.token = resp.access_token;   // 記憶體 only，不落任何儲存
   Cloud.signedIn = true;
+  try { localStorage.setItem(SIGNIN_HINT_KEY, '1'); } catch { /* private mode */ }
   try {
     const cloudStore = await loadCloudStore();
-    Cloud.store = mergeStores(cloudStore, loadLocalStore());
+    const localStore = loadLocalStore();
+    const diff = mergeStoresWithDiff(localStore, cloudStore);
+    Cloud.store = diff.merged;
     await persistStore();            // 合併結果回寫雲端 + 本機鏡像
+    notifyCloudSync(diff);           // 告知使用者衝突解決結果
   } catch (e) {
     console.error('Cloud sync error:', e);
   }
@@ -129,8 +174,43 @@ function cloudSignOut() {
   Cloud.token = null;
   Cloud.signedIn = false;
   Cloud.fileId = null;
+  try { localStorage.removeItem(SIGNIN_HINT_KEY); } catch { /* private mode */ }
   Cloud.store = loadLocalStore();    // 優雅降級回 localStorage 模式
   renderLibrary();
+}
+
+// 同步結果輕量 toast；無變更則不打擾使用者。
+function notifyCloudSync(diff) {
+  if (!diff || (diff.cloudWins === 0 && diff.localWins === 0 && diff.cloudOnly === 0)) return;
+  const parts = [];
+  if (diff.cloudWins > 0)
+    parts.push(t('sync_cloud_wins').replace('{n}', diff.cloudWins));
+  if (diff.localWins > 0)
+    parts.push(t('sync_local_wins').replace('{n}', diff.localWins));
+  if (diff.cloudOnly > 0)
+    parts.push(t('sync_cloud_only').replace('{n}', diff.cloudOnly));
+  showCloudToast('☁ ' + parts.join('　'));
+}
+
+function showCloudToast(msg) {
+  let host = document.getElementById('cloud-toast');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'cloud-toast';
+    host.style.cssText =
+      'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);'
+      + 'background:rgba(26,26,26,0.92);color:#fff;padding:10px 18px;'
+      + 'border-radius:6px;font-size:12px;letter-spacing:0.05em;z-index:9999;'
+      + 'box-shadow:0 6px 24px rgba(0,0,0,0.28);max-width:90%;opacity:0;'
+      + 'transition:opacity 0.25s ease;pointer-events:none;';
+    document.body.appendChild(host);
+  }
+  host.textContent = msg;
+  // 強制 reflow 後再改 opacity 才會 transition
+  void host.offsetWidth;
+  host.style.opacity = '1';
+  clearTimeout(host._hideTimer);
+  host._hideTimer = setTimeout(() => { host.style.opacity = '0'; }, 4500);
 }
 
 // ════════════════════════════════════════════════════════

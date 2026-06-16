@@ -64,6 +64,9 @@ const I18N = {
     lib_delete_confirm: '確定刪除此命例？',
     lib_import_done: '已匯入 {n} 筆命例',
     lib_import_bad: '檔案格式不正確',
+    sync_cloud_wins: '雲端覆蓋本機 {n} 筆',
+    sync_local_wins: '本機推送雲端 {n} 筆',
+    sync_cloud_only: '自雲端拉回 {n} 筆',
   },
   en: {
     page_title: "Blue's Zi Wei Dou Shu Chart System",
@@ -123,6 +126,9 @@ const I18N = {
     lib_delete_confirm: 'Delete this chart?',
     lib_import_done: 'Imported {n} chart(s)',
     lib_import_bad: 'Invalid file format',
+    sync_cloud_wins: 'Cloud overwrote {n} local',
+    sync_local_wins: 'Pushed {n} local to cloud',
+    sync_cloud_only: 'Pulled {n} from cloud',
   },
   ko: {
     page_title: 'Blue\'s 자미두수 명반 시스템',
@@ -171,6 +177,9 @@ const I18N = {
     lib_delete_confirm: '이 명례를 삭제할까요?',
     lib_import_done: '{n}건 가져왔습니다',
     lib_import_bad: '파일 형식이 올바르지 않습니다',
+    sync_cloud_wins: '클라우드가 로컬 {n}건 덮어씀',
+    sync_local_wins: '로컬 {n}건 클라우드로 푸시',
+    sync_cloud_only: '클라우드에서 {n}건 가져옴',
   },
 };
 
