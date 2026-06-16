@@ -1,10 +1,12 @@
 {
   "version": 2,
+  "buildCommand": "bash ./scripts/pull-owner-ext.sh",
   "functions": {
-    "api/chart.js":    { "maxDuration": 10 },
-    "api/flow.js":     { "maxDuration": 10 },
-    "api/synastry.js": { "maxDuration": 15 },
-    "api/info.js":     { "maxDuration": 5  }
+    "api/chart.js":        { "maxDuration": 10 },
+    "api/flow.js":         { "maxDuration": 10 },
+    "api/synastry.js":     { "maxDuration": 15 },
+    "api/info.js":         { "maxDuration": 5  },
+    "api/owner-check.js":  { "maxDuration": 5  }
   },
   "redirects": [
     {
@@ -21,6 +23,13 @@
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Content-Type", "value": "application/json; charset=utf-8" }
+      ]
+    },
+    {
+      "source": "/ext/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+        { "key": "Surrogate-Control", "value": "no-store" }
       ]
     }
   ]

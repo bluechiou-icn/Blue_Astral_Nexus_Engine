@@ -59,7 +59,9 @@ function saveLocalStore(store) {
   try { localStorage.setItem(LOCAL_KEY, JSON.stringify(store)); } catch { /* private mode 等 */ }
 }
 
-// 合併兩份 store：同 id（或同生辰參數）取 updatedAt 較新者
+// 合併兩份 store：同 id（或同生辰參數）取 updatedAt 較新者。
+// library-level 欄位（除 charts 外）以較新 updatedAt 那一份為準保留，
+// 確保未來 schema evolution（額外的 store-level 欄位）不會在合併時被丟棄。
 function mergeStores(a, b) {
   const keyOf = c => c.id || `${c.date}|${c.time}|${c.gender}|${c.name || ''}`;
   const map = new Map();
@@ -68,7 +70,8 @@ function mergeStores(a, b) {
     const prev = map.get(k);
     if (!prev || (c.updatedAt || '') > (prev.updatedAt || '')) map.set(k, c);
   }
-  const merged = emptyStore();
+  const newer = ((a?.updatedAt || '') > (b?.updatedAt || '')) ? a : b;
+  const merged = { ...emptyStore(), ...(newer || {}) };
   merged.charts = [...map.values()]
     .sort((x, y) => (y.updatedAt || '').localeCompare(x.updatedAt || ''));
   return merged;

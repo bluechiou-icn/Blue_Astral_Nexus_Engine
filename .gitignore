@@ -31,3 +31,7 @@ test-*.mjs
 
 # macOS Icon resource forks
 Icon?
+
+# Owner-only ext bundle (build-time pulled from private repo)
+public/ext/
+.owner-ext-tmp/
