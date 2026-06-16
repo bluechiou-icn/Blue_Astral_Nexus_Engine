@@ -375,3 +375,9 @@ function setLang(l) {
     buildChartBlocks(); renderAllCharts();
   }
 }
+
+// 暴露給其他 script / 模組（const / let 預設不會掛到 window）
+if (typeof window !== 'undefined') {
+  window.I18N = I18N;
+  window.getCurrentLang = () => lang;
+}

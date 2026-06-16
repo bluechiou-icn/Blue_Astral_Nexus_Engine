@@ -345,3 +345,6 @@ function renderLibrary() {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+
+// 暴露給其他 script / 模組（const 宣告預設不會掛到 window）
+if (typeof window !== 'undefined') window.Cloud = Cloud;

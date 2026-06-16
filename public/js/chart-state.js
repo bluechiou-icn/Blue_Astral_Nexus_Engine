@@ -177,3 +177,7 @@ function limitForYear(year) {
   const lims = S.chartData?.majorLimits || [];
   return lims.find(l => year >= l.startYear && year <= l.endYear) || null;
 }
+
+
+// 暴露給其他 script / 模組（const 預設不會掛到 window）
+if (typeof window !== 'undefined') window.S = S;
