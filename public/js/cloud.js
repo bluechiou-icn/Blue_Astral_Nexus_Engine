@@ -11,7 +11,9 @@
 // localStorage 保留為離線鏡像，登出 / token 失效時優雅降級。
 // ════════════════════════════════════════════════════════
 
-const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.appdata';
+// drive.appdata 用於命例庫加密儲存；userinfo.email 用於 owner 身分驗證
+// （Sprint 3.5 加入；只看 email，不存任何個資）。
+const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email';
 const CLOUD_FILENAME = 'aethnous-charts.json';
 const LOCAL_KEY      = 'aethnous_charts_v1';
 
