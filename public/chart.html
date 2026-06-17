@@ -323,8 +323,10 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   </div>
   <!-- 已定盤 checkbox：勾選 = 輸入時間以此為主，引擎不再做真太陽時校正（Blue 2026-06-17）-->
   <div class="field" style="display:flex;align-items:center;gap:8px;">
-    <input type="checkbox" id="f-chartset" checked style="width:auto;accent-color:var(--accent);">
-    <label for="f-chartset" data-i18n="chartset_label" style="margin-bottom:0;cursor:pointer;">已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
+    <input type="checkbox" id="f-chartset" checked style="width:auto;accent-color:var(--accent);"
+           title="勾選＝過去已校正過真太陽時，引擎不再二次校正；未勾＝引擎依出生城市再校正一次">
+    <label for="f-chartset" data-i18n="chartset_label" style="margin-bottom:0;cursor:pointer;"
+           title="勾選＝過去已校正過真太陽時，引擎不再二次校正；未勾＝引擎依出生城市再校正一次">已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
   </div>
 
   <!-- 關係狀態 + 配偶 sub-form（auto-展開）: Blue 2026-06-17 規格 (rev 2 同性婚) -->
@@ -380,8 +382,10 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     </div>
     <!-- 配偶已定盤 checkbox -->
     <div class="field" style="display:flex;align-items:center;gap:8px;">
-      <input type="checkbox" id="f2-chartset" checked style="width:auto;accent-color:var(--accent);">
-      <label for="f2-chartset" data-i18n="chartset_label_partner" style="margin-bottom:0;cursor:pointer;">配偶已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
+      <input type="checkbox" id="f2-chartset" checked style="width:auto;accent-color:var(--accent);"
+             title="勾選＝過去已校正過真太陽時，引擎不再二次校正；未勾＝引擎依出生城市再校正一次">
+      <label for="f2-chartset" data-i18n="chartset_label_partner" style="margin-bottom:0;cursor:pointer;"
+             title="勾選＝過去已校正過真太陽時，引擎不再二次校正；未勾＝引擎依出生城市再校正一次">配偶已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
     </div>
   </div>
 
@@ -421,6 +425,32 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
       if (sub && sub.style.display !== 'none') autoSetPartnerGender();
     });
   });
+
+  // 已定盤模式下 city 欄位視覺淡化 + placeholder 改文字
+  //   勾選 → city 不會送進引擎（app.js apiCity=''），故畫面標示為「裝飾用」
+  //   未勾 → city 會用於真太陽時校正，畫面回復正常
+  //   Cassian Sprint 3.8 回饋 — 避免使用者誤以為 city 仍在生效
+  function syncChartSetCityVisual(cbId, cityId) {
+    const cb = document.getElementById(cbId);
+    const city = document.getElementById(cityId);
+    if (!cb || !city) return;
+    const apply = () => {
+      if (cb.checked) {
+        city.style.opacity = '0.55';
+        city.style.background = '#f3efe5';
+        city.dataset._phOrig = city.dataset._phOrig || city.placeholder || '';
+        city.placeholder = '已定盤模式下不會校正真太陽時';
+      } else {
+        city.style.opacity = '';
+        city.style.background = '';
+        if (city.dataset._phOrig != null) city.placeholder = city.dataset._phOrig;
+      }
+    };
+    cb.addEventListener('change', apply);
+    apply();
+  }
+  syncChartSetCityVisual('f-chartset', 'f-city');
+  syncChartSetCityVisual('f2-chartset', 'f2-city');
 </script>
 
 <!-- 命例庫（Sprint 3）：內容由 cloud.js renderLibrary() 動態生成 -->

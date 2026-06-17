@@ -787,7 +787,9 @@ function drawCenterTo(ctx, fd) {
   }});
 
   if (hasTST) items.push({ size: FS.tst, draw: y => {
-    ctx.font = `${FS.tst}px ${isEn() ? FONT_EN : FONT}`; ctx.fillStyle = '#9a6a3a';
+    // 警示色 #7a4515 + bold：與米金月X 外框 #a89878/#5a4530 拉開對比，
+    // 避免「已定盤=off」命主漏看時辰跨界提醒（Cassian Sprint 3.8 回饋）
+    ctx.font = `bold ${FS.tst}px ${isEn() ? FONT_EN : FONT}`; ctx.fillStyle = '#7a4515';
     const offStr = `${offset >= 0 ? '+' : ''}${offset}`;
     ctx.fillText(isEn()
       ? `${t('cv_tst_label')} ${tst} (${offStr} min)`

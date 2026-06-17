@@ -26,8 +26,21 @@ const BLUE_SI_HUA_TABLE = {
 function getYearStem(year)   { return HEAVENLY_STEMS[(year - 4) % 10]; }
 function getYearBranch(year) { return EARTHLY_BRANCHES[(year - 4) % 12]; }
 
-// 立春日（2月幾號），近似公式適用 1900–2100
+// 立春日（2月幾號）。優先用 lunar-typescript 的 getJieQiTable 取準確日，
+// 取不到再 fall back 到近似公式（1900–2100 ±1 天精度）。
+// ⚠️ 本檔內 lichunDay / birthGanZhiYear 只用於 chineseAge（虛歲）計算；
+//    流年／流月命宮邊界以 Solar.fromYmd(...).getLunar().getYearInGanZhi()
+//    的正月初一為準（見 lib/liushi.js）— 兩個界線並存、不要混用。
+let _Solar = null;
+try { _Solar = require("lunar-typescript").Solar; } catch (_) { /* graceful fallback */ }
 function lichunDay(year) {
+  if (_Solar) {
+    try {
+      const table = _Solar.fromYmd(year, 2, 15).getLunar().getJieQiTable();
+      const jq = table['立春'];
+      if (jq && jq.getYear() === year && jq.getMonth() === 2) return jq.getDay();
+    } catch (_) { /* fall through to approximation */ }
+  }
   const base = year >= 2000 ? 2000 : 1900;
   return Math.floor((year - base) * 0.2422 + 4.4475) - Math.floor((year - base) / 4);
 }

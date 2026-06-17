@@ -444,8 +444,12 @@ function openSynastryWindow() {
     alert(t('partner_required_for_synastry') || '需先綁定配偶／伴侶命例才能合盤');
     return;
   }
-  const meLabel = `${S.name || '主命主'}　${S.birthDate} ${S.birthTime} ${S.gender}　${S.city || ''}`;
-  const partnerLabel = `${partner.name || '(未命名)'}　${partner.date} ${partner.time} ${partner.gender}　${partner.city || ''}`;
+  // 起合盤前再次確認雙方 chartSet 狀態，避免引擎一邊校正一邊不校正
+  // 造成時辰偏差（Cassian Sprint 3.8 回饋）
+  const meSet = (S.chartSet !== false) ? '已定盤' : '未定盤';
+  const pSet  = (partner.chartSet !== false) ? '已定盤' : '未定盤';
+  const meLabel = `${S.name || '主命主'}　${S.birthDate} ${S.birthTime} ${S.gender}　${S.city || ''}　[${meSet}]`;
+  const partnerLabel = `${partner.name || '(未命名)'}　${partner.date} ${partner.time} ${partner.gender}　${partner.city || ''}　[${pSet}]`;
   alert(
     (t('synastry_pending') || '合盤／疊盤視窗開發中（Sprint 4 規劃中）') +
     '\n\n' + (t('synastry_pending_detected') || '已偵測到配對命例：') +

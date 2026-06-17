@@ -11,6 +11,16 @@ try { _lunarLib = require("lunar-typescript"); } catch(_) { /* graceful fallback
 
 astro.config({ language: "zh-TW" });
 
+// 陽干（甲丙戊庚壬）— 共用常數，calcBaziQiyun / generateChart 兩處皆引用。
+const YANG_STEMS = ['甲', '丙', '戊', '庚', '壬'];
+// yinYang 命名約定（IP-邊界決定，2026-06-17 Blue 拍板）：
+//   yinYang = 年干陰陽（陽/陰）+ 性別字面（男/女）
+//   例：1984 甲子年男 → '陽男'；1985 甲子年女 → '陽女'；
+//       1983 癸亥年男 → '陰男'；癸亥年女 → '陰女'。
+//   ⚠️ 不要改成「大限順逆組合名」（e.g. 陽干女 → '陰女'）—— 下游 flowYearAges
+//      等多處用 yinYang 字串 switch 方向；改寫會牽動整條流年路徑。
+//      大限順逆請從 (YANG_STEMS, gender) 直接判，勿從 yinYang 字串反推。
+
 // ── 真太陽時校正（Blue's Version）────────────────────────────
 // 規則：真太陽時 = 鐘錶時間 + (出生地經度 - 標準經度) × 4 分鐘
 // 標準經度 = 時區 × 15°
@@ -110,8 +120,7 @@ function calcBaziQiyun(solarDate, birthTime, gender, yearStem) {
   const [h, mi]   = birthTime.split(':').map(Number);
   const birthMs   = new Date(y, m-1, d, h, mi, 0).getTime();
 
-  const yangStems = ['甲','丙','戊','庚','壬'];
-  const isYang    = yangStems.includes(toTrad(yearStem));
+  const isYang    = YANG_STEMS.includes(toTrad(yearStem));
   const isMale    = gender === '男';
   const isForward = (isYang && isMale) || (!isYang && !isMale);
 
@@ -495,9 +504,8 @@ function generateChart(solarDate, birthTime, gender, city = null, longitude = nu
     monthBranch: toTrad(r.rawDates.chineseDate.monthly[1]),
     hourBranch:  toTrad(TIME_INDEX_TO_BRANCH[effectiveTimeIndex]),
   };
-  const yangStems = ["甲", "丙", "戊", "庚", "壬"];
-  const isYang    = yangStems.includes(yearStem);
-  const yinYang   = (isYang ? "陽" : "陰") + gender;
+  const isYang    = YANG_STEMS.includes(yearStem);
+  const yinYang   = (isYang ? "陽" : "陰") + gender;  // 約定 A — 字串等於年干陰陽 + 性別字面
 
   // ── 生年四化 ──────────────────────────────────────────────
   const yearMutagenStars = getMutagenStars(yearStem);
