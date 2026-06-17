@@ -161,6 +161,27 @@ h1.page-title {
 .flow-btn:hover { background: #f5f4f0; }
 .fy-limit { font-size: 11px; color: #888; margin-left: auto; }
 
+/* ── 三干疊加 banner (Sprint 4 P1) ──────────────────────── */
+.triple-banner {
+  border-radius: 4px; padding: 10px 14px; margin-bottom: 8px;
+  font-size: 13px; line-height: 1.5; cursor: pointer;
+  transition: filter 0.15s;
+}
+.triple-banner:hover { filter: brightness(0.96); }
+.triple-banner.triple {
+  background: #d4af37; color: #5a4530;
+  font-weight: 700; border: 1px solid #b88f25;
+}
+.triple-banner.double {
+  background: #fdf6e8; color: #7a4515;
+  font-weight: 500; border: 1px solid #e0d4b0;
+}
+.triple-banner .tsb-detail {
+  display: none; margin-top: 8px; padding-top: 8px;
+  border-top: 1px dashed currentColor; font-size: 12px; opacity: 0.9;
+}
+.triple-banner.open .tsb-detail { display: block; }
+
 /* ── 雙軸切換（大限/流年）+ 檢視模式 ─────────────────── */
 .axis-bar {
   background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
@@ -463,6 +484,8 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 
 <div id="chart-area">
   <div class="meta-bar" id="meta-bar"></div>
+  <!-- Sprint 4 P1：三干疊加 banner（內容由 updateTripleStemBanner 動態填） -->
+  <div id="triple-stem-banner" class="triple-banner" style="display:none;"></div>
   <div class="flow-bar">
     <span class="fy-label" data-i18n="flow_year_label">主流年</span>
     <span class="fy-year" id="fc-year">—</span>

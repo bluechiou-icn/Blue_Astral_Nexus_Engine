@@ -27,6 +27,98 @@ function updateFlowBar() {
   document.getElementById('fc-age').textContent = `${t('age_prefix')}${fy.chineseAge}${t('age_suffix')}`;
   document.getElementById('fc-limit').textContent = ml
     ? `${t('limit_label')}${tPalaceName(ml.palace)}${t('limit_palace')}　${ml.startYear}~${ml.endYear}` : '';
+  updateTripleStemBanner();
+}
+
+// Sprint 4 P1 — 三干疊加 banner（Cassian 回饋：SARAJ 案例必須能跑出）
+//   引擎 tripleStemOverlap = { isTripleOverlap, isDoubleOverlap, birthYearStem,
+//     originalStem, decadeStem, note }
+//   isTriple → 金色強警示；isDouble → 淺米色提示；皆無 → 隱藏
+//   點 banner 展開細節列；再點宮位 chip → 對應宮格閃爍橘色 outline 2 次
+function updateTripleStemBanner() {
+  const banner = document.getElementById('triple-stem-banner');
+  if (!banner) return;
+  const ts = S.flowData?.tripleStemOverlap;
+  if (!ts || (!ts.isTripleOverlap && !ts.isDoubleOverlap)) {
+    banner.style.display = 'none';
+    banner.classList.remove('triple', 'double', 'open');
+    return;
+  }
+  const d = S.chartData;
+  const mingPal   = d?.palaces.find(p => p.name === '命宮');
+  const origPal   = d?.originalPalace?.name ? d.palaces.find(p => p.name === d.originalPalace.name) : null;
+  const decadePal = S.flowData?.currentMajorLimit?.palace
+    ? d?.palaces.find(p => p.name === S.flowData.currentMajorLimit.palace) : null;
+
+  const tier = ts.isTripleOverlap ? 'triple' : 'double';
+  banner.classList.remove('triple', 'double');
+  banner.classList.add(tier);
+  banner.style.display = 'block';
+
+  let headline;
+  if (tier === 'triple') {
+    const stem = ts.birthYearStem;
+    const branch = origPal?.branch || '';
+    headline = `${t('tsb_triple_prefix')}${t('tsb_birth_label')}／${t('tsb_orig_label')}／${t('tsb_decade_label')} 同步 *${stem}${branch}*`;
+  } else {
+    headline = `${t('tsb_double_prefix')}${ts.note || ''}`;
+  }
+
+  const chip = (label, stem, palaceName) => palaceName
+    ? `<span class="tsb-chip" data-palace="${palaceName}" style="display:inline-block;padding:2px 8px;margin:0 6px 4px 0;background:rgba(255,255,255,0.5);border-radius:3px;cursor:pointer;font-size:12px;">${label}：<b>${stem || '?'}</b>　${palaceName || ''}</span>`
+    : `<span style="display:inline-block;padding:2px 8px;margin:0 6px 4px 0;font-size:12px;opacity:0.6;">${label}：<b>${stem || '?'}</b></span>`;
+
+  banner.innerHTML =
+    `<div>${headline} <span style="font-size:11px;opacity:0.7;">${t('tsb_click_hint')}</span></div>` +
+    `<div class="tsb-detail">` +
+      chip(t('tsb_birth_label'),  ts.birthYearStem, mingPal?.name) +
+      chip(t('tsb_orig_label'),   ts.originalStem,  origPal?.name) +
+      chip(t('tsb_decade_label'), ts.decadeStem,    decadePal?.name) +
+    `</div>`;
+
+  banner.onclick = (e) => {
+    const palChip = e.target.closest('.tsb-chip');
+    if (palChip) {
+      flashPalaceOutline(palChip.dataset.palace);
+      e.stopPropagation();
+      return;
+    }
+    banner.classList.toggle('open');
+  };
+}
+
+// 暫態橘色 outline 閃爍 (2 次)：用 selectedBranch + 自訂 dashOffset 不行，
+// 直接 DOM-overlay 一個 absolute div 蓋在對應宮格座標，閃完移除
+function flashPalaceOutline(palaceName) {
+  if (!palaceName || !S.chartData) return;
+  const pal = S.chartData.palaces.find(p => p.name === palaceName);
+  if (!pal) return;
+  // BRANCH_POS / CELL / BASE 為 chart-state.js 載入的 module-level const，
+  // 在共享 lexical scope 中可直接引用（classic script，非 ES module）
+  const canvas = document.getElementById(S.yearBlocks?.[0]?.canvasId);
+  if (!canvas || typeof BRANCH_POS === 'undefined') return;
+  const rect = canvas.getBoundingClientRect();
+  const scale = rect.width / BASE;
+  const [row, col] = BRANCH_POS[pal.branch] || [];
+  if (row == null) return;
+  const cell = CELL * scale;
+  const overlay = document.createElement('div');
+  overlay.style.cssText =
+    `position:absolute;left:${rect.left + col*cell + window.scrollX}px;` +
+    `top:${rect.top + row*cell + window.scrollY}px;` +
+    `width:${cell}px;height:${cell}px;` +
+    `border:3px solid #ea7c1c;border-radius:2px;` +
+    `pointer-events:none;z-index:8000;opacity:1;` +
+    `transition:opacity 0.25s;`;
+  document.body.appendChild(overlay);
+  let n = 0;
+  const blink = () => {
+    overlay.style.opacity = (n % 2 === 0) ? '0.1' : '1';
+    n++;
+    if (n < 4) setTimeout(blink, 280);
+    else setTimeout(() => overlay.remove(), 300);
+  };
+  setTimeout(blink, 200);
 }
 
 // ════════════════════════════════════════════════════════

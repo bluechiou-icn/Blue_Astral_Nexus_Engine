@@ -94,6 +94,13 @@ const I18N = {
     lujl_medium:   '祿忌交戰：輕度',
     lujl_lu_label: '祿',
     lujl_ji_label: '忌',
+    // Sprint 4 — 三干疊加 banner
+    tsb_triple_prefix: '⚠️ 三干疊加：',
+    tsb_double_prefix: '雙干疊加：',
+    tsb_birth_label:   '生年',
+    tsb_orig_label:    '來因宮',
+    tsb_decade_label:  '大限',
+    tsb_click_hint:    '（點擊展開細節）',
   },
   en: {
     page_title: "Blue's Zi Wei Dou Shu Chart System",
@@ -182,6 +189,13 @@ const I18N = {
     lujl_medium:   'Lu-Ji Conflict: Medium',
     lujl_lu_label: 'Lu',
     lujl_ji_label: 'Ji',
+    // Sprint 4 — Triple-stem convergence banner
+    tsb_triple_prefix: '⚠️ Triple-Stem Convergence: ',
+    tsb_double_prefix: 'Double-Stem Overlap: ',
+    tsb_birth_label:   'Birth-Year',
+    tsb_orig_label:    'Origin Palace',
+    tsb_decade_label:  'Major Limit',
+    tsb_click_hint:    '(click to expand)',
   },
   ko: {
     page_title: 'Blue\'s 자미두수 명반 시스템',
