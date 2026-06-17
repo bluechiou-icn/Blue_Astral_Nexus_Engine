@@ -314,6 +314,9 @@ function libraryLoad(id) {
   document.getElementById('f-name').value = c.name || '';
   const fc = document.getElementById('f-city');
   if (fc && c.city) fc.value = c.city;
+  // 還原已定盤狀態（v3 後加入；舊資料無此欄位視同 true，保持向後相容）
+  const fcs = document.getElementById('f-chartset');
+  if (fcs) fcs.checked = c.chartSet !== false;
   handleSubmit();
 }
 
@@ -386,7 +389,21 @@ function renderLibrary() {
   const panel = document.getElementById('library-panel');
   if (!panel) return;
   if (!Cloud.store) Cloud.store = loadLocalStore();
-  const charts = Cloud.store.charts || [];
+  // 顯示順序：selfChartId（命主本人）永遠在最上；其後 partnerIds 緊鄰命主之下；
+  // 其餘 chart 按 updatedAt desc。避免「partner 在 main 之上」的奇怪順序。
+  const all = Cloud.store.charts || [];
+  const selfId = Cloud.store.selfChartId || null;
+  const selfChart = selfId ? all.find(c => c.id === selfId) : null;
+  const partnerIds = new Set(selfChart?.partnerIds || []);
+  const partnerCharts = all.filter(c => partnerIds.has(c.id))
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  const others = all.filter(c => c.id !== selfId && !partnerIds.has(c.id))
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  const charts = [
+    ...(selfChart ? [selfChart] : []),
+    ...partnerCharts,
+    ...others,
+  ];
 
   const authBtn = Cloud.clientId
     ? (Cloud.signedIn

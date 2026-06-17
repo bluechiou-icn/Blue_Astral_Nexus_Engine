@@ -303,17 +303,21 @@ async function handleSubmit() {
   const mainYear = yv ? parseInt(yv) : new Date().getFullYear();
   const allYears = [mainYear];
 
-  Object.assign(S, { birthDate:date, birthTime:time, gender, name, city, currentYear:mainYear });
+  // 已定盤：勾選 → 輸入時間已是真太陽時，引擎不要再校正 → 不傳 city（API 跳過真太陽時校正）
+  const chartSet = document.getElementById('f-chartset')?.checked !== false;
+  const apiCity = chartSet ? '' : city;
+
+  Object.assign(S, { birthDate:date, birthTime:time, gender, name, city, chartSet, currentYear:mainYear });
 
   document.getElementById('input-panel').style.display = 'none';
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('loading').style.display     = 'block';
 
   try {
-    const chartData = await apiChart(date, time, gender, city);
+    const chartData = await apiChart(date, time, gender, apiCity);
     S.chartData = chartData;
     S.flowDataByYear = {};
-    const flows = await Promise.all(allYears.map(y => apiFlow(date, time, gender, y, city)));
+    const flows = await Promise.all(allYears.map(y => apiFlow(date, time, gender, y, apiCity)));
     allYears.forEach((y, i) => { S.flowDataByYear[y] = flows[i]; });
     S.flowData = S.flowDataByYear[mainYear];
 
@@ -387,9 +391,11 @@ async function saveAndLinkPartnerChart(mainGender) {
     const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
       ? crypto.randomUUID()
       : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    const pChartSet = document.getElementById('f2-chartset')?.checked !== false;
     partnerChart = {
       id: newId, name: pname, date: pdate, time: ptime, gender: pgender,
-      city: pcity, tags: [], notes: '', createdAt: now, updatedAt: now,
+      city: pcity, chartSet: pChartSet,
+      tags: [], notes: '', createdAt: now, updatedAt: now,
     };
     // 若 owner-ext 載入 → 補上 schema v3 欄位
     if (window.CloudExt) {
@@ -413,6 +419,38 @@ async function saveAndLinkPartnerChart(mainGender) {
   if (typeof window.renderLibrary === 'function') window.renderLibrary();
 }
 
+// ── 合盤 button helpers（Sprint 3.9，Blue 2026-06-17 round 4）─────────
+// 找到目前主命主在 store 內的 chart entry，回傳已綁定的 partner 命例（第一個）
+function findCurrentPartnerChart() {
+  const store = window.Cloud?.store;
+  if (!store || !Array.isArray(store.charts)) return null;
+  const me = store.charts.find(c =>
+    c.date === S.birthDate && c.time === S.birthTime &&
+    c.gender === S.gender && (c.name || '') === (S.name || ''));
+  if (!me || !Array.isArray(me.partnerIds) || !me.partnerIds.length) return null;
+  return store.charts.find(c => c.id === me.partnerIds[0]) || null;
+}
+
+function canOpenSynastry() {
+  return !!findCurrentPartnerChart();
+}
+
+function openSynastryWindow() {
+  const partner = findCurrentPartnerChart();
+  if (!partner) {
+    alert(t('partner_required_for_synastry') || '需先綁定配偶／伴侶命例才能合盤');
+    return;
+  }
+  const params = new URLSearchParams({
+    date1: S.birthDate, time1: S.birthTime, gender1: S.gender,
+    name1: S.name || '', city1: S.city || '',
+    date2: partner.date, time2: partner.time, gender2: partner.gender,
+    name2: partner.name || '', city2: partner.city || '',
+    auto: '1',
+  });
+  window.open('/synastry.html?' + params.toString(), '_blank');
+}
+
 // Build the DOM for each year block (title + canvas + actions)
 function buildChartBlocks() {
   const container = document.getElementById('charts-container');
@@ -423,11 +461,16 @@ function buildChartBlocks() {
     const isMain = blk.year === S.currentYear;
     const { start, end } = lunarYearRange(blk.year);
     const gzDisp = isEn() ? tGZ(blk.gz) : `${blk.gz}年`;
+    // 合盤 button：當 owner-ext 載入且當前命主有 partnerIds 時顯示
+    const synastryBtn = canOpenSynastry()
+      ? `<button onclick="openSynastryWindow()">${t('btn_synastry')}</button>`
+      : '';
     div.innerHTML = `
       <div class="chart-block-title">${isMain ? t('block_main') : t('block_extra')}　${blk.year}　${gzDisp}　${start}〜${end}</div>
       <div class="canvas-wrap"><canvas id="${blk.canvasId}"></canvas></div>
       <div class="chart-block-actions">
         <button onclick="exportPNGForYear(${blk.year})">${t('btn_export')} ${blk.year} ${t('btn_export_suffix')}</button>
+        ${synastryBtn}
       </div>
     `;
     container.appendChild(div);

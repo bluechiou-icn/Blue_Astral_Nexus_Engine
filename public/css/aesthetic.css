@@ -468,15 +468,29 @@ body > div > a[href*="aethnous"]:hover {
 .radio-grp label {
   color: var(--text-secondary);
 }
-.field input {
+.field input,
+.field select {
   background: var(--bg-input);
   border: 1px solid var(--border-hairline);
   color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: var(--radius-input);
+  outline: none;
+  font-family: inherit;
+  transition: var(--tx);
+  width: 100%;
 }
 .field input::placeholder { color: var(--text-tertiary); }
-.field input:focus {
+.field input:focus,
+.field select:focus {
   border-color: var(--border-accent);
   background: var(--bg-hover);
+}
+/* select option 下拉項本身用系統選單，這裡確保前景背景對齊 */
+.field select option {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 /* language switcher pills */

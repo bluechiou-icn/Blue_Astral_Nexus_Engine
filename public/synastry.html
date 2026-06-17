@@ -272,6 +272,38 @@
 <script>
 const TC = {'化祿':'t-luk','化權':'t-kuen','化科':'t-sci','化忌':'t-chi'};
 
+// 由 chart.html 合盤 button 帶 URL params 進來時，自動填表 + 起算
+// （Blue 2026-06-17 round 4，chart.html ↔ synastry.html 串接）
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(window.location.search);
+  const has1 = p.get('date1') && p.get('time1') && p.get('gender1');
+  const has2 = p.get('date2') && p.get('time2') && p.get('gender2');
+  if (!has1 && !has2) return;
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+  const setGender = (name, v) => {
+    if (!v) return;
+    const el = document.querySelector(`input[name=${name}][value="${v}"]`);
+    if (el) el.checked = true;
+  };
+  if (has1) {
+    setVal('a-date', p.get('date1'));
+    setVal('a-time', p.get('time1'));
+    setGender('ag', p.get('gender1'));
+    setVal('a-name', p.get('name1'));
+    setVal('a-city', p.get('city1') || '台北');
+  }
+  if (has2) {
+    setVal('b-date', p.get('date2'));
+    setVal('b-time', p.get('time2'));
+    setGender('bg', p.get('gender2'));
+    setVal('b-name', p.get('name2'));
+    setVal('b-city', p.get('city2') || '台北');
+  }
+  if (has1 && has2 && p.get('auto') === '1') {
+    setTimeout(() => { try { submit(); } catch (e) { console.error(e); } }, 150);
+  }
+});
+
 async function submit() {
   const aDate = document.getElementById('a-date').value;
   const aTime = document.getElementById('a-time').value;

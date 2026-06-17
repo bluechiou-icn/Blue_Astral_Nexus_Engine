@@ -321,6 +321,11 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     </div>
     <div class="field"><label data-i18n="email_label">Email（選填）</label><input type="email" id="f-email" data-i18n-ph="email_ph" placeholder=""></div>
   </div>
+  <!-- 已定盤 checkbox：勾選 = 輸入時間以此為主，引擎不再做真太陽時校正（Blue 2026-06-17）-->
+  <div class="field" style="display:flex;align-items:center;gap:8px;">
+    <input type="checkbox" id="f-chartset" checked style="width:auto;accent-color:var(--accent);">
+    <label for="f-chartset" data-i18n="chartset_label" style="margin-bottom:0;cursor:pointer;">已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
+  </div>
 
   <!-- 關係狀態 + 配偶 sub-form（auto-展開）: Blue 2026-06-17 規格 (rev 2 同性婚) -->
   <div class="row-2">
@@ -341,7 +346,7 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
       </select>
     </div>
     <div class="field">
-      <label data-i18n="match_type_label">配對類型</label>
+      <label data-i18n="match_type_label">對象性別</label>
       <select id="f-mt" onchange="autoSetPartnerGender()">
         <option value="hetero" data-i18n="mt_hetero">異性</option>
         <option value="homo" data-i18n="mt_homo">同性</option>
@@ -367,7 +372,12 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
         <label data-i18n="partner_city_label">配偶出生地</label>
         <input type="text" id="f2-city" value="台北" placeholder="城市名 / 機場代號" autocomplete="off">
       </div>
-      <div class="field"><label data-i18n="partner_name_label">配偶姓名（選填）</label><input type="text" id="f2-name" placeholder=""></div>
+      <div class="field"><label data-i18n="partner_name_label">配偶姓名或暱稱（選填）</label><input type="text" id="f2-name" placeholder=""></div>
+    </div>
+    <!-- 配偶已定盤 checkbox -->
+    <div class="field" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="f2-chartset" checked style="width:auto;accent-color:var(--accent);">
+      <label for="f2-chartset" data-i18n="chartset_label_partner" style="margin-bottom:0;cursor:pointer;">配偶已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
     </div>
   </div>
 
