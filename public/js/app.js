@@ -598,27 +598,35 @@ function canOpenSynastry() {
   return !!findCurrentPartnerChart();
 }
 
-// 合盤／疊盤視窗仍在規劃中（Blue 2026-06-17 round 5 確認暫不連到 synastry.html）。
-// 按鈕保留，點下去顯示「規劃中」並列出已偵測到的配偶資料，方便確認綁定無誤。
-// 未來 Sprint 4 完成獨立合盤畫面後再接回。
+// 合盤頁 — Sprint 4 P0 已上線（/synastry.html）。優先以 cloud store id 帶入，
+// 找不到 id（如剛起盤未存）時退回生辰參數，確保配偶 sub-form 直接起盤也能用。
 function openSynastryWindow() {
   const partner = findCurrentPartnerChart();
   if (!partner) {
     alert(t('partner_required_for_synastry') || '需先綁定配偶／伴侶命例才能合盤');
     return;
   }
-  // 起合盤前再次確認雙方 chartSet 狀態，避免引擎一邊校正一邊不校正
-  // 造成時辰偏差（Cassian Sprint 3.8 回饋）
-  const meSet = (S.chartSet !== false) ? '已定盤' : '未定盤';
-  const pSet  = (partner.chartSet !== false) ? '已定盤' : '未定盤';
-  const meLabel = `${S.name || '主命主'}　${S.birthDate} ${S.birthTime} ${S.gender}　${S.city || ''}　[${meSet}]`;
-  const partnerLabel = `${partner.name || '(未命名)'}　${partner.date} ${partner.time} ${partner.gender}　${partner.city || ''}　[${pSet}]`;
-  alert(
-    (t('synastry_pending') || '合盤／疊盤視窗開發中（Sprint 4 規劃中）') +
-    '\n\n' + (t('synastry_pending_detected') || '已偵測到配對命例：') +
-    '\n命主：' + meLabel +
-    '\n配偶：' + partnerLabel
-  );
+  const store = window.Cloud?.store;
+  const me = store?.charts?.find(c =>
+    c.date === S.birthDate && c.time === S.birthTime &&
+    c.gender === S.gender && (c.name || '') === (S.name || ''));
+  let url = '/synastry.html';
+  if (me?.id && partner?.id) {
+    url += `?selfId=${encodeURIComponent(me.id)}&partnerId=${encodeURIComponent(partner.id)}`;
+  } else {
+    const q = new URLSearchParams({
+      date1: S.birthDate, time1: S.birthTime, gender1: S.gender,
+      date2: partner.date, time2: partner.time, gender2: partner.gender,
+    });
+    if (S.city)         q.set('city1', S.city);
+    if (partner.city)   q.set('city2', partner.city);
+    if (S.name)         q.set('name1', S.name);
+    if (partner.name)   q.set('name2', partner.name);
+    if (S.chartSet === false)       q.set('chartSet1', '0');
+    if (partner.chartSet === false) q.set('chartSet2', '0');
+    url += '?' + q.toString();
+  }
+  window.open(url, '_blank', 'noopener');
 }
 
 // Build the DOM for each year block (title + canvas + actions)
