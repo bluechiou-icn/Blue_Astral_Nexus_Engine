@@ -13,6 +13,71 @@ function updateMetaBar() {
     [t('meta_origin'),  tPalaceName(d.originalPalace?.name)||'—'],
   ].map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
    .join('<span class="msep">·</span>');
+  updateFormationBadges();
+}
+
+// Sprint 4 P3 — 格局徽章
+//   引擎 classicalFormations[] = { name, type, palaces[], stars[], note, confidence }
+//   type: 'auspicious' (金) / 'challenge' (暗紅) / 'neutral' (灰)
+//   按 confidence desc 排序，前 5 個顯示完整徽章，剩下用「+N more」chip 點開展全列
+//   點徽章 → 對應宮位閃爍 + 下方 fb-detail 區塊展開 note + confidence
+function updateFormationBadges() {
+  const box = document.getElementById('formation-badges');
+  if (!box) return;
+  const formations = S.chartData?.classicalFormations || [];
+  if (!formations.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const sorted = [...formations].sort((a,b) => (b.confidence||0) - (a.confidence||0));
+  const TOP = 5;
+  const shown   = sorted.slice(0, TOP);
+  const hidden  = sorted.slice(TOP);
+  let showingAll = false;
+
+  const typeLabel = ty =>
+      ty === 'auspicious' ? t('formation_type_auspicious')
+    : ty === 'challenge'  ? t('formation_type_challenge')
+    :                       t('formation_type_neutral');
+
+  const chipHTML = (f, idx) => {
+    const short = (f.name || '').slice(0, 2);
+    const tipText = `${typeLabel(f.type)} · ${f.name} · ${t('formation_confidence')} ${f.confidence}%\n${f.note}`;
+    return `<span class="fb-chip ${f.type || 'neutral'}" data-idx="${idx}" title="${tipText.replace(/"/g,'&quot;')}">${short}</span>`;
+  };
+
+  const detailHTML = (f) => {
+    const palText = (f.palaces || []).map(tPalaceName).join('、') || '—';
+    const starText = (f.stars || []).join('、') || '—';
+    return `<b>${f.name}</b><span class="fb-conf">${t('formation_confidence')} ${f.confidence}%</span><br>` +
+           `<span style="color:#888;">${palText}　·　${starText}</span><br>` +
+           `${f.note}`;
+  };
+
+  const render = () => {
+    const list = showingAll ? sorted : shown;
+    const chips = list.map((f, i) => chipHTML(f, i)).join('');
+    const moreChip = (!showingAll && hidden.length)
+      ? `<span class="fb-chip fb-more" data-more="1">${t('formation_more').replace('{n}', hidden.length)}</span>`
+      : '';
+    box.innerHTML =
+      `<span class="fb-label">${t('formation_section_label')}</span>` +
+      chips + moreChip +
+      `<div class="fb-detail"></div>`;
+    box.style.display = 'flex';
+  };
+  render();
+
+  box.onclick = (e) => {
+    const more = e.target.closest('[data-more="1"]');
+    if (more) { showingAll = true; render(); return; }
+    const chip = e.target.closest('.fb-chip');
+    if (!chip) return;
+    const f = (showingAll ? sorted : shown)[parseInt(chip.dataset.idx, 10)];
+    if (!f) return;
+    const detail = box.querySelector('.fb-detail');
+    detail.innerHTML = detailHTML(f);
+    detail.classList.add('open');
+    (f.palaces || []).forEach(p => flashPalaceOutline(p, f.type));
+  };
 }
 
 function updateFlowBar() {
@@ -87,9 +152,10 @@ function updateTripleStemBanner() {
   };
 }
 
-// 暫態橘色 outline 閃爍 (2 次)：用 selectedBranch + 自訂 dashOffset 不行，
-// 直接 DOM-overlay 一個 absolute div 蓋在對應宮格座標，閃完移除
-function flashPalaceOutline(palaceName) {
+// 暫態 outline 閃爍 (2 次)：DOM-overlay absolute div 蓋在對應宮格座標，閃完移除
+//   variant: 'triple' (橘) | 'auspicious' (金) | 'challenge' (紅) | 'neutral' (灰)
+//   Sprint 4 P1 三干 chip 點擊用 'triple'；P3 格局徽章用對應 type
+function flashPalaceOutline(palaceName, variant) {
   if (!palaceName || !S.chartData) return;
   const pal = S.chartData.palaces.find(p => p.name === palaceName);
   if (!pal) return;
@@ -102,12 +168,17 @@ function flashPalaceOutline(palaceName) {
   const [row, col] = BRANCH_POS[pal.branch] || [];
   if (row == null) return;
   const cell = CELL * scale;
+  const color =
+      variant === 'auspicious' ? '#d4af37'
+    : variant === 'challenge'  ? '#9f1f1f'
+    : variant === 'neutral'    ? '#9aa0a6'
+    :                            '#ea7c1c'; // default: triple-stem 橘
   const overlay = document.createElement('div');
   overlay.style.cssText =
     `position:absolute;left:${rect.left + col*cell + window.scrollX}px;` +
     `top:${rect.top + row*cell + window.scrollY}px;` +
     `width:${cell}px;height:${cell}px;` +
-    `border:3px solid #ea7c1c;border-radius:2px;` +
+    `border:3px solid ${color};border-radius:2px;` +
     `pointer-events:none;z-index:8000;opacity:1;` +
     `transition:opacity 0.25s;`;
   document.body.appendChild(overlay);

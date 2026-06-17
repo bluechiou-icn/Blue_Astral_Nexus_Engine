@@ -101,6 +101,13 @@ const I18N = {
     tsb_orig_label:    '來因宮',
     tsb_decade_label:  '大限',
     tsb_click_hint:    '（點擊展開細節）',
+    // Sprint 4 — 格局徽章
+    formation_section_label: '格局',
+    formation_more:          '+{n} 個',
+    formation_type_auspicious: '吉格',
+    formation_type_challenge:  '凶格',
+    formation_type_neutral:    '中性',
+    formation_confidence:      '信心度',
   },
   en: {
     page_title: "Blue's Zi Wei Dou Shu Chart System",
@@ -196,6 +203,15 @@ const I18N = {
     tsb_orig_label:    'Origin Palace',
     tsb_decade_label:  'Major Limit',
     tsb_click_hint:    '(click to expand)',
+    // Sprint 4 — Classical formation badges
+    //   Note: formation 中文名稱在引擎側 hardcode（IP-邊界內）；EN 翻譯待 HERMES 收斂
+    //   階段性策略：徽章文字保留中文，type label + confidence 走 EN
+    formation_section_label: 'Formations',
+    formation_more:          '+{n} more',
+    formation_type_auspicious: 'Auspicious',
+    formation_type_challenge:  'Challenge',
+    formation_type_neutral:    'Neutral',
+    formation_confidence:      'Confidence',
   },
   ko: {
     page_title: 'Blue\'s 자미두수 명반 시스템',

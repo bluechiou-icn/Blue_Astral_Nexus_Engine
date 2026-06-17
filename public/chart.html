@@ -182,6 +182,37 @@ h1.page-title {
 }
 .triple-banner.open .tsb-detail { display: block; }
 
+/* ── 格局徽章 (Sprint 4 P3) ──────────────────────────────── */
+.formation-badges {
+  background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
+  padding: 8px 12px; margin-bottom: 8px;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.formation-badges .fb-label {
+  font-size: 10px; letter-spacing: 0.1em; color: #999;
+  margin-right: 4px;
+}
+.fb-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 9px; border-radius: 11px; font-size: 12px;
+  font-weight: 600; cursor: pointer; user-select: none;
+  transition: filter 0.15s, transform 0.1s;
+}
+.fb-chip:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.fb-chip:active { transform: translateY(0); }
+.fb-chip.auspicious { background: #d4af37; color: #5a4530; }
+.fb-chip.challenge  { background: #9f1f1f; color: #fdf6e8; }
+.fb-chip.neutral    { background: #9aa0a6; color: #1a1a1a; }
+.fb-chip.fb-more    { background: transparent; color: #888; border: 1px dashed #bbb; }
+.fb-detail {
+  flex-basis: 100%; margin-top: 6px; padding-top: 8px;
+  border-top: 1px dashed #e0d4b0; font-size: 12px; color: #444;
+  display: none; line-height: 1.5;
+}
+.fb-detail.open { display: block; }
+.fb-detail b { color: #1a1a1a; }
+.fb-detail .fb-conf { color: #888; font-size: 11px; margin-left: 6px; }
+
 /* ── 雙軸切換（大限/流年）+ 檢視模式 ─────────────────── */
 .axis-bar {
   background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
@@ -484,6 +515,8 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 
 <div id="chart-area">
   <div class="meta-bar" id="meta-bar"></div>
+  <!-- Sprint 4 P3：格局徽章（內容由 updateFormationBadges 動態填） -->
+  <div id="formation-badges" class="formation-badges" style="display:none;"></div>
   <!-- Sprint 4 P1：三干疊加 banner（內容由 updateTripleStemBanner 動態填） -->
   <div id="triple-stem-banner" class="triple-banner" style="display:none;"></div>
   <div class="flow-bar">
