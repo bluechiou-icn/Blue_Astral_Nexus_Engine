@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blue 紫微命盤視覺化系統</title>
+<title>汎天派紫微斗數排盤軟體</title>
 <link rel="icon" href="/logo_black.png">
+<link rel="stylesheet" href="/css/aesthetic.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -27,7 +28,7 @@ h1.page-title {
   border: 1px solid #d8d6d0;
   border-radius: 4px;
   padding: 18px;
-  max-width: 720px;
+  max-width: 880px;
   margin: 0 auto 16px;
 }
 .panel-title { font-size: 10px; letter-spacing: 0.2em; color: #888; text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e8e6e0; }
@@ -129,7 +130,11 @@ h1.page-title {
 .spinner { width: 24px; height: 24px; border: 2px solid #ddd; border-top-color: #555; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-#chart-area { display: none; max-width: 1060px; margin: 0 auto; }
+#chart-area { display: none; max-width: 880px; margin: 0 auto; }
+@media (min-width: 1200px) {
+  #chart-area { max-width: 1060px; } /* 寬螢幕回大盤閱讀 */
+  .panel { max-width: 1060px; }
+}
 .meta-bar {
   background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
   padding: 9px 14px; margin-bottom: 8px;
@@ -274,7 +279,7 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 <div style="text-align:center;margin-bottom:12px;">
   <a href="https://www.aethnous.co/" style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;border:1px solid #c8c4bc;border-radius:999px;color:#888;font-size:11px;letter-spacing:0.2em;text-decoration:none;text-transform:uppercase;font-family:inherit;transition:border-color 0.15s,color 0.15s;" onmouseover="this.style.borderColor='#555';this.style.color='#333';" onmouseout="this.style.borderColor='#c8c4bc';this.style.color='#888';">← Back to the Universe</a>
 </div>
-<h1 class="page-title" data-i18n="page_title">Blue's 紫微斗數命理顧問排盤系統</h1>
+<h1 class="page-title" data-i18n="page_title">Blue's 紫微斗數命理顧問系統</h1>
 
 <div class="lang-bar-chart">
   <button class="lbtn active" onclick="setLang('zh')">中文</button>

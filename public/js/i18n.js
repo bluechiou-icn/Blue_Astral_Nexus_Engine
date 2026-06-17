@@ -7,7 +7,7 @@ let lang = 'zh';
 
 const I18N = {
   zh: {
-    page_title: 'Blue\'s 紫微斗數命理顧問排盤系統',
+    page_title: 'Blue\'s 紫微斗數命理顧問系統',
     form_title: '命主資料',
     date_label: '西曆生日', time_label: '出生時間',
     gender_label: '性別', male: '男', female: '女',

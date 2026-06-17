@@ -1,0 +1,662 @@
+/* ════════════════════════════════════════════════════════
+   ÆTHNOUS aesthetic — 深淺藍漸層 + 米色 accent
+   只在 owner-ext.js 載入時透過 <link rel=stylesheet> 注入。
+   作用域：頁面 scope（覆寫 chart.html 既有藍+金主題色於 ext 控制的元件）
+   ════════════════════════════════════════════════════════ */
+
+:root {
+  --bg-deepest: #0a1018;
+  --bg-base: #0e1822;
+  --bg-mid: #18283b;
+  --bg-elevated: #1f3148;
+  --bg-input: #243a55;
+  --bg-hover: #2d4564;
+  --bg-modal-overlay: rgba(10, 16, 24, 0.88);
+
+  --gradient-top: linear-gradient(180deg, #1a2d44 0%, #0e1822 40%, #0a1018 100%);
+  --gradient-card: linear-gradient(145deg, #1f3148 0%, #18283b 100%);
+  --gradient-accent: linear-gradient(135deg, #3d6280 0%, #5a8db0 50%, #7eb0ce 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(126,176,206,0.04), rgba(90,141,176,0.08));
+
+  --border-hairline: rgba(232, 226, 211, 0.07);
+  --border-strong: rgba(232, 226, 211, 0.14);
+  --border-accent: rgba(126, 176, 206, 0.42);
+  --border-warm: rgba(212, 196, 168, 0.25);
+
+  --text-primary: #ede4d3;
+  --text-secondary: #b8c5d4;
+  --text-tertiary: #7a8ca1;
+  --text-warm: #d4c4a8;
+  --text-warm-dim: #a89878;
+
+  --blue-100: #c5dbeb;
+  --blue-200: #a8c8de;
+  --blue-300: #7eb0ce;
+  --blue-400: #5a8db0;
+  --blue-500: #3d6280;
+  --blue-600: #2a4866;
+
+  --accent: var(--blue-300);
+  --accent-light: var(--blue-200);
+  --accent-bright: var(--blue-100);
+
+  --beige-100: #ede4d3;
+  --beige-200: #d4c4a8;
+  --beige-300: #a89878;
+  --beige-500: #6b5e44;
+
+  --positive: #9bb8a3;
+  --warning: #d4b89a;
+  --danger:   #c89a9a;
+  --selected: var(--blue-400);
+
+  --shadow-soft: 0 1px 3px rgba(0,0,0,0.18);
+  --shadow-elevated: 0 8px 32px rgba(0,0,0,0.28);
+  --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.04);
+
+  --tx: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-input: 6px;
+  --radius-card: 10px;
+  --radius-chip: 999px;
+  --radius-modal: 12px;
+}
+
+/* ─── 覆寫 chart.html 中 ext 控管的區塊 ─── */
+
+.ext-scope,
+.ext-scope * {
+  font-family: 'Inter', 'Helvetica Neue', -apple-system, BlinkMacSystemFont,
+               'PingFang TC', 'Noto Sans TC', sans-serif;
+  font-weight: 300;
+  color: var(--text-primary);
+  letter-spacing: 0.012em;
+  line-height: 1.65;
+}
+
+.ext-scope h1, .ext-scope h2, .ext-scope h3 {
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+/* category chips bar */
+.ext-cat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 0;
+  align-items: center;
+}
+.ext-cat-row .label {
+  color: var(--text-warm);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-right: 6px;
+}
+.ext-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--border-hairline);
+  background: var(--gradient-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: var(--tx);
+  user-select: none;
+}
+.ext-chip:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.ext-chip.active {
+  background: var(--gradient-accent);
+  border-color: var(--border-accent);
+  color: var(--bg-base);
+  font-weight: 500;
+  box-shadow: var(--shadow-inset);
+}
+.ext-chip.manage { border-style: dashed; color: var(--text-tertiary); }
+.ext-chip:disabled, .ext-chip[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* card / panel */
+.ext-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: var(--shadow-soft);
+}
+.ext-card .card-title {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: var(--text-warm);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+/* privacy notice */
+.privacy-notice {
+  background: var(--gradient-soft);
+  border: 1px solid var(--border-warm);
+  border-left: 2px solid var(--beige-200);
+  border-radius: var(--radius-input);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.75;
+}
+.privacy-notice .pn-title {
+  color: var(--text-warm);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+/* consent checkbox */
+.ext-consent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.ext-consent input { accent-color: var(--accent); }
+
+/* form fields */
+.ext-field {
+  margin-bottom: 12px;
+}
+.ext-field label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-warm);
+  margin-bottom: 6px;
+}
+.ext-field select, .ext-field input[type="text"] {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: var(--radius-input);
+  outline: none;
+  font-family: inherit;
+  transition: var(--tx);
+}
+.ext-field select:focus, .ext-field input:focus {
+  border-color: var(--border-accent);
+  background: var(--bg-hover);
+}
+
+/* pill / check-item (multi-select) */
+.ext-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ext-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--border-hairline);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--tx);
+}
+.ext-pill:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.ext-pill.on {
+  background: var(--gradient-accent);
+  color: var(--bg-base);
+  border-color: var(--border-accent);
+  font-weight: 500;
+}
+
+/* lens preview card */
+.ext-lens-card {
+  background: var(--gradient-soft);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-input);
+  padding: 14px 16px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ext-lens-card .lens-title {
+  color: var(--accent-light);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.ext-lens-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; }
+.ext-lens-card dt { color: var(--text-warm); font-size: 11px; }
+.ext-lens-card dd { color: var(--text-primary); font-size: 12px; }
+.ext-lens-card .lens-notes { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-hairline); }
+.ext-lens-card .lens-notes li { font-size: 11px; color: var(--text-tertiary); padding-left: 1em; }
+
+/* partner section in library row */
+.ext-partner-section {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.ext-partner-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-input);
+  font-size: 11px;
+  cursor: pointer;
+  transition: var(--tx);
+  font-family: inherit;
+}
+.ext-partner-btn:hover { border-color: var(--border-accent); color: var(--accent-light); }
+.ext-partner-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-chip);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  background: var(--bg-elevated);
+  color: var(--text-warm);
+  border: 1px solid var(--border-hairline);
+}
+.ext-partner-tag.former { color: var(--text-tertiary); border-style: dashed; }
+
+/* modal */
+.ext-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 16px;
+}
+.ext-modal {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-modal);
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: var(--shadow-elevated);
+}
+.ext-modal h3 {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-warm);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.ext-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-hairline);
+}
+.ext-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius-input);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: var(--tx);
+  font-family: inherit;
+}
+.ext-btn:hover { border-color: var(--border-accent); color: var(--text-primary); }
+.ext-btn.primary {
+  background: var(--gradient-accent);
+  color: var(--bg-base);
+  border-color: var(--border-accent);
+  font-weight: 500;
+}
+.ext-btn.danger { color: var(--danger); border-color: var(--danger); }
+
+/* picker row (in partner modal) */
+.ext-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  transition: var(--tx);
+  border: 1px solid transparent;
+}
+.ext-picker-row:hover {
+  background: var(--gradient-soft);
+  border-color: var(--border-hairline);
+}
+.ext-picker-name { color: var(--text-primary); font-size: 13px; }
+.ext-picker-meta { color: var(--text-tertiary); font-size: 11px; margin-left: 6px; }
+
+/* category mgmt modal item */
+.ext-cat-mgmt-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.ext-cat-mgmt-row input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: var(--radius-input);
+  font-size: 13px;
+  font-family: inherit;
+}
+.ext-cat-mgmt-row .row-actions { display: flex; gap: 4px; }
+.ext-add-cat-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-hairline);
+}
+.ext-add-cat-row input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: var(--radius-input);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+/* utility */
+.ext-hidden { display: none !important; }
+
+/* ════════════════════════════════════════════════════════
+   全頁套用 — chart.html 整頁 design system
+   （aesthetic.css 已從 owner-ext 提升為公開層，所有訪客皆套）
+   ext-* class 規則仍只在 owner-ext 載入後渲染（DOM 不存在則無效）
+   ════════════════════════════════════════════════════════ */
+
+body {
+  background: var(--gradient-top);
+  background-attachment: fixed;
+  color: var(--text-primary);
+}
+
+/* meta-bar 容器底色（先前漏覆寫，導致 ml 標籤 / mv 數值在 #fff 底上反差不足）*/
+.meta-bar {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
+}
+.ml { color: var(--text-warm); }
+.mv { color: var(--accent-bright); font-weight: 500; }
+.msep { color: var(--border-strong); }
+
+/* panels（input-panel / library-panel / chart-block） */
+.panel,
+.chart-block {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+.panel-title,
+.chart-block-title {
+  color: var(--text-warm);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+/* fields */
+.field label,
+.extra-years label,
+.radio-grp label {
+  color: var(--text-secondary);
+}
+.field input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+}
+.field input::placeholder { color: var(--text-tertiary); }
+.field input:focus {
+  border-color: var(--border-accent);
+  background: var(--bg-hover);
+}
+
+/* language switcher pills */
+.lbtn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+.lbtn:hover { border-color: var(--border-accent); color: var(--text-primary); }
+.lbtn.active {
+  border-color: var(--border-accent);
+  background: var(--gradient-soft);
+  color: var(--accent-light);
+}
+
+/* city dropdown */
+.city-hint { color: var(--text-tertiary); }
+.city-dropdown {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-elevated);
+}
+.city-opt { color: var(--text-primary); border-bottom: 1px solid var(--border-hairline); }
+.city-opt:hover,
+.city-opt.active { background: var(--bg-hover); }
+.city-opt-code { color: var(--text-tertiary); }
+.city-opt-tz   { color: var(--text-tertiary); }
+
+/* radio + extra-years checked */
+.radio-grp input[type=radio] { accent-color: var(--accent); }
+.radio-grp label:has(input:checked) {
+  border-color: var(--border-accent);
+  background: var(--gradient-soft);
+  color: var(--accent-light);
+}
+.extra-years input[type=checkbox] { accent-color: var(--accent); }
+.extra-years label:has(input:checked) {
+  border-color: var(--border-accent);
+  background: var(--gradient-soft);
+  color: var(--accent-light);
+}
+
+/* primary submit button */
+.btn-primary {
+  background: var(--gradient-accent);
+  color: var(--bg-base);
+  font-weight: 500;
+  border: none;
+}
+.btn-primary:hover { filter: brightness(1.08); background: var(--gradient-accent); }
+
+/* error box */
+.err-box {
+  background: rgba(200, 154, 154, 0.08);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+/* loading spinner */
+.spinner {
+  border-color: var(--border-strong);
+  border-top-color: var(--accent);
+}
+#loading-text { color: var(--text-tertiary); }
+
+/* meta-bar & flow-bar */
+.meta-bar { color: var(--text-secondary); }
+.ml { color: var(--text-tertiary); }
+.mv { color: var(--text-primary); }
+.msep { color: var(--border-strong); }
+
+.flow-bar { background: var(--gradient-card); border: 1px solid var(--border-hairline); }
+.fy-label { color: var(--text-tertiary); }
+.fy-year  { color: var(--text-primary); }
+.fy-gz    { color: var(--text-secondary); }
+.fy-age   { color: var(--text-tertiary); }
+.fy-limit { color: var(--text-tertiary); }
+.flow-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+.flow-btn:hover { border-color: var(--border-accent); background: var(--gradient-soft); color: var(--text-primary); }
+
+/* axis bars */
+.axis-bar { background: var(--gradient-card); border: 1px solid var(--border-hairline); }
+.axis-label { color: var(--text-warm); }
+.kbd-hint { color: var(--text-tertiary); }
+
+/* chips（三軸保留色調區分：decade=綠、year=米金、month=藍） */
+.chip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hairline);
+}
+.chip:hover { border-color: var(--border-strong); }
+.chip .chip-main { color: var(--text-primary); }
+.chip .chip-sub  { color: var(--text-tertiary); }
+
+.chip.active { border-color: var(--positive); background: rgba(155, 184, 163, 0.16); }
+.chip.active .chip-main { color: var(--positive); }
+.chip.active .chip-sub  { color: rgba(155, 184, 163, 0.8); }
+
+.chip-year.active { border-color: var(--beige-200); background: rgba(212, 196, 168, 0.14); }
+.chip-year.active .chip-main { color: var(--beige-200); }
+.chip-year.active .chip-sub  { color: var(--text-warm-dim); }
+
+.chip-month.active { border-color: var(--accent); background: var(--gradient-soft); }
+.chip-month.active .chip-main { color: var(--accent-light); }
+.chip-month.active .chip-sub  { color: var(--accent); }
+
+/* seg-btn (view mode) */
+.seg-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+.seg-btn:hover { border-color: var(--border-accent); color: var(--text-primary); }
+.seg-btn.active {
+  background: var(--gradient-accent);
+  border-color: var(--border-accent);
+  color: var(--bg-base);
+}
+
+/* library list */
+.lib-status { color: var(--text-tertiary); }
+.lib-row {
+  background: transparent;
+  border: 1px solid var(--border-hairline);
+}
+.lib-row:hover { border-color: var(--border-accent); background: var(--gradient-soft); }
+.lib-name { color: var(--text-primary); }
+.lib-meta { color: var(--text-secondary); }
+.lib-del  { color: var(--text-tertiary); }
+.lib-del:hover { color: var(--danger); }
+.lib-empty { color: var(--text-tertiary); }
+.lib-auto  { color: var(--text-secondary); }
+.lib-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+.lib-btn:hover { border-color: var(--border-accent); color: var(--text-primary); }
+.lib-btn-google {
+  background: var(--gradient-accent);
+  border-color: var(--border-accent);
+  color: var(--bg-base);
+}
+
+/* chart-block secondary buttons */
+.chart-block-actions button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+.chart-block-actions button:hover { border-color: var(--border-accent); color: var(--text-primary); background: var(--gradient-soft); }
+
+/* ════════════════════════════════════════════════════════
+   selfChartId 視覺角標
+   ════════════════════════════════════════════════════════ */
+
+.ext-self-badge {
+  display: inline-block;
+  background: var(--gradient-accent);
+  color: var(--bg-base);
+  padding: 1px 8px;
+  border-radius: var(--radius-chip);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-right: 8px;
+  vertical-align: middle;
+  box-shadow: var(--shadow-inset);
+}
+
+/* ════════════════════════════════════════════════════════
+   Reading Lens 獨立卡片（library-panel 上方）
+   ════════════════════════════════════════════════════════ */
+
+#ext-lens-standalone {
+  /* 沿用 .ext-card 樣式，這裡只調強調感 */
+  border-left: 2px solid var(--accent);
+}
+#ext-lens-standalone dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; }
+#ext-lens-standalone dt { color: var(--text-warm); font-size: 11px; }
+#ext-lens-standalone dd { color: var(--text-primary); font-size: 12px; margin: 0; }
+#ext-lens-standalone .lens-notes {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-hairline);
+  list-style: none;
+  padding-left: 0;
+}
+#ext-lens-standalone .lens-notes li {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding-left: 1em;
+  position: relative;
+}
+#ext-lens-standalone .lens-notes li::before {
+  content: '·';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
