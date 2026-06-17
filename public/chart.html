@@ -319,9 +319,65 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     </div>
     <div class="field"><label data-i18n="email_label">Email（選填）</label><input type="email" id="f-email" data-i18n-ph="email_ph" placeholder=""></div>
   </div>
+
+  <!-- 關係狀態 + 配偶 sub-form（auto-展開）: Blue 2026-06-17 規格 -->
+  <div class="field">
+    <label data-i18n="relationship_label">關係狀態（選填）</label>
+    <select id="f-rs" onchange="togglePartnerFields()">
+      <option value="" data-i18n="rs_blank">—</option>
+      <option value="single" data-i18n="rs_single">單身</option>
+      <option value="dating" data-i18n="rs_dating">交往中</option>
+      <option value="engaged" data-i18n="rs_engaged">訂婚</option>
+      <option value="married" data-i18n="rs_married">已婚</option>
+      <option value="polyamorous" data-i18n="rs_polyamorous">多元關係</option>
+      <option value="open" data-i18n="rs_open">開放關係</option>
+      <option value="separated" data-i18n="rs_separated">分居</option>
+      <option value="divorced" data-i18n="rs_divorced">離婚</option>
+      <option value="widowed" data-i18n="rs_widowed">喪偶</option>
+      <option value="complicated" data-i18n="rs_complicated">複雜</option>
+    </select>
+  </div>
+  <div id="partner-fields" style="display:none;border-top:1px dashed #c0bdb6;padding-top:12px;margin-top:8px;">
+    <div class="panel-title" data-i18n="partner_title">配偶／伴侶資料（起盤後自動建立第二盤並雙向串連）</div>
+    <div class="row-3">
+      <div class="field"><label data-i18n="partner_date_label">配偶生日</label><input type="date" id="f2-date"></div>
+      <div class="field"><label data-i18n="partner_time_label">配偶時間</label><input type="time" id="f2-time"></div>
+      <div class="field">
+        <label data-i18n="partner_gender_label">配偶性別</label>
+        <div class="radio-grp">
+          <label><input type="radio" name="g2" value="男"> <span data-i18n="male">男</span></label>
+          <label><input type="radio" name="g2" value="女"> <span data-i18n="female">女</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="field"><label data-i18n="partner_name_label">配偶姓名（選填，default 異性戀夫婦）</label><input type="text" id="f2-name" placeholder=""></div>
+  </div>
+
   <div class="err-box" id="form-err"></div>
   <button class="btn-primary" onclick="handleSubmit()" data-i18n="btn_submit">起　盤</button>
 </div>
+
+<script>
+  // 關係狀態 → 配偶 sub-form 展開／收合（PARTNER_LINKABLE_STATUSES 對齊 cloud-v3.js）
+  const PARTNER_LINKABLE_STATUSES = ['dating', 'engaged', 'married', 'polyamorous', 'open'];
+  function togglePartnerFields() {
+    const rs = document.getElementById('f-rs').value;
+    const sub = document.getElementById('partner-fields');
+    if (PARTNER_LINKABLE_STATUSES.includes(rs)) {
+      sub.style.display = 'block';
+      // 預設配偶性別 = 主命主反性（異性戀夫婦預設）
+      const myGender = document.querySelector('input[name=g]:checked')?.value;
+      const pGenderInput = document.querySelector('input[name=g2]:checked');
+      if (!pGenderInput && myGender) {
+        const defaultG = myGender === '男' ? '女' : '男';
+        const el = document.querySelector(`input[name=g2][value="${defaultG}"]`);
+        if (el) el.checked = true;
+      }
+    } else {
+      sub.style.display = 'none';
+    }
+  }
+</script>
 
 <!-- 命例庫（Sprint 3）：內容由 cloud.js renderLibrary() 動態生成 -->
 <div class="panel" id="library-panel"></div>

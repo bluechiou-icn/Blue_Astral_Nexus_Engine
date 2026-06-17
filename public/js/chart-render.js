@@ -305,7 +305,7 @@ function drawTransientRow(ctx, cx, cy, palace, decadeMu, flowTrans, yTop, rowH) 
 }
 
 function drawPalace(ctx, palace, row, col, opts) {
-  const { muMap, decadeMing, flowMing, minorLimPalace,
+  const { muMap, decadeMing, flowMing, monthMing, minorLimPalace,
           origPalace, bodyPalace, birthYear,
           flowYearStr, flowYearGZ } = opts;
   const cx = col * CELL, cy = row * CELL;
@@ -657,12 +657,52 @@ function drawPalace(ctx, palace, row, col, opts) {
     ctx.fillText('借' + srcFull, cx + PAD, cy + CELL - 30);
   }
 
+  // ── 流月十二宮「月X」標籤（汎天派順排）──
+  //   位置：左下角橫向外框；若空宮 → 排在空宮訊息上方，否則直接置左下
+  //   色系：米金（accent beige，排除紅色，跟新 UI match）
+  if (monthMing) {
+    const monthOffsetPal = palOffset(palace.name, monthMing);
+    if (monthOffsetPal) {
+      const monthLabel = isEn()
+        ? 'M·' + tPalaceShort(monthOffsetPal)
+        : '月' + palaceCharZh(monthOffsetPal);
+      drawMonthLabelBox(ctx, cx, cy, monthLabel, isEmptyP);
+    }
+  }
+
   // ── BOTTOM-RIGHT: Stem ↑ Branch ↓ ──
   ctx.font = isEn() ? `9px ${FONT_EN}` : `11px ${FONT}`; ctx.fillStyle = '#666';
   ctx.textAlign = 'right';
   ctx.fillText(tStem(palace.stem),     cx+CELL-PAD, cy+CELL-26);
   ctx.fillText(tBranch(palace.branch), cx+CELL-PAD, cy+CELL-12);
   ctx.textAlign = 'left';
+}
+
+// ════════════════════════════════════════════════════════
+// 流月「月X」橫向標籤（左下角，米金色外框，非紅）
+//   isEmptyAbove=true 時往上排，讓位給「空宮／借X宮」訊息
+// ════════════════════════════════════════════════════════
+
+function drawMonthLabelBox(ctx, cx, cy, label, isEmptyAbove) {
+  const FS = isEn() ? 10 : 11;
+  const padX = 5, padY = 3;
+  ctx.font = `bold ${FS}px ${isEn() ? FONT_EN : FONT}`;
+  const bw = ctx.measureText(label).width + 2 * padX;
+  const bh = FS + 2 * padY;
+  const bx = cx + PAD;
+  // 預設左下角貼近底部資訊列上方；空宮時往上推 30px，讓位給空宮／借X宮
+  const bottomOffsetFromBottom = isEmptyAbove ? 60 : 26;
+  const by = cy + CELL - bottomOffsetFromBottom - bh;
+
+  // 米金色系：填底淺米 + 描邊深米 + 文字深褐（非紅，跟新 UI 米色 accent match）
+  ctx.fillStyle = '#fdf6e8';
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = '#a89878';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bx + 0.75, by + 0.75, bw - 1.5, bh - 1.5);
+  ctx.fillStyle = '#5a4530';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, bx + padX, by + padY + FS - 1);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1029,6 +1069,10 @@ function renderChartTo(canvas, fdRaw) {
   const decadeMing = fd?.currentMajorLimit?.palace       || null;
   const flowMing   = fd?.flowYearLifePalace?.name        || null;
   const minorLimPalace = fd?.minorLimitPalace?.name      || null;
+  // 流月命宮 palace name（汎天派順排：用此推算每宮位「月X」標籤）
+  const monthMing = S.monthMingBranch
+    ? (d.palaces.find(p => p.branch === S.monthMingBranch)?.name || null)
+    : null;
   const origPalace = d.originalPalace?.name              || null;
   const bodyPalace = d.bodyPalace?.name                  || null;
   const birthYear  = parseInt(S.birthDate.split('-')[0]);
@@ -1043,7 +1087,7 @@ function renderChartTo(canvas, fdRaw) {
   for (const palace of d.palaces) {
     const pos = BRANCH_POS[palace.branch]; if (!pos) continue;
     drawPalace(ctx, palace, pos[0], pos[1], {
-      muMap, decadeMing, flowMing, minorLimPalace,
+      muMap, decadeMing, flowMing, monthMing, minorLimPalace,
       origPalace, bodyPalace, birthYear,
       flowYearVal, flowYearBranch, flowYearGZ,
       flowTransByBranch, decadeMu,

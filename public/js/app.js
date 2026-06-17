@@ -144,7 +144,8 @@ function renderMonthAxis() {
   if (act) act.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
-// 點流月 chip → 高亮該流月命宮三方四正（再點同月可取消）
+// 點流月 chip → 高亮該流月命宮三方四正 + 渲染十二宮「月X」標籤
+//   （再點同月可取消；切到流年/大限軸時自動清空 monthMingBranch）
 function gotoMonth(m) {
   const fd = S.flowData;
   const mingBranch = fd?.flowYearLifePalace?.branch;
@@ -153,12 +154,14 @@ function gotoMonth(m) {
   if (!br) return;
   if (S.selectedBranch === br) {
     S.selectedBranch = null;
+    S.monthMingBranch = null;
     stopTrineAnim();
     renderMonthAxis();
     renderAllCharts();
     return;
   }
   S.selectedBranch = br;
+  S.monthMingBranch = br;
   S.dashOffset = 0;
   startTrineAnim();
   renderMonthAxis();
@@ -196,7 +199,7 @@ function changeDecade(delta) {
 
 async function gotoYear(year) {
   if (!S.chartData || isNaN(year) || year < 1900 || year > 2100) return;
-  S.selectedBranch = null; stopTrineAnim();
+  S.selectedBranch = null; S.monthMingBranch = null; stopTrineAnim();
   S.currentYear = year;
   document.getElementById('fc-year').textContent = S.currentYear;
   ['fc-gz','fc-age','fc-limit'].forEach(id => document.getElementById(id).textContent='');
@@ -328,12 +331,80 @@ async function handleSubmit() {
     renderAllCharts();
 
     // Sprint 3：起盤成功 → 自動存入命例庫（cloud.js 提供；可由 UI 關閉）
-    if (typeof librarySaveCurrent === 'function') librarySaveCurrent();
+    if (typeof librarySaveCurrent === 'function') await librarySaveCurrent();
+
+    // Sprint 3.8（Blue 2026-06-17）：配偶 sub-form 填寫 → 自動建第二盤 + 雙向串連
+    if (partnerFieldsFilled()) {
+      await saveAndLinkPartnerChart(gender);
+    }
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('input-panel').style.display = 'block';
     err.textContent = t('err_failed') + e.message; err.style.display = 'block';
   }
+}
+
+// ── 配偶 sub-form helpers (Sprint 3.8, Blue 2026-06-17) ─────────────────
+// 起盤後若關係狀態為 PARTNER_LINKABLE_STATUSES + 配偶生日／時間填寫 → 自動
+// 建立第二盤命例 + linkPartners 雙向綁定（owner-ext 載入時才綁，否則只存盤）
+function partnerFieldsFilled() {
+  const sub = document.getElementById('partner-fields');
+  if (!sub || sub.style.display === 'none') return false;
+  const pdate = document.getElementById('f2-date')?.value;
+  const ptime = document.getElementById('f2-time')?.value;
+  return !!(pdate && ptime);
+}
+
+async function saveAndLinkPartnerChart(mainGender) {
+  const store = window.Cloud?.store;
+  if (!store || !Array.isArray(store.charts)) return;
+
+  const pdate = document.getElementById('f2-date').value;
+  const ptime = document.getElementById('f2-time').value;
+  let pgender = document.querySelector('input[name=g2]:checked')?.value;
+  // 異性戀預設：未填配偶性別 → 反性
+  if (!pgender) pgender = (mainGender === '男') ? '女' : '男';
+  const pname = document.getElementById('f2-name').value.trim();
+
+  // 找主命主（剛被 librarySaveCurrent 寫入 store）
+  const mainChart = store.charts.find(c =>
+    c.date === S.birthDate && c.time === S.birthTime &&
+    c.gender === S.gender && (c.name || '') === (S.name || ''));
+  if (!mainChart) return;
+
+  // 找或建配偶 chart entry
+  let partnerChart = store.charts.find(c =>
+    c.date === pdate && c.time === ptime &&
+    c.gender === pgender && (c.name || '') === (pname || ''));
+  const now = new Date().toISOString();
+  if (!partnerChart) {
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    partnerChart = {
+      id: newId, name: pname, date: pdate, time: ptime, gender: pgender,
+      city: '', tags: [], notes: '', createdAt: now, updatedAt: now,
+    };
+    // 若 owner-ext 載入 → 補上 schema v3 欄位
+    if (window.CloudExt) {
+      partnerChart.categoryId = null;
+      partnerChart.personalProfile = window.CloudExt.emptyProfile();
+      partnerChart.partnerIds = [];
+      partnerChart.formerPartnerIds = [];
+    }
+    store.charts.unshift(partnerChart);
+  }
+
+  // 雙向綁定（僅 owner-ext 載入時，CloudExt.linkPartners 存在）
+  if (window.CloudExt?.linkPartners) {
+    window.CloudExt.linkPartners(store, mainChart.id, partnerChart.id);
+  }
+
+  store.updatedAt = now;
+  if (typeof window.saveLocalStore === 'function') window.saveLocalStore(store);
+  // 再呼叫 librarySaveCurrent 觸發雲端 persistStore（store 已更新含配偶）
+  if (typeof librarySaveCurrent === 'function') await librarySaveCurrent();
+  if (typeof window.renderLibrary === 'function') window.renderLibrary();
 }
 
 // Build the DOM for each year block (title + canvas + actions)

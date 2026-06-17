@@ -144,6 +144,9 @@ const S = {
   selectedBranch: null,
   dashOffset: 0,
   trineRaf: null,
+  // 流月命宮地支：點 month chip 時設，gotoYear / gotoDecade 清。
+  // chart-render 用此推算十二宮位「月X」標籤（月命→月父順排）。
+  monthMingBranch: null,
   // 手勢：滑動後短暫抑制 click（避免誤觸三方四正選取）
   lastSwipeTs: 0,
 };
