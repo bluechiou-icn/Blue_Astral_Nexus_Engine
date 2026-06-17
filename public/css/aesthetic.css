@@ -416,6 +416,28 @@ body {
   color: var(--text-primary);
 }
 
+/* 頁面標題（H1）：原 inline 為青藍 #0C6170，在深藍底反差不足 */
+h1.page-title {
+  color: var(--accent-bright);
+  font-weight: 300;
+  letter-spacing: 0.18em;
+}
+
+/* 「Back to the Universe」浮鈕（chart.html 行內樣式 #888 在深藍底糊）*/
+body > div > a[href*="aethnous"] {
+  color: var(--text-warm) !important;
+  border-color: var(--border-warm) !important;
+}
+body > div > a[href*="aethnous"]:hover {
+  color: var(--accent-bright) !important;
+  border-color: var(--border-accent) !important;
+}
+
+/* 配偶 sub-form 視覺：dashed 上邊框沿用 accent 系（取代 inline #c0bdb6） */
+#partner-fields {
+  border-top: 1px dashed var(--border-strong) !important;
+}
+
 /* meta-bar 容器底色（先前漏覆寫，導致 ml 標籤 / mv 數值在 #fff 底上反差不足）*/
 .meta-bar {
   background: var(--gradient-card);

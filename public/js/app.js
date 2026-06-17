@@ -361,9 +361,15 @@ async function saveAndLinkPartnerChart(mainGender) {
 
   const pdate = document.getElementById('f2-date').value;
   const ptime = document.getElementById('f2-time').value;
+  const pcity = document.getElementById('f2-city')?.value.trim() || '';
   let pgender = document.querySelector('input[name=g2]:checked')?.value;
-  // 異性戀預設：未填配偶性別 → 反性
-  if (!pgender) pgender = (mainGender === '男') ? '女' : '男';
+  // 配對類型 (異性／同性／不指定) → 性別 default
+  if (!pgender) {
+    const mt = document.getElementById('f-mt')?.value || 'hetero';
+    if (mt === 'hetero') pgender = (mainGender === '男') ? '女' : '男';
+    else if (mt === 'homo') pgender = mainGender;
+    else return; // 不指定 + 沒勾性別 → 不建第二盤
+  }
   const pname = document.getElementById('f2-name').value.trim();
 
   // 找主命主（剛被 librarySaveCurrent 寫入 store）
@@ -383,7 +389,7 @@ async function saveAndLinkPartnerChart(mainGender) {
       : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
     partnerChart = {
       id: newId, name: pname, date: pdate, time: ptime, gender: pgender,
-      city: '', tags: [], notes: '', createdAt: now, updatedAt: now,
+      city: pcity, tags: [], notes: '', createdAt: now, updatedAt: now,
     };
     // 若 owner-ext 載入 → 補上 schema v3 欄位
     if (window.CloudExt) {
