@@ -88,6 +88,12 @@ const I18N = {
     synastry_pending: '合盤／疊盤視窗開發中（Sprint 4 規劃中）',
     synastry_pending_detected: '已偵測到配對命例：',
     partner_required_for_synastry: '需先綁定配偶／伴侶命例才能合盤',
+    // Sprint 4 — 祿忌交戰 severity
+    lujl_critical: '祿忌交戰：嚴重',
+    lujl_high:     '祿忌交戰：中重',
+    lujl_medium:   '祿忌交戰：輕度',
+    lujl_lu_label: '祿',
+    lujl_ji_label: '忌',
   },
   en: {
     page_title: "Blue's Zi Wei Dou Shu Chart System",
@@ -170,6 +176,12 @@ const I18N = {
     synastry_pending: 'Synastry overlay window in development (Sprint 4)',
     synastry_pending_detected: 'Linked partner detected:',
     partner_required_for_synastry: 'Link a partner chart first to use synastry',
+    // Sprint 4 — Lu-Ji conflict severity
+    lujl_critical: 'Lu-Ji Conflict: Critical',
+    lujl_high:     'Lu-Ji Conflict: High',
+    lujl_medium:   'Lu-Ji Conflict: Medium',
+    lujl_lu_label: 'Lu',
+    lujl_ji_label: 'Ji',
   },
   ko: {
     page_title: 'Blue\'s 자미두수 명반 시스템',

@@ -307,7 +307,7 @@ function drawTransientRow(ctx, cx, cy, palace, decadeMu, flowTrans, yTop, rowH) 
 function drawPalace(ctx, palace, row, col, opts) {
   const { muMap, decadeMing, flowMing, monthMing, minorLimPalace,
           origPalace, bodyPalace, birthYear,
-          flowYearStr, flowYearGZ } = opts;
+          flowYearStr, flowYearGZ, luJiSeverity } = opts;
   const cx = col * CELL, cy = row * CELL;
   const hasFlow = !!(flowMing);
   // 疊盤標記層：流年或大限其一存在即顯示（檢視模式「本命＋大限」只有 decadeMing）
@@ -321,6 +321,24 @@ function drawPalace(ctx, palace, row, col, opts) {
   // ── Background ──
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
+
+  // ── 祿忌交戰外框（Sprint 4 P2，Cassian 回饋）──
+  //   critical → 紅雙線；high → 紅單線粗；medium → 橘單線
+  //   畫在 bg 之後、flowMing/decadeMing 高亮之前 → 流限金/綠雙線會疊在上方
+  if (luJiSeverity) {
+    if (luJiSeverity === 'critical') {
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx+1, cy+1, CELL-2, CELL-2);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx+4, cy+4, CELL-8, CELL-8);
+    } else if (luJiSeverity === 'high') {
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx+1, cy+1, CELL-2, CELL-2);
+    } else if (luJiSeverity === 'medium') {
+      ctx.strokeStyle = '#ea7c1c'; ctx.lineWidth = 1;
+      ctx.strokeRect(cx+1, cy+1, CELL-2, CELL-2);
+    }
+  }
 
   // ── 流年命宮：整個宮格金色雙線高亮邊框 ──
   if (isFlowMing) {
@@ -1085,6 +1103,20 @@ function renderChartTo(canvas, fdRaw) {
   const flowYearBranch = showFlowLayer ? (fd?.flowYear?.branch || getYearBranch(flowYearVal)) : null;
   const flowYearGZ     = showFlowLayer ? (fd?.flowYear?.ganZhi || '') : '';
 
+  // ── 祿忌交戰：palace name → { severity, conflicts[] }（Sprint 4 P2）──
+  //   單一宮位可能有多顆星各自 lu vs ji，取最高 severity 作畫框依據
+  //   conflicts[] 完整保留供 tooltip 顯示來源細節
+  const SEVERITY_RANK = { critical: 3, high: 2, medium: 1 };
+  const luJiByPalace = {};
+  for (const c of (fd?.luJiConflicts || [])) {
+    if (!luJiByPalace[c.palace]) luJiByPalace[c.palace] = { severity: null, conflicts: [] };
+    const slot = luJiByPalace[c.palace];
+    slot.conflicts.push(c);
+    if (!slot.severity || (SEVERITY_RANK[c.severity] || 0) > (SEVERITY_RANK[slot.severity] || 0)) {
+      slot.severity = c.severity;
+    }
+  }
+
   drawGrid(ctx);
   for (const palace of d.palaces) {
     const pos = BRANCH_POS[palace.branch]; if (!pos) continue;
@@ -1093,6 +1125,7 @@ function renderChartTo(canvas, fdRaw) {
       origPalace, bodyPalace, birthYear,
       flowYearVal, flowYearBranch, flowYearGZ,
       flowTransByBranch, decadeMu,
+      luJiSeverity: luJiByPalace[palace.name]?.severity || null,
     });
   }
   drawCenterTo(ctx, fd);
@@ -1104,8 +1137,9 @@ function renderChartTo(canvas, fdRaw) {
     drawTrineLines(ctx, S.selectedBranch, S.dashOffset, fmBranch);
   }
 
-  // 綁定一次點擊事件
+  // 綁定一次點擊事件 + hover tooltip（祿忌交戰來源詳列）
   bindPalaceClick(canvas);
+  bindLuJiHover(canvas, luJiByPalace);
 }
 
 // 地支位移：B + n (mod 12)
@@ -1176,6 +1210,73 @@ function startTrineAnim() {
 function stopTrineAnim() {
   if (S.trineRaf) cancelAnimationFrame(S.trineRaf);
   S.trineRaf = null;
+}
+
+// ── 祿忌交戰 hover tooltip（Sprint 4 P2）──
+//   單一 DOM element 全 canvas 共用；每次 render 把當前 conflictMap 掛到 canvas
+//   上，mousemove 時依宮位查表顯示祿/忌來源細節
+let _luJiTipEl = null;
+function _ensureLuJiTipEl() {
+  if (_luJiTipEl) return _luJiTipEl;
+  _luJiTipEl = document.createElement('div');
+  _luJiTipEl.id = 'lu-ji-tooltip';
+  _luJiTipEl.style.cssText =
+    'position:fixed;display:none;background:rgba(40,20,15,0.94);' +
+    'color:#fdf6e8;font-size:12px;padding:8px 12px;border-radius:4px;' +
+    'pointer-events:none;z-index:9999;max-width:280px;line-height:1.5;' +
+    'box-shadow:0 2px 10px rgba(0,0,0,0.45);white-space:pre-wrap;' +
+    'font-family:' + FONT + ';';
+  document.body.appendChild(_luJiTipEl);
+  return _luJiTipEl;
+}
+function bindLuJiHover(canvas, luJiByPalace) {
+  canvas._luJiByPalace = luJiByPalace || {};
+  if (canvas.dataset.lujlBound) return;
+  canvas.dataset.lujlBound = '1';
+  const tip = _ensureLuJiTipEl();
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scale = BASE / rect.width;
+    const x = (e.clientX - rect.left) * scale;
+    const y = (e.clientY - rect.top)  * scale;
+    const col = Math.floor(x / CELL);
+    const row = Math.floor(y / CELL);
+    const d = S.chartData;
+    if (!d) { tip.style.display = 'none'; return; }
+    let palaceName = null;
+    for (const b of Object.keys(BRANCH_POS)) {
+      const [r, c] = BRANCH_POS[b];
+      if (r === row && c === col) {
+        palaceName = d.palaces.find(p => p.branch === b)?.name || null;
+        break;
+      }
+    }
+    const slot = palaceName ? canvas._luJiByPalace?.[palaceName] : null;
+    if (!slot || !slot.conflicts.length) { tip.style.display = 'none'; return; }
+
+    const sevLabel = s =>
+      s === 'critical' ? (t('lujl_critical') || '祿忌交戰：嚴重')
+    : s === 'high'     ? (t('lujl_high')     || '祿忌交戰：中重')
+    :                    (t('lujl_medium')   || '祿忌交戰：輕度');
+    const luWord = t('lujl_lu_label') || '祿';
+    const jiWord = t('lujl_ji_label') || '忌';
+    const lines = slot.conflicts.map(c => {
+      const lu = c.luSources.map(s => `${s.src}${s.stem || ''}`).join('、');
+      const ji = c.jiSources.map(s => `${s.src}${s.stem || ''}`).join('、');
+      return `[${sevLabel(c.severity)}] ${c.note}\n  ${luWord}：${lu}\n  ${jiWord}：${ji}`;
+    });
+    tip.textContent = lines.join('\n\n');
+    // 邊緣 clamp：超出 viewport 右/下 → 翻到左/上
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const tipW = 290, tipH = lines.length * 60;
+    let tx = e.clientX + 14, ty = e.clientY + 14;
+    if (tx + tipW > vw) tx = e.clientX - tipW - 14;
+    if (ty + tipH > vh) ty = e.clientY - tipH - 14;
+    tip.style.left = Math.max(8, tx) + 'px';
+    tip.style.top  = Math.max(8, ty) + 'px';
+    tip.style.display = 'block';
+  });
+  canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 }
 
 function bindPalaceClick(canvas) {
