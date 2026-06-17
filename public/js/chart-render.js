@@ -674,8 +674,8 @@ function drawCenterTo(ctx, fd) {
   const cx = CELL, cy = CELL, cw = 2*CELL, ch = 2*CELL;
   const mx = cx + cw/2;
 
-  // Background
-  ctx.fillStyle = '#f9f8f4';
+  // Background — 升級為深淺 beige，跟新 UI 米色 accent match（高級感）
+  ctx.fillStyle = '#ede2c8';
   ctx.fillRect(cx, cy, cw, ch);
 
   // Watermark removed per design update
@@ -700,7 +700,8 @@ function drawCenterTo(ctx, fd) {
   // the bottom of the preceding text row and the top of the following text row.
   const ASCENT = 0.82;  // baseline ≈ top + ASCENT × size  (CJK em-box approximation)
   const brandH = 50;
-  const availH = ch - brandH;  // 450 px usable above brand area
+  const TOP_PAD = 12;  // 姓名不貼上 edge（Blue 視覺平衡指示 2026-06-17）
+  const availH = ch - brandH - TOP_PAD;  // usable above brand area
 
   const tst    = d.meta?.trueSolarTime;
   const ckt    = d.meta?.clockTime;
@@ -713,7 +714,8 @@ function drawCenterTo(ctx, fd) {
   const pStartX        = mx - (colSpacing * 4) / 2 + colSpacing / 2;
   const enPillarLabels = ['Yr', 'Mo', 'Day', 'Hr'];
 
-  // Font sizes — adapt to language so spacing matches rendered text
+  // Font sizes — adapt to language so spacing matches rendered text.
+  // ov_title / ov_det 對齊 life（命主/身主）字級，依 Blue 2026-06-17 規範。
   const FS = {
     name:     isEn() ? 22 : 24,
     birth:    isEn() ? 16 : 20,
@@ -723,8 +725,8 @@ function drawCenterTo(ctx, fd) {
     pillar:   isEn() ? 13 : 17,
     life:     isEn() ? 11 : 14,
     luck:     isEn() ? 11 : 13,
-    ov_title: isEn() ? 14 : 17,
-    ov_det:   isEn() ? 12 : 15,
+    ov_title: isEn() ? 11 : 14,
+    ov_det:   isEn() ? 11 : 14,
   };
 
   const items = [];  // { size, draw(y) } | null
@@ -788,13 +790,24 @@ function drawCenterTo(ctx, fd) {
 
   items.push(null); // ── sep 2 ──
 
+  // 命主／身主（上行，bold 主強調）
   items.push({ size: FS.life, draw: y => {
     if (isEn()) {
-      ctx.font = `bold ${FS.life}px ${FONT_EN}`; ctx.fillStyle = '#333';
-      ctx.fillText(`${t('cv_ming_lord')} ${tStar(d.lifeStars?.mingZhu)||'—'} · ${t('cv_shen_lord')} ${tStar(d.lifeStars?.shenZhu)||'—'} · ${t('cv_body_label')} ${tPalaceName(d.bodyPalace?.name)||'—'} · ${t('cv_origin_label')} ${tPalaceName(d.originalPalace?.name)||'—'}`, mx, y);
+      ctx.font = `bold ${FS.life}px ${FONT_EN}`; ctx.fillStyle = '#3a2814';
+      ctx.fillText(`${t('cv_ming_lord')} ${tStar(d.lifeStars?.mingZhu)||'—'} · ${t('cv_shen_lord')} ${tStar(d.lifeStars?.shenZhu)||'—'}`, mx, y);
     } else {
-      ctx.font = `bold ${FS.life}px ${FONT}`; ctx.fillStyle = '#333';
-      ctx.fillText(`命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}　身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`, mx, y);
+      ctx.font = `bold ${FS.life}px ${FONT}`; ctx.fillStyle = '#3a2814';
+      ctx.fillText(`命主：${d.lifeStars?.mingZhu||'—'}　身主：${d.lifeStars?.shenZhu||'—'}`, mx, y);
+    }
+  }});
+  // 身宮／來因（下行，輕量副資訊）
+  items.push({ size: FS.life, draw: y => {
+    if (isEn()) {
+      ctx.font = `${FS.life}px ${FONT_EN}`; ctx.fillStyle = '#6b5a3e';
+      ctx.fillText(`${t('cv_body_label')} ${tPalaceName(d.bodyPalace?.name)||'—'} · ${t('cv_origin_label')} ${tPalaceName(d.originalPalace?.name)||'—'}`, mx, y);
+    } else {
+      ctx.font = `${FS.life}px ${FONT}`; ctx.fillStyle = '#6b5a3e';
+      ctx.fillText(`身宮：${d.bodyPalace?.name||'—'}　來因：${d.originalPalace?.name||'—'}`, mx, y);
     }
   }});
 
@@ -824,20 +837,20 @@ function drawCenterTo(ctx, fd) {
 
       items.push({ size: FS.ov_title, draw: y => {
         if (isEn()) {
-          ctx.font = `bold ${FS.ov_title}px ${FONT_EN}`; ctx.fillStyle = '#1a1a1a';
+          ctx.font = `bold ${FS.ov_title}px ${FONT_EN}`; ctx.fillStyle = '#3a2814';
           ctx.fillText(`${tGZ(gz)} (${year}) Flow Overlay`, mx, y);
         } else {
-          ctx.font = `bold ${FS.ov_title}px ${FONT}`; ctx.fillStyle = '#1a1a1a';
+          ctx.font = `bold ${FS.ov_title}px ${FONT}`; ctx.fillStyle = '#3a2814';
           ctx.fillText(`${gz}年（${year}）流年疊盤`, mx, y);
         }
       }});
 
       items.push({ size: FS.ov_det, draw: y => {
         if (isEn()) {
-          ctx.font = `${FS.ov_det}px ${FONT_EN}`; ctx.fillStyle = '#444';
+          ctx.font = `${FS.ov_det}px ${FONT_EN}`; ctx.fillStyle = '#6b5a3e';
           ctx.fillText(`${t('cv_year_life')} · ${dpStrEn} · Natal ${tPalaceName(flowMingName)}`, mx, y);
         } else {
-          ctx.font = `${FS.ov_det}px ${FONT}`; ctx.fillStyle = '#444';
+          ctx.font = `${FS.ov_det}px ${FONT}`; ctx.fillStyle = '#6b5a3e';
           ctx.fillText(`年命　${dpStrZh}　本命${flowMingName}宮`, mx, y);
         }
       }});
@@ -854,7 +867,7 @@ function drawCenterTo(ctx, fd) {
   let tPtr = 0, cumH = 0;
   for (const item of items) {
     if (!item) continue;
-    item.top      = cy + (tPtr + 1) * gap + cumH;
+    item.top      = cy + TOP_PAD + (tPtr + 1) * gap + cumH;
     item.bottom   = item.top + item.size;
     item.baseline = item.top + item.size * ASCENT;
     cumH += item.size;
@@ -881,12 +894,29 @@ function drawCenterTo(ctx, fd) {
     ctx.fillText(t('cv_tst_warn'), mx, cy + ch - 44);
   }
 
-  // ── Bottom brand: Midnight Blue + Crystibee® ──
-  ctx.font = isEn() ? `bold 13px ${FONT_EN}` : `bold 14px ${FONT}`; ctx.fillStyle = '#0C6170';
+  // ── Bottom brand：cv_brand 上行 + Crystibee® 下行（左加 LOGO） ──
+  ctx.textAlign = 'center';
+  ctx.font = isEn() ? `bold 13px ${FONT_EN}` : `bold 14px ${FONT}`;
+  ctx.fillStyle = '#5a4530';
   ctx.fillText(t('cv_brand'), mx, cy + ch - 28);
 
-  ctx.font = `bold 12px ${FONT}`; ctx.fillStyle = '#0C6170';
-  ctx.fillText('Crystibee ®', mx, cy + ch - 12);
+  // Crystibee® 下行：LOGO + 6px gap + 'Crystibee ®'，整組水平置中
+  const crystiText = 'Crystibee ®';
+  const crystiFS = 12;
+  ctx.font = `bold ${crystiFS}px ${FONT}`;
+  const crystiW = ctx.measureText(crystiText).width;
+  const logoSize = 14;   // 與字體大小相符（略大於 12 補視覺權重）
+  const logoGap = 6;
+  const totalBrandW = logoSize + logoGap + crystiW;
+  const brandStartX = mx - totalBrandW / 2;
+  const brandBaselineY = cy + ch - 12;
+
+  if (LOGO_IMG && LOGO_IMG.complete && LOGO_IMG.naturalWidth > 0) {
+    ctx.drawImage(LOGO_IMG, brandStartX, brandBaselineY - logoSize + 2, logoSize, logoSize);
+  }
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#5a4530';
+  ctx.fillText(crystiText, brandStartX + logoSize + logoGap, brandBaselineY);
 
   ctx.textAlign = 'left';
 }
@@ -907,6 +937,19 @@ let WATERMARK_IMG = null;
   };
   img.onerror = () => { /* keep fallback SVG drawing */ };
   img.src = '/watermark.png';
+})();
+
+// Brand LOGO 圖片 (Crystibee 左側標誌；Blue 2026-06-17 指示)
+let LOGO_IMG = null;
+(function loadLogo() {
+  const img = new Image();
+  img.onload = () => {
+    LOGO_IMG = img;
+    if (typeof renderAllCharts === 'function') renderAllCharts();
+    else if (S.chartData) renderChart();
+  };
+  img.onerror = () => { /* 無 logo 就略過繪製，文字仍照常顯示 */ };
+  img.src = '/logo_black.png';
 })();
 
 function drawCrystibeeLogo(ctx, cx, cy, size, color) {
