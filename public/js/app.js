@@ -435,20 +435,23 @@ function canOpenSynastry() {
   return !!findCurrentPartnerChart();
 }
 
+// 合盤／疊盤視窗仍在規劃中（Blue 2026-06-17 round 5 確認暫不連到 synastry.html）。
+// 按鈕保留，點下去顯示「規劃中」並列出已偵測到的配偶資料，方便確認綁定無誤。
+// 未來 Sprint 4 完成獨立合盤畫面後再接回。
 function openSynastryWindow() {
   const partner = findCurrentPartnerChart();
   if (!partner) {
     alert(t('partner_required_for_synastry') || '需先綁定配偶／伴侶命例才能合盤');
     return;
   }
-  const params = new URLSearchParams({
-    date1: S.birthDate, time1: S.birthTime, gender1: S.gender,
-    name1: S.name || '', city1: S.city || '',
-    date2: partner.date, time2: partner.time, gender2: partner.gender,
-    name2: partner.name || '', city2: partner.city || '',
-    auto: '1',
-  });
-  window.open('/synastry.html?' + params.toString(), '_blank');
+  const meLabel = `${S.name || '主命主'}　${S.birthDate} ${S.birthTime} ${S.gender}　${S.city || ''}`;
+  const partnerLabel = `${partner.name || '(未命名)'}　${partner.date} ${partner.time} ${partner.gender}　${partner.city || ''}`;
+  alert(
+    (t('synastry_pending') || '合盤／疊盤視窗開發中（Sprint 4 規劃中）') +
+    '\n\n' + (t('synastry_pending_detected') || '已偵測到配對命例：') +
+    '\n命主：' + meLabel +
+    '\n配偶：' + partnerLabel
+  );
 }
 
 // Build the DOM for each year block (title + canvas + actions)
@@ -519,47 +522,70 @@ window.addEventListener('resize', () => { if (S.yearBlocks.length) renderAllChar
 // ════════════════════════════════════════════════════════
 // CITY AUTOCOMPLETE
 // ════════════════════════════════════════════════════════
+// CITY_DATA 升級（Blue 2026-06-17 round 5）：台灣細分到 22 直轄市/縣市，所有
+// 城市加上 enName；外國項目於 dropdown 中只顯示英文，台灣項目雙語顯示。
 const CITY_DATA = [
-  // 台灣
-  { name:'台北', code:'TPE', region:'台灣', tz:8 },
-  { name:'台中', code:'RMQ', region:'台灣', tz:8 },
-  { name:'台南', code:'TNN', region:'台灣', tz:8 },
-  { name:'高雄', code:'KHH', region:'台灣', tz:8 },
-  { name:'新北', code:'',    region:'台灣', tz:8 },
-  { name:'桃園', code:'TPE', region:'台灣', tz:8 },
-  { name:'新竹', code:'',    region:'台灣', tz:8 },
-  { name:'基隆', code:'',    region:'台灣', tz:8 },
+  // 台灣（直轄市 + 縣市）
+  { name:'台北市',     enName:'Taipei City',         code:'TPE', region:'台灣', tz:8 },
+  { name:'新北市',     enName:'New Taipei City',     code:'',    region:'台灣', tz:8 },
+  { name:'桃園市',     enName:'Taoyuan City',        code:'TYN', region:'台灣', tz:8 },
+  { name:'台中市',     enName:'Taichung City',       code:'RMQ', region:'台灣', tz:8 },
+  { name:'台南市',     enName:'Tainan City',         code:'TNN', region:'台灣', tz:8 },
+  { name:'高雄市',     enName:'Kaohsiung City',      code:'KHH', region:'台灣', tz:8 },
+  { name:'基隆市',     enName:'Keelung City',        code:'',    region:'台灣', tz:8 },
+  { name:'新竹市',     enName:'Hsinchu City',        code:'',    region:'台灣', tz:8 },
+  { name:'嘉義市',     enName:'Chiayi City',         code:'',    region:'台灣', tz:8 },
+  { name:'新竹縣',     enName:'Hsinchu County',      code:'',    region:'台灣', tz:8 },
+  { name:'苗栗縣',     enName:'Miaoli County',       code:'',    region:'台灣', tz:8 },
+  { name:'彰化縣',     enName:'Changhua County',     code:'',    region:'台灣', tz:8 },
+  { name:'南投縣',     enName:'Nantou County',       code:'',    region:'台灣', tz:8 },
+  { name:'雲林縣',     enName:'Yunlin County',       code:'',    region:'台灣', tz:8 },
+  { name:'嘉義縣',     enName:'Chiayi County',       code:'',    region:'台灣', tz:8 },
+  { name:'屏東縣',     enName:'Pingtung County',     code:'',    region:'台灣', tz:8 },
+  { name:'宜蘭縣',     enName:'Yilan County',        code:'',    region:'台灣', tz:8 },
+  { name:'花蓮縣',     enName:'Hualien County',      code:'HUN', region:'台灣', tz:8 },
+  { name:'台東縣',     enName:'Taitung County',      code:'TTT', region:'台灣', tz:8 },
+  { name:'澎湖縣',     enName:'Penghu County',       code:'MZG', region:'台灣', tz:8 },
+  { name:'金門縣',     enName:'Kinmen County',       code:'KNH', region:'台灣', tz:8 },
+  { name:'連江縣',     enName:'Lienchiang County',   code:'',    region:'台灣', tz:8 },
   // 港澳
-  { name:'香港', code:'HKG', region:'香港', tz:8 },
-  { name:'澳門', code:'MFM', region:'澳門', tz:8 },
+  { name:'香港', enName:'Hong Kong', code:'HKG', region:'香港', tz:8 },
+  { name:'澳門', enName:'Macau',     code:'MFM', region:'澳門', tz:8 },
   // 中國
-  { name:'上海', code:'PVG', region:'中國', tz:8 },
-  { name:'北京', code:'PEK', region:'中國', tz:8 },
-  { name:'廣州', code:'CAN', region:'中國', tz:8 },
-  { name:'深圳', code:'SZX', region:'中國', tz:8 },
-  { name:'成都', code:'CTU', region:'中國', tz:8 },
-  { name:'重慶', code:'CKG', region:'中國', tz:8 },
-  { name:'武漢', code:'WUH', region:'中國', tz:8 },
+  { name:'上海', enName:'Shanghai',  code:'PVG', region:'中國', tz:8 },
+  { name:'北京', enName:'Beijing',   code:'PEK', region:'中國', tz:8 },
+  { name:'廣州', enName:'Guangzhou', code:'CAN', region:'中國', tz:8 },
+  { name:'深圳', enName:'Shenzhen',  code:'SZX', region:'中國', tz:8 },
+  { name:'成都', enName:'Chengdu',   code:'CTU', region:'中國', tz:8 },
+  { name:'重慶', enName:'Chongqing', code:'CKG', region:'中國', tz:8 },
+  { name:'武漢', enName:'Wuhan',     code:'WUH', region:'中國', tz:8 },
   // 韓國
-  { name:'首爾', code:'ICN', region:'韓國', tz:9 },
-  { name:'釜山', code:'PUS', region:'韓國', tz:9 },
+  { name:'首爾', enName:'Seoul', code:'ICN', region:'韓國', tz:9 },
+  { name:'釜山', enName:'Busan', code:'PUS', region:'韓國', tz:9 },
   // 日本
-  { name:'東京', code:'NRT', region:'日本', tz:9 },
-  { name:'大阪', code:'KIX', region:'日本', tz:9 },
+  { name:'東京', enName:'Tokyo', code:'NRT', region:'日本', tz:9 },
+  { name:'大阪', enName:'Osaka', code:'KIX', region:'日本', tz:9 },
   // 東南亞
-  { name:'曼谷',    code:'BKK', region:'泰國',   tz:7 },
-  { name:'新加坡',  code:'SIN', region:'新加坡', tz:8 },
-  { name:'吉隆坡',  code:'KUL', region:'馬來西亞', tz:8 },
-  { name:'胡志明市',code:'SGN', region:'越南',   tz:7 },
-  { name:'河內',    code:'HAN', region:'越南',   tz:7 },
+  { name:'曼谷',    enName:'Bangkok',       code:'BKK', region:'泰國',     tz:7 },
+  { name:'新加坡',  enName:'Singapore',     code:'SIN', region:'新加坡',   tz:8 },
+  { name:'吉隆坡',  enName:'Kuala Lumpur',  code:'KUL', region:'馬來西亞', tz:8 },
+  { name:'胡志明市',enName:'Ho Chi Minh City', code:'SGN', region:'越南',  tz:7 },
+  { name:'河內',    enName:'Hanoi',         code:'HAN', region:'越南',     tz:7 },
   // 北美
-  { name:'洛杉磯', code:'LAX', region:'美國',  tz:-8 },
-  { name:'紐約',   code:'JFK', region:'美國',  tz:-5 },
-  { name:'多倫多', code:'YYZ', region:'加拿大', tz:-5 },
+  { name:'洛杉磯', enName:'Los Angeles', code:'LAX', region:'美國',   tz:-8 },
+  { name:'紐約',   enName:'New York',    code:'JFK', region:'美國',   tz:-5 },
+  { name:'多倫多', enName:'Toronto',     code:'YYZ', region:'加拿大', tz:-5 },
   // 歐洲
-  { name:'倫敦', code:'LHR', region:'英國', tz:0 },
-  { name:'巴黎', code:'CDG', region:'法國', tz:1 },
+  { name:'倫敦', enName:'London', code:'LHR', region:'英國', tz:0 },
+  { name:'巴黎', enName:'Paris',  code:'CDG', region:'法國', tz:1 },
 ];
+
+// 台灣項目於 dropdown 雙語顯示「EnName / 中文」；外國項目只顯示 EnName
+function isTwCity(c) { return c.region === '台灣'; }
+function cityDisplayLabel(c) {
+  if (!c.enName) return c.name;
+  return isTwCity(c) ? `${c.enName} / ${c.name}` : c.enName;
+}
 
 // 機場代號反查 → 城市名
 const CODE_MAP = {};
@@ -568,76 +594,83 @@ CITY_DATA.forEach(c => { if (c.code) CODE_MAP[c.code.toUpperCase()] = c.name; })
 function searchCities(q) {
   if (!q) return [];
   const uq = q.toUpperCase().trim();
-  const lq = q.toLowerCase().trim();
-  // 完全匹配機場代號優先
+  const lqRaw = q.toLowerCase().trim();
+  // 機場代號 startsWith 優先
   const byCode = CITY_DATA.filter(c => c.code && c.code.toUpperCase().startsWith(uq));
-  // 城市名包含
-  const byName = CITY_DATA.filter(c =>
-    !byCode.includes(c) && c.name.includes(lq)
-  );
-  // 地區包含
+  // 英文名 startsWith（用於 Blue 輸入 "Kao" → Kaohsiung 場景）
+  const byEnStart = CITY_DATA.filter(c =>
+    !byCode.includes(c) && c.enName && c.enName.toLowerCase().startsWith(lqRaw));
+  // 中文名 includes（台北市/新北市的「台北」也能找到雙北）
+  const byZhName = CITY_DATA.filter(c =>
+    !byCode.includes(c) && !byEnStart.includes(c) && c.name.includes(lqRaw));
+  // 英文名 includes（fallback；如「pei」找 Taipei）
+  const byEnIncl = CITY_DATA.filter(c =>
+    !byCode.includes(c) && !byEnStart.includes(c) && !byZhName.includes(c) &&
+    c.enName && c.enName.toLowerCase().includes(lqRaw));
+  // region 包含（最後排序）
   const byRegion = CITY_DATA.filter(c =>
-    !byCode.includes(c) && !byName.includes(c) && c.region.includes(lq)
-  );
-  return [...byCode, ...byName, ...byRegion].slice(0, 8);
+    !byCode.includes(c) && !byEnStart.includes(c) && !byZhName.includes(c) &&
+    !byEnIncl.includes(c) && c.region.includes(lqRaw));
+  return [...byCode, ...byEnStart, ...byZhName, ...byEnIncl, ...byRegion].slice(0, 10);
 }
 
-function renderDropdown(items, activeIdx) {
-  const dd = document.getElementById('city-dropdown');
-  if (!items.length) { dd.classList.remove('open'); return; }
-  dd.innerHTML = items.map((c, i) => {
+// 通用 dropdown render：dropdownEl 指定哪個 dropdown 容器；ctx 持有 activeIdx
+function renderDropdownInto(dropdownEl, items, ctx) {
+  if (!items.length) { dropdownEl.classList.remove('open'); return; }
+  dropdownEl.innerHTML = items.map((c, i) => {
     const tzStr = c.tz >= 0 ? `UTC+${c.tz}` : `UTC${c.tz}`;
-    return `<div class="city-opt${i === activeIdx ? ' active' : ''}" data-name="${c.name}">
-      <span>${c.name} <span style="color:#aaa;font-size:11px">${c.region}</span></span>
+    const label = cityDisplayLabel(c);
+    return `<div class="city-opt${i === ctx.activeIdx ? ' active' : ''}" data-name="${c.name}">
+      <span>${label} <span style="color:#aaa;font-size:11px">${c.region}</span></span>
       <span>${c.code ? `<span class="city-opt-code">${c.code}</span>` : ''}<span class="city-opt-tz">${tzStr}</span></span>
     </div>`;
   }).join('');
-  dd.classList.add('open');
-  dd.querySelectorAll('.city-opt').forEach(el => {
+  dropdownEl.classList.add('open');
+  dropdownEl.querySelectorAll('.city-opt').forEach(el => {
     el.addEventListener('mousedown', e => {
       e.preventDefault();
-      document.getElementById('f-city').value = el.dataset.name;
-      dd.classList.remove('open');
-      _cityItems = []; _cityActiveIdx = -1;
+      ctx.inputEl.value = el.dataset.name;
+      dropdownEl.classList.remove('open');
+      ctx.items = []; ctx.activeIdx = -1;
     });
   });
 }
 
-let _cityItems = [], _cityActiveIdx = -1;
-
-document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('f-city');
-  const dd  = document.getElementById('city-dropdown');
-  if (!inp) return;
+// 通用 autocomplete 綁定：套用主命主 + 配偶 sub-form
+function bindCityAutocomplete(inputId, dropdownId) {
+  const inp = document.getElementById(inputId);
+  const dd  = document.getElementById(dropdownId);
+  if (!inp || !dd) return;
+  const ctx = { items: [], activeIdx: -1, inputEl: inp };
 
   inp.addEventListener('input', () => {
     const q = inp.value.trim();
-    // 若輸入 3 個大寫字母，嘗試機場代號直接替換
+    // 純 3 字母大寫 → 直接轉成城市名
     if (/^[A-Za-z]{3}$/.test(q) && CODE_MAP[q.toUpperCase()]) {
       inp.value = CODE_MAP[q.toUpperCase()];
       dd.classList.remove('open');
       return;
     }
-    _cityItems = searchCities(q);
-    _cityActiveIdx = -1;
-    renderDropdown(_cityItems, _cityActiveIdx);
+    ctx.items = searchCities(q);
+    ctx.activeIdx = -1;
+    renderDropdownInto(dd, ctx.items, ctx);
   });
 
   inp.addEventListener('keydown', e => {
     if (!dd.classList.contains('open')) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      _cityActiveIdx = Math.min(_cityActiveIdx + 1, _cityItems.length - 1);
-      renderDropdown(_cityItems, _cityActiveIdx);
+      ctx.activeIdx = Math.min(ctx.activeIdx + 1, ctx.items.length - 1);
+      renderDropdownInto(dd, ctx.items, ctx);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      _cityActiveIdx = Math.max(_cityActiveIdx - 1, -1);
-      renderDropdown(_cityItems, _cityActiveIdx);
-    } else if (e.key === 'Enter' && _cityActiveIdx >= 0) {
+      ctx.activeIdx = Math.max(ctx.activeIdx - 1, -1);
+      renderDropdownInto(dd, ctx.items, ctx);
+    } else if (e.key === 'Enter' && ctx.activeIdx >= 0) {
       e.preventDefault();
-      inp.value = _cityItems[_cityActiveIdx].name;
+      inp.value = ctx.items[ctx.activeIdx].name;
       dd.classList.remove('open');
-      _cityItems = []; _cityActiveIdx = -1;
+      ctx.items = []; ctx.activeIdx = -1;
     } else if (e.key === 'Escape') {
       dd.classList.remove('open');
     }
@@ -647,14 +680,19 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => dd.classList.remove('open'), 150);
   });
 
-  // 點擊輸入框時若有值也顯示搜尋
   inp.addEventListener('focus', () => {
     const q = inp.value.trim();
-    if (q && q !== '台北') {
-      _cityItems = searchCities(q);
-      renderDropdown(_cityItems, -1);
+    if (q && q !== '台北' && q !== '台北市') {
+      ctx.items = searchCities(q);
+      renderDropdownInto(dd, ctx.items, ctx);
     }
   });
+}
+
+// 啟動：主命主 + 配偶兩組 city autocomplete
+document.addEventListener('DOMContentLoaded', () => {
+  bindCityAutocomplete('f-city', 'city-dropdown');
+  bindCityAutocomplete('f2-city', 'f2-city-dropdown');
 });
 
 // ════════════════════════════════════════════════════════
