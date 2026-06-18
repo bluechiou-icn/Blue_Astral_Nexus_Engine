@@ -16,12 +16,7 @@ iztro library with original research, domain-specific calculation corrections,
 and an analytical layer designed to bridge traditional Eastern divination with
 contemporary Western depth psychology.
 
-This project is maintained by a solo practitioner with over 15 years of
-professional experience in traditional Chinese divination — and no formal
-software engineering background. Every line of code is developed through a
-combination of domain expertise and AI-assisted development, representing a
-novel model of human-AI collaboration in knowledge preservation and
-computational humanities.
+This project is maintained by a solo practitioner with over a decade of experience in Eastern and Western divination, my current research focuses deeply on Chinese divinatory systems,but with no formal software engineering background. Every line of code is developed through a combination of domain expertise and AI-assisted development, representing a novel model of human-AI collaboration in knowledge preservation and computational humanities.
 
 ---
 
