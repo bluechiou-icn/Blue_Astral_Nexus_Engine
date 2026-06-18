@@ -10,13 +10,21 @@
 ### Overview
 
 The Blue Astral Nexus Engine is an open-source computational framework for
-**Zi Wei Dou Shu** (紫微斗數, Purple Star Astrology), one of the most
-sophisticated classical Chinese metaphysical systems. The project extends the
-iztro library with original research, domain-specific calculation corrections,
-and an analytical layer designed to bridge traditional Eastern divination with
-contemporary Western depth psychology.
+**Zi Wei Dou Shu** (紫微斗數, Purple Star Astrology), one of the most sophisticated 
+classical Chinese metaphysical systems. The project extends the iztro library with 
+original research, domain-specific calculation corrections, and an analytical layer 
+designed to bridge traditional Eastern divination with contemporary Western psychology.
 
-This project is maintained by a solo practitioner with over a decade of experience in Eastern and Western divination, my current research focuses deeply on Chinese divinatory systems,but with no formal software engineering background. Every line of code is developed through a combination of domain expertise and AI-assisted development, representing a novel model of human-AI collaboration in knowledge preservation and computational humanities.
+This project is a solo endeavor by Blue Chiou, a practitioner with over a decade of 
+experience in Eastern and Western divination, currently focusing deeply on 
+Chinese divinatory systems. In sharp contrast to the technical nature of this system
+It was built with zero formal software engineering training.
+
+Blue's foundation actually lies in Chinese Literature (Creative Writing)
+and English Literature, also Psychology (in process).
+Every line of code is developed through a combination of domain expertise
+and AI-assisted development, representing a novel model of human-AI collaboration
+in knowledge preservation and computational humanities.
 
 ---
 
