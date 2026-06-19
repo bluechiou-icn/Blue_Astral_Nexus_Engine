@@ -183,13 +183,15 @@ h1.page-title {
 .triple-banner.open .tsb-detail { display: block; }
 
 /* ── 格局徽章 (Sprint 4 P3) ──────────────────────────────── */
+/* 底色與 .triple-banner.double 同色系（淺米咖啡），與整體深藍 UI 形成 ÆTHNOUS Brand v4 cream/brown accent */
 .formation-badges {
-  background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
+  background: #fdf6e8; border: 1px solid #e0d4b0; border-radius: 4px;
+  color: #5a4530;
   padding: 8px 12px; margin-bottom: 8px;
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
 }
 .formation-badges .fb-label {
-  font-size: 10px; letter-spacing: 0.1em; color: #999;
+  font-size: 10px; letter-spacing: 0.1em; color: #7a4515;
   margin-right: 4px;
 }
 .fb-chip {
@@ -214,13 +216,14 @@ h1.page-title {
 .fb-detail .fb-conf { color: #888; font-size: 11px; margin-left: 6px; }
 
 /* ── 雙軸切換（大限/流年）+ 檢視模式 ─────────────────── */
+/* 統一深色 UI 系（與 .lib-row / .panel 對齊）；active 狀態保留綠/金/青語意色但用透明深底 */
 .axis-bar {
-  background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
+  background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: 4px;
   padding: 8px 14px; margin-bottom: 8px;
   display: flex; align-items: center; gap: 10px;
 }
 .axis-label {
-  font-size: 10px; letter-spacing: 0.1em; color: #999;
+  font-size: 10px; letter-spacing: 0.1em; color: var(--text-warm);
   flex: 0 0 auto; white-space: nowrap;
 }
 .chips-scroll {
@@ -230,32 +233,32 @@ h1.page-title {
 }
 .chip {
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
-  background: #fff; border: 1px solid #d0cec8; border-radius: 3px;
+  background: transparent; border: 1px solid var(--border-hairline); border-radius: 3px;
   padding: 4px 10px; cursor: pointer; font-family: inherit;
   transition: border-color 0.15s, background 0.15s;
   line-height: 1.3;
 }
-.chip:hover { border-color: #888; }
-.chip .chip-main { font-size: 12px; font-weight: 600; color: #1a1a1a; white-space: nowrap; }
-.chip .chip-sub  { font-size: 10px; color: #999; white-space: nowrap; }
-.chip.active { border-color: #16542d; background: #eaf3ed; }
-.chip.active .chip-main { color: #16542d; }
-.chip.active .chip-sub  { color: #4a7a5a; }
-.chip-year.active { border-color: #b8860b; background: #fbf4e0; }
-.chip-year.active .chip-main { color: #8a6508; }
+.chip:hover { border-color: var(--border-accent); background: var(--gradient-soft); }
+.chip .chip-main { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.chip .chip-sub  { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+.chip.active { border-color: #4a8a5e; background: rgba(76, 138, 94, 0.18); }
+.chip.active .chip-main { color: #9bb8a3; }
+.chip.active .chip-sub  { color: #7ea48c; }
+.chip-year.active { border-color: #b8860b; background: rgba(184, 134, 11, 0.16); }
+.chip-year.active .chip-main { color: #d4b89a; }
 .chip-year.active .chip-sub  { color: #b8962e; }
-.chip-month.active { border-color: #0C6170; background: #e6f5f3; }
-.chip-month.active .chip-main { color: #0C6170; }
-.chip-month.active .chip-sub  { color: #3a8a86; }
+.chip-month.active { border-color: #2a8a8a; background: rgba(42, 138, 138, 0.18); }
+.chip-month.active .chip-main { color: #7eb0ce; }
+.chip-month.active .chip-sub  { color: #5a8db0; }
 .seg-btn {
-  background: #fff; border: 1px solid #d0cec8; color: #555;
+  background: transparent; border: 1px solid var(--border-strong); color: var(--text-secondary);
   padding: 5px 14px; border-radius: 2px; cursor: pointer;
   font-size: 11px; letter-spacing: 0.05em; font-family: inherit;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
-.seg-btn:hover { border-color: #888; }
-.seg-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; font-weight: 600; }
-.kbd-hint { font-size: 10px; color: #b5b2aa; text-align: center; margin: 2px 0 10px; letter-spacing: 0.05em; }
+.seg-btn:hover { border-color: var(--border-accent); color: var(--text-primary); }
+.seg-btn.active { border-color: var(--border-accent); background: var(--gradient-accent); color: var(--bg-base); font-weight: 600; }
+.kbd-hint { font-size: 10px; color: var(--text-tertiary); text-align: center; margin: 2px 0 10px; letter-spacing: 0.05em; }
 
 /* ── 命例庫（Sprint 3）──────────────────────────────────── */
 .lib-status { font-size: 10px; color: #999; margin-bottom: 10px; letter-spacing: 0.03em; }
@@ -489,12 +492,10 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     const apply = () => {
       if (cb.checked) {
         city.style.opacity = '0.55';
-        city.style.background = '#f3efe5';
         city.dataset._phOrig = city.dataset._phOrig || city.placeholder || '';
         city.placeholder = '已定盤模式下不會校正真太陽時';
       } else {
         city.style.opacity = '';
-        city.style.background = '';
         if (city.dataset._phOrig != null) city.placeholder = city.dataset._phOrig;
       }
     };
@@ -519,6 +520,8 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   <div id="formation-badges" class="formation-badges" style="display:none;"></div>
   <!-- Sprint 4 P1：三干疊加 banner（內容由 updateTripleStemBanner 動態填） -->
   <div id="triple-stem-banner" class="triple-banner" style="display:none;"></div>
+  <!-- Sprint 3.9 H4：儲存到分類列（內容由 updateSaveCategoryBar 動態填，未登入或無 categories 時隱藏） -->
+  <div id="save-category-bar" class="save-category-bar" style="display:none;"></div>
   <div class="flow-bar">
     <span class="fy-label" data-i18n="flow_year_label">主流年</span>
     <span class="fy-year" id="fc-year">—</span>

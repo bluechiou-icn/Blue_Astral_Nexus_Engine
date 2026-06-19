@@ -15,6 +15,7 @@
 // （Sprint 3.5 加入；只看 email，不存任何個資）。
 const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email';
 const CLOUD_FILENAME = 'aethnous-charts.json';
+const CATEGORIES_FILENAME = 'aethnous-categories.json';
 const LOCAL_KEY      = 'aethnous_charts_v1';
 // 非敏感旗標：上次曾成功登入過。token 仍只在記憶體（CLAUDE.md Rule 2 不變），
 // 此旗標僅供 silent re-auth 判斷是否值得嘗試無 UI 取 token。
@@ -31,6 +32,10 @@ const Cloud = {
   signedIn: false,
   store: null,           // { version: 1, updatedAt, charts: [] }
   autoSave: true,
+  // Sprint 3.9 H4：分類索引（讀自 Drive appData/aethnous-categories.json；由 scripts/admin-setup.js 初始化）
+  categories: [],        // [{ id, slug, displayName, icon, default, folderId, createdAt }]
+  categoriesFileId: null,
+  activeCategoryFilter: null,  // slug | null；renderLibrary 套用後只顯示該分類命例
 };
 
 function libEscape(s) {
@@ -164,7 +169,12 @@ async function onCloudToken(resp) {
   } catch (e) {
     console.error('Cloud sync error:', e);
   }
+  // Sprint 3.9 H4：登入後拉分類索引。找不到 categories.json 不阻斷主流程
+  // （表示 admin-setup.js 還沒跑 — 命例庫仍可用，只是分類功能 disabled）
+  try { await loadCategories(); } catch (e) { console.warn('loadCategories failed:', e); }
   renderLibrary();
+  // 通知 owner-ext 重新渲染 chip row（categories 已就緒）
+  try { window.dispatchEvent(new CustomEvent('aethnous-categories-updated')); } catch { /* noop */ }
 }
 
 function cloudSignOut() {
@@ -174,9 +184,14 @@ function cloudSignOut() {
   Cloud.token = null;
   Cloud.signedIn = false;
   Cloud.fileId = null;
+  // Sprint 3.9 H4：登出時清掉 categories（避免 ext bundle 拿到 stale list）
+  Cloud.categories = [];
+  Cloud.categoriesFileId = null;
+  Cloud.activeCategoryFilter = null;
   try { localStorage.removeItem(SIGNIN_HINT_KEY); } catch { /* private mode */ }
   Cloud.store = loadLocalStore();    // 優雅降級回 localStorage 模式
   renderLibrary();
+  try { window.dispatchEvent(new CustomEvent('aethnous-categories-updated')); } catch { /* noop */ }
 }
 
 // 同步結果輕量 toast；無變更則不打擾使用者。
@@ -269,6 +284,61 @@ async function driveUpload(store) {
 }
 
 // ════════════════════════════════════════════════════════
+// Categories（Sprint 3.9 H4）— 分類索引讀寫
+// 由 scripts/admin-setup.js 初始化；UI 透過 Cloud.setCategoryFilter() 切換。
+// ════════════════════════════════════════════════════════
+
+async function loadCategories() {
+  if (!Cloud.signedIn) { Cloud.categories = []; return; }
+  const q = encodeURIComponent(`name='${CATEGORIES_FILENAME}' and trashed=false`);
+  const r = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${q}&fields=files(id,name)`);
+  const j = await r.json();
+  const fileId = j.files?.[0]?.id || null;
+  Cloud.categoriesFileId = fileId;
+  if (!fileId) { Cloud.categories = []; return; }
+  const r2 = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+  const data = await r2.json();
+  Cloud.categories = (data && data.version === 1 && Array.isArray(data.categories))
+    ? data.categories : [];
+}
+
+async function saveCategories() {
+  if (!Cloud.signedIn) return;
+  const body = JSON.stringify({
+    version: 1,
+    categories: Cloud.categories,
+    updatedAt: new Date().toISOString(),
+  });
+  if (Cloud.categoriesFileId) {
+    await driveFetch(
+      `https://www.googleapis.com/upload/drive/v3/files/${Cloud.categoriesFileId}?uploadType=media`,
+      { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
+    return;
+  }
+  const boundary = 'aethnouscat' + Date.now();
+  const meta = { name: CATEGORIES_FILENAME, parents: ['appDataFolder'] };
+  const multipart =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
+  const r = await driveFetch(
+    `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`,
+    { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipart });
+  Cloud.categoriesFileId = (await r.json()).id;
+}
+
+// Public API for owner-ext bundle / chart.html save button
+function setCategoryFilter(slugOrNull) {
+  Cloud.activeCategoryFilter = slugOrNull || null;
+  renderLibrary();
+}
+
+function getCategories() {
+  return Cloud.categories.slice();  // defensive copy
+}
+
+// ════════════════════════════════════════════════════════
 // 命例操作
 // ════════════════════════════════════════════════════════
 
@@ -278,9 +348,16 @@ function newId() {
     : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 }
 
-// 起盤成功後由 app.js 呼叫：同生辰參數更新，否則新增
-async function librarySaveCurrent() {
-  if (!Cloud.autoSave) return;
+// 起盤成功後由 app.js 呼叫：同生辰參數更新，否則新增。
+// opts: { categoryId?, skipAutoSaveCheck? }  — Sprint 3.9 H4：支援指定分類儲存
+//   - skipAutoSaveCheck=true 由「手動儲存到分類」UI 使用，繞過 autoSave 開關
+async function librarySaveCurrent(opts) {
+  opts = opts || {};
+  // 未登入不寫 localStorage（Sprint 3.9 P4 補強）：
+  // 防共用瀏覽器情境下訪客起盤資料殘留，避免之後 owner 登入時 merge 衝突。
+  // 命例儲存只發生於登入後 → Drive appData + localStorage 離線鏡像同步。
+  if (!Cloud.signedIn) return;
+  if (!Cloud.autoSave && !opts.skipAutoSaveCheck) return;
   if (!Cloud.store) Cloud.store = loadLocalStore();
   if (typeof S === 'undefined' || !S.birthDate || !S.birthTime || !S.gender) return;
   const now = new Date().toISOString();
@@ -289,6 +366,7 @@ async function librarySaveCurrent() {
     c.gender === S.gender && (c.name || '') === (S.name || ''));
   if (match) {
     match.city = S.city || '';
+    if (opts.categoryId !== undefined) match.categoryId = opts.categoryId || null;
     match.updatedAt = now;
   } else {
     Cloud.store.charts.unshift({
@@ -296,6 +374,7 @@ async function librarySaveCurrent() {
       name: S.name || '',
       date: S.birthDate, time: S.birthTime, gender: S.gender,
       city: S.city || '', tags: [], notes: '',
+      categoryId: opts.categoryId || null,
       createdAt: now, updatedAt: now,
     });
   }
@@ -391,7 +470,16 @@ function renderLibrary() {
   if (!Cloud.store) Cloud.store = loadLocalStore();
   // 顯示順序：selfChartId（命主本人）永遠在最上；其後 partnerIds 緊鄰命主之下；
   // 其餘 chart 按 updatedAt desc。避免「partner 在 main 之上」的奇怪順序。
-  const all = Cloud.store.charts || [];
+  // Sprint 3.9 H4：若 activeCategoryFilter 已設，先以 categoryId 篩 charts。
+  // self / partner 在篩選後若不屬於該分類則不強行置頂，避免分類視角下出現「不該在這裡」的命例。
+  const filterCat = Cloud.activeCategoryFilter || null;
+  const filteredAll = filterCat
+    ? (Cloud.store.charts || []).filter(c => {
+        const cat = Cloud.categories.find(x => x.id === c.categoryId);
+        return cat && cat.slug === filterCat;
+      })
+    : (Cloud.store.charts || []);
+  const all = filteredAll;
   const selfId = Cloud.store.selfChartId || null;
   const selfChart = selfId ? all.find(c => c.id === selfId) : null;
   const partnerIds = new Set(selfChart?.partnerIds || []);
@@ -411,16 +499,35 @@ function renderLibrary() {
         : `<button class="lib-btn lib-btn-google" onclick="cloudSignIn()">${t('lib_signin')}</button>`)
     : '';
 
-  const list = charts.length
-    ? charts.map(c => `
-        <div class="lib-row">
-          <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
-            <span class="lib-name">${libEscape(c.name) || '—'}</span>
-            <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
-          </div>
-          <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
-        </div>`).join('')
-    : `<div class="lib-empty">${t('lib_empty')}</div>`;
+  // 隱私防線：未登入時不曝光命例詳情（姓名／生日／性別／城市）。
+  // localStorage 命例保留為離線鏡像，但 UI 只顯示計數遮罩；
+  // export / import / autosave 等操作也僅限登入後可用，避免在共用瀏覽器情境下洩漏。
+  const list = Cloud.signedIn
+    ? (charts.length
+        ? charts.map(c => `
+            <div class="lib-row">
+              <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
+                <span class="lib-name">${libEscape(c.name) || '—'}</span>
+                <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
+              </div>
+              <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
+            </div>`).join('')
+        : `<div class="lib-empty">${t('lib_empty')}</div>`)
+    : `<div class="lib-locked">${
+        charts.length
+          ? t('lib_locked_count').replace('{n}', charts.length)
+          : t('lib_locked_empty')
+      }</div>`;
+
+  const actions = Cloud.signedIn
+    ? `<div class="lib-actions">
+         <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
+         <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
+         <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
+         <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
+         <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
+       </div>`
+    : '';
 
   panel.innerHTML = `
     <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -428,13 +535,7 @@ function renderLibrary() {
     </div>
     <div class="lib-status">${Cloud.signedIn ? t('lib_status_cloud') : t('lib_status_local')}</div>
     <div class="lib-list">${list}</div>
-    <div class="lib-actions">
-      <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
-      <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
-      <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
-      <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
-      <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
-    </div>`;
+    ${actions}`;
 }
 
 // boot：載入本機命例 + 嘗試初始化 GIS（gsi script 的 onload 也會再呼叫一次）
@@ -446,4 +547,16 @@ function renderLibrary() {
 })();
 
 // 暴露給其他 script / 模組（const 宣告預設不會掛到 window）
-if (typeof window !== 'undefined') window.Cloud = Cloud;
+// Sprint 3.9 H4：對 owner-ext bundle 暴露分類 API：
+//   Cloud.getCategories() / Cloud.setCategoryFilter(slug|null)
+//   Cloud.activeCategoryFilter / Cloud.categories
+//   Cloud.loadCategories() / Cloud.saveCategories()
+//   librarySaveCurrent({ categoryId, skipAutoSaveCheck }) — chart.html 儲存按鈕用
+if (typeof window !== 'undefined') {
+  Cloud.getCategories = getCategories;
+  Cloud.setCategoryFilter = setCategoryFilter;
+  Cloud.loadCategories = loadCategories;
+  Cloud.saveCategories = saveCategories;
+  Cloud.librarySaveCurrent = librarySaveCurrent;
+  window.Cloud = Cloud;
+}

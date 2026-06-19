@@ -193,6 +193,77 @@ function flashPalaceOutline(palaceName, variant) {
 }
 
 // ════════════════════════════════════════════════════════
+// Sprint 3.9 H4：儲存到分類列（result-page）
+// 顯示條件：登入 + Cloud.categories 非空 + S 已有命主資料
+// 預設帶入命例現有 categoryId（編輯）；可改後按「儲存」寫回 Drive + localStorage
+// ════════════════════════════════════════════════════════
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+  }[c]));
+}
+
+function updateSaveCategoryBar() {
+  const bar = document.getElementById('save-category-bar');
+  if (!bar) return;
+  if (!window.Cloud || !Cloud.signedIn || !Array.isArray(Cloud.categories) || Cloud.categories.length === 0) {
+    bar.style.display = 'none';
+    bar.innerHTML = '';
+    return;
+  }
+  if (!S || !S.birthDate || !S.birthTime || !S.gender) {
+    bar.style.display = 'none';
+    return;
+  }
+  const current = (Cloud.store?.charts || []).find(c =>
+    c.date === S.birthDate && c.time === S.birthTime &&
+    c.gender === S.gender && (c.name || '') === (S.name || ''));
+  const currentCatId = current?.categoryId || '';
+  const options = Cloud.categories.map(c =>
+    `<option value="${escapeHtml(c.id)}"${c.id === currentCatId ? ' selected' : ''}>` +
+    `${escapeHtml(c.icon ? c.icon + ' ' : '')}${escapeHtml(c.displayName)}</option>`
+  ).join('');
+  bar.innerHTML =
+    `<span class="scb-label">${t('save_cat_label')}</span>` +
+    `<select id="scb-select" class="scb-select">` +
+    `<option value="">${t('save_cat_unassigned')}</option>${options}</select>` +
+    `<button class="scb-btn" onclick="saveCurrentToCategory()">${t('save_cat_btn')}</button>` +
+    `<span class="scb-status" id="scb-status"></span>`;
+  bar.style.display = '';
+}
+
+async function saveCurrentToCategory() {
+  const sel = document.getElementById('scb-select');
+  if (!sel) return;
+  const status = document.getElementById('scb-status');
+  const categoryId = sel.value || null;
+  if (typeof Cloud?.librarySaveCurrent !== 'function') return;
+  if (status) { status.textContent = '…'; status.style.color = 'var(--text-secondary)'; }
+  try {
+    await Cloud.librarySaveCurrent({ categoryId, skipAutoSaveCheck: true });
+    if (status) {
+      status.textContent = '✓ ' + t('save_cat_done');
+      status.style.color = 'var(--positive)';
+      setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+    }
+  } catch (e) {
+    console.error('saveCurrentToCategory failed', e);
+    if (status) {
+      status.textContent = '✕ ' + t('save_cat_failed');
+      status.style.color = 'var(--danger)';
+    }
+  }
+}
+
+// 登入或登出後 categories 變動 → 重渲染分類列
+if (typeof window !== 'undefined') {
+  window.saveCurrentToCategory = saveCurrentToCategory;
+  window.updateSaveCategoryBar  = updateSaveCategoryBar;
+  window.addEventListener('aethnous-categories-updated', () => updateSaveCategoryBar());
+}
+
+// ════════════════════════════════════════════════════════
 // 檢視模式（本命 / 本命＋大限 / 本命＋大限＋流年）
 // ════════════════════════════════════════════════════════
 
@@ -499,6 +570,8 @@ async function handleSubmit() {
 
     // Sprint 3：起盤成功 → 自動存入命例庫（cloud.js 提供；可由 UI 關閉）
     if (typeof librarySaveCurrent === 'function') await librarySaveCurrent();
+    // Sprint 3.9 H4：渲染「儲存到分類」列（需在 librarySaveCurrent 後，才能反映 categoryId）
+    updateSaveCategoryBar();
 
     // Sprint 3.8（Blue 2026-06-17）：配偶 sub-form 填寫 → 自動建第二盤 + 雙向串連
     if (partnerFieldsFilled()) {

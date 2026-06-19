@@ -78,20 +78,18 @@
   letter-spacing: 0.04em;
 }
 
-/* category chips bar */
+/* category chips bar — Sprint 3.9 hotfix H1：
+   - vertical padding 從 10px 收緊到 4px，避免 panel 過高（spec：「跟上下區塊一樣的比例」）
+   - 重複「分類」label 隱藏（panel title 已寫「分類」，row 內 label 為冗餘）*/
 .ext-cat-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 10px 0;
+  padding: 4px 0;
   align-items: center;
 }
 .ext-cat-row .label {
-  color: var(--text-warm);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-right: 6px;
+  display: none;
 }
 .ext-chip {
   display: inline-flex;
@@ -626,6 +624,64 @@ body > div > a[href*="aethnous"]:hover {
 .lib-del  { color: var(--text-tertiary); }
 .lib-del:hover { color: var(--danger); }
 .lib-empty { color: var(--text-tertiary); }
+.lib-locked {
+  color: var(--text-secondary);
+  padding: 14px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--gradient-soft);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Sprint 3.9 H4：result-page 儲存到分類列 */
+.save-category-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  margin-bottom: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+}
+.save-category-bar .scb-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-warm);
+}
+.save-category-bar .scb-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.save-category-bar .scb-select:focus { border-color: var(--border-accent); }
+.save-category-bar .scb-btn {
+  background: var(--gradient-accent);
+  border: 1px solid var(--border-accent);
+  color: var(--bg-base);
+  padding: 4px 14px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+.save-category-bar .scb-btn:hover { filter: brightness(1.08); }
+.save-category-bar .scb-status {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 4px;
+  min-width: 60px;
+}
 .lib-auto  { color: var(--text-secondary); }
 .lib-btn {
   background: transparent;
