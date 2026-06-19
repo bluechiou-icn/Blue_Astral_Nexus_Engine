@@ -499,43 +499,40 @@ function renderLibrary() {
         : `<button class="lib-btn lib-btn-google" onclick="cloudSignIn()">${t('lib_signin')}</button>`)
     : '';
 
-  // 隱私防線：未登入時不曝光命例詳情（姓名／生日／性別／城市）。
-  // localStorage 命例保留為離線鏡像，但 UI 只顯示計數遮罩；
-  // export / import / autosave 等操作也僅限登入後可用，避免在共用瀏覽器情境下洩漏。
-  const list = Cloud.signedIn
-    ? (charts.length
-        ? charts.map(c => `
-            <div class="lib-row">
-              <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
-                <span class="lib-name">${libEscape(c.name) || '—'}</span>
-                <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
-              </div>
-              <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
-            </div>`).join('')
-        : `<div class="lib-empty">${t('lib_empty')}</div>`)
-    : `<div class="lib-locked">${
-        charts.length
-          ? t('lib_locked_count').replace('{n}', charts.length)
-          : t('lib_locked_empty')
-      }</div>`;
+  // 隱私防線（Sprint 3.9 v2，Blue 2026-06-19 強化）：
+  // 未登入 → 命例庫 panel 只保留 title + 登入按鈕，完全不洩漏「有多少筆」「狀態為何」等 metadata。
+  // 登入後才渲染 status / list / actions。export/import/autosave 也僅限登入後可用。
+  if (!Cloud.signedIn) {
+    panel.innerHTML =
+      `<div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">` +
+      `<span>${t('lib_title')}</span><span>${authBtn}</span></div>`;
+    return;
+  }
 
-  const actions = Cloud.signedIn
-    ? `<div class="lib-actions">
-         <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
-         <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
-         <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
-         <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
-         <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
-       </div>`
-    : '';
+  const list = charts.length
+    ? charts.map(c => `
+        <div class="lib-row">
+          <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
+            <span class="lib-name">${libEscape(c.name) || '—'}</span>
+            <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
+          </div>
+          <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
+        </div>`).join('')
+    : `<div class="lib-empty">${t('lib_empty')}</div>`;
 
   panel.innerHTML = `
     <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
       <span>${t('lib_title')}</span><span>${authBtn}</span>
     </div>
-    <div class="lib-status">${Cloud.signedIn ? t('lib_status_cloud') : t('lib_status_local')}</div>
+    <div class="lib-status">${t('lib_status_cloud')}</div>
     <div class="lib-list">${list}</div>
-    ${actions}`;
+    <div class="lib-actions">
+      <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
+      <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
+      <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
+      <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
+      <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
+    </div>`;
 }
 
 // boot：載入本機命例 + 嘗試初始化 GIS（gsi script 的 onload 也會再呼叫一次）
