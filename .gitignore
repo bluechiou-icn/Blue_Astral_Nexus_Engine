@@ -10,9 +10,11 @@ node_modules/
 # 知識文件（含個人資料，僅存 Google Drive）
 ClaudeCode_*.md
 CLAUDE_Code_*.md
-*_BriefReport.md
-*_brief_report.md
+*_BriefReport*.md
+*_brief_report*.md
 *.rtf
+*.gdoc
+RAZIEL_SKILL.md
 
 # 命盤圖片（含命主生日/姓名，僅存 Google Drive）
 # 例外允許：public/ 內的 brand asset（watermark, logos 等）
@@ -28,6 +30,17 @@ CLAUDE_Code_*.md
 # 本地測試腳本
 test-chart.mjs.rtf
 test-*.mjs
+dev-server.js
+
+# Blue 私人 brain dump（含個案線索 / 草稿需求，IP）
+public/未命名.md
+public/未命名*.md
+未命名*.md
+
+# Agent handoff / 測試報告 / SPEC（含真實命例日期，Rule 3）
+CASSIAN_HANDOFF_*.md
+Cassian_Test_*.md
+SPEC_AgentWrite_*.md
 
 # macOS Icon resource forks
 Icon?
