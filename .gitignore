@@ -37,10 +37,11 @@ public/未命名.md
 public/未命名*.md
 未命名*.md
 
-# Agent handoff / 測試報告 / SPEC（含真實命例日期，Rule 3）
+# Agent handoff / 測試報告 / SPEC（含真實命例日期 + IP rule，Rule 3 / 5）
 CASSIAN_HANDOFF_*.md
 Cassian_Test_*.md
 SPEC_AgentWrite_*.md
+docs/handoff/
 
 # macOS Icon resource forks
 Icon?
