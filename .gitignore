@@ -51,3 +51,5 @@ Icon?
 # Owner-only ext bundle (build-time pulled from private repo)
 public/ext/
 .owner-ext-tmp/
+# 伺服端私有 bundle（build 時自私有 repo 拉入，含汎天派 IP，永不入 git — Rule 5）
+lib/_private/

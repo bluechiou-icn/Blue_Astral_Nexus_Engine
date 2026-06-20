@@ -15,6 +15,58 @@ function updateMetaBar() {
    .join('<span class="msep">·</span>');
   updatePartnerBanner();
   updateFormationBadges();
+  updateDailyFortune();
+}
+
+// Feature 2（Blue 2026-06-20）：本日基本運勢 section
+//   顯示條件：登入 + store 內有命例（≥1 筆，近似「回訪用戶」；loginCount 嚴格門檻待後續）。
+//   抓 /api/daily-fortune（對外只回 fortuneText；owner 多回 debug）。
+//   fail-safe：任何錯誤一律隱藏，絕不影響既有 UI。Tier 2 生成器未上線時回結構佔位文字。
+let _dfFetchKey = null;
+async function updateDailyFortune() {
+  const box = document.getElementById('daily-fortune');
+  if (!box) return;
+  const hide = () => { box.style.display = 'none'; box.innerHTML = ''; box.dataset.rendered = ''; };
+  if (!window.Cloud || !Cloud.signedIn) return hide();
+  if (!S || !S.birthDate || !S.birthTime || !S.gender) return hide();
+  const store = Cloud.store;
+  const hasRecord = store && Array.isArray(store.charts) && store.charts.length >= 1;
+  if (!hasRecord) return hide();
+
+  const today = todayTaipei();
+  const key = `${S.birthDate}|${S.birthTime}|${S.gender}|${today}`;
+  if (_dfFetchKey === key && box.dataset.rendered === '1') { box.style.display = ''; return; }
+  _dfFetchKey = key;
+  try {
+    const r = await apiDailyFortune(S.birthDate, S.birthTime, S.gender, today);
+    renderDailyFortune(box, r, today);
+  } catch (_) {
+    hide();
+  }
+}
+
+function todayTaipei() {
+  const now = new Date();
+  const tpe = new Date(now.getTime() + (now.getTimezoneOffset() + 480) * 60000); // Asia/Taipei UTC+8, no DST
+  const y = tpe.getFullYear(), m = String(tpe.getMonth() + 1).padStart(2, '0'), d = String(tpe.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function renderDailyFortune(box, data, today) {
+  const text = (data && typeof data.fortuneText === 'string') ? data.fortuneText : '';
+  if (!text) { box.style.display = 'none'; box.innerHTML = ''; box.dataset.rendered = ''; return; }
+  const debugHTML = data.debug
+    ? `<div class="df-debug">🔓 ${escapeHtml(data.debug)}</div>` : '';
+  box.innerHTML =
+    `<div class="df-head">` +
+      `<span class="df-title">🩵 ${escapeHtml(t('df_title'))}</span>` +
+      `<span class="df-date">${escapeHtml(today)}</span>` +
+    `</div>` +
+    `<div class="df-body">${escapeHtml(text).replace(/\n/g, '<br>')}</div>` +
+    `<div class="df-note">${escapeHtml(t('df_disclaimer'))}</div>` +
+    debugHTML;
+  box.dataset.rendered = '1';
+  box.style.display = '';
 }
 
 // Sprint 3.9 P8（Blue 2026-06-20）：partner 關聯 banner
@@ -294,9 +346,11 @@ if (typeof window !== 'undefined') {
   window.saveCurrentToCategory = saveCurrentToCategory;
   window.updateSaveCategoryBar  = updateSaveCategoryBar;
   window.updatePartnerBanner    = updatePartnerBanner;
+  window.updateDailyFortune     = updateDailyFortune;
   window.addEventListener('aethnous-categories-updated', () => {
     updateSaveCategoryBar();
     updatePartnerBanner();
+    updateDailyFortune();
   });
 }
 

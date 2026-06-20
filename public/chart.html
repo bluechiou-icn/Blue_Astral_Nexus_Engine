@@ -202,6 +202,29 @@ h1.page-title {
 }
 .fb-chip:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .fb-chip:active { transform: translateY(0); }
+
+/* ── 本日基本運勢 (Feature 2, 2026-06-20) ────────────────── */
+/* 白卡 + ÆTHNOUS 米金 accent，與 meta-bar / formation-badges 同語彙 */
+.daily-fortune {
+  background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
+  padding: 12px 14px; margin-bottom: 8px; color: #333;
+}
+.daily-fortune .df-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px;
+}
+.daily-fortune .df-title { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+.daily-fortune .df-date  { font-size: 11px; color: #888; }
+.daily-fortune .df-body  { font-size: 13px; line-height: 1.75; color: #333; }
+.daily-fortune .df-note  {
+  margin-top: 9px; padding-top: 7px; border-top: 1px dashed #ddd;
+  font-size: 10.5px; color: #aaa; line-height: 1.5;
+}
+.daily-fortune .df-debug {
+  margin-top: 8px; background: #2c2c2a; border-radius: 4px;
+  padding: 6px 9px; font-family: ui-monospace, Menlo, monospace;
+  font-size: 10.5px; color: #d4af37; line-height: 1.5; word-break: break-all;
+}
 .fb-chip.auspicious { background: #d4af37; color: #5a4530; }
 .fb-chip.challenge  { background: #9f1f1f; color: #fdf6e8; }
 .fb-chip.neutral    { background: #9aa0a6; color: #1a1a1a; }
@@ -518,6 +541,8 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   <div class="meta-bar" id="meta-bar"></div>
   <!-- Sprint 3.9 P8：partner 關聯 banner（內容由 updatePartnerBanner 動態填） -->
   <div id="partner-link-banner" class="partner-link-banner" style="display:none;"></div>
+  <!-- Feature 2（2026-06-20）：本日基本運勢（內容由 updateDailyFortune 動態填；登入後顯示） -->
+  <div id="daily-fortune" class="daily-fortune" style="display:none;"></div>
   <!-- Sprint 4 P3：格局徽章（內容由 updateFormationBadges 動態填） -->
   <div id="formation-badges" class="formation-badges" style="display:none;"></div>
   <!-- Sprint 4 P1：三干疊加 banner（內容由 updateTripleStemBanner 動態填） -->

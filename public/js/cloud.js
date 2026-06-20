@@ -36,6 +36,7 @@ const Cloud = {
   categories: [],        // [{ id, slug, displayName, icon, default, folderId, createdAt }]
   categoriesFileId: null,
   activeCategoryFilter: null,  // slug | null；renderLibrary 套用後只顯示該分類命例
+  entitlement: null,           // Feature 1（2026-06-20）：{ tier, maxRecords, dailyFortune, owner }；登入後由 /api/entitlement 填
 };
 
 function libEscape(s) {
@@ -172,6 +173,8 @@ async function onCloudToken(resp) {
   // Sprint 3.9 H4：登入後拉分類索引。找不到 categories.json 不阻斷主流程
   // （表示 admin-setup.js 還沒跑 — 命例庫仍可用，只是分類功能 disabled）
   try { await loadCategories(); } catch (e) { console.warn('loadCategories failed:', e); }
+  // Feature 1：拉方案層級（命例 quota）。失敗不阻斷 — 保守降級為 free。
+  try { await loadEntitlement(); } catch (e) { console.warn('loadEntitlement failed:', e); }
   renderLibrary();
   // 通知 owner-ext 重新渲染 chip row（categories 已就緒）
   try { window.dispatchEvent(new CustomEvent('aethnous-categories-updated')); } catch { /* noop */ }
@@ -188,6 +191,7 @@ function cloudSignOut() {
   Cloud.categories = [];
   Cloud.categoriesFileId = null;
   Cloud.activeCategoryFilter = null;
+  Cloud.entitlement = null;
   try { localStorage.removeItem(SIGNIN_HINT_KEY); } catch { /* private mode */ }
   Cloud.store = loadLocalStore();    // 優雅降級回 localStorage 模式
   renderLibrary();
@@ -351,6 +355,27 @@ function newId() {
 // 起盤成功後由 app.js 呼叫：同生辰參數更新，否則新增。
 // opts: { categoryId?, skipAutoSaveCheck? }  — Sprint 3.9 H4：支援指定分類儲存
 //   - skipAutoSaveCheck=true 由「手動儲存到分類」UI 使用，繞過 autoSave 開關
+// Feature 1（2026-06-20）：方案層級 + 命例 quota
+//   命例存於用戶自己的 Drive（伺服器不經手），故 quota 為「產品軟閘」非安全牆：
+//   前端據 entitlement 擋「新增第 N+1 筆」。tier 由 /api/entitlement 依 email 權威判定。
+async function loadEntitlement() {
+  if (!Cloud.signedIn || !Cloud.token) { Cloud.entitlement = null; return; }
+  const r = await fetch(`/api/entitlement?_t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${Cloud.token}` },
+  });
+  if (!r.ok) { Cloud.entitlement = null; return; }
+  Cloud.entitlement = await r.json();
+}
+
+// 是否可再新增一筆命例。未知 entitlement → 保守視為 free(1)。maxRecords null = 無上限。
+function canAddRecord() {
+  const ent = Cloud.entitlement;
+  const max = ent && ('maxRecords' in ent) ? ent.maxRecords : 1;
+  if (max == null) return true;
+  const n = (Cloud.store && Array.isArray(Cloud.store.charts)) ? Cloud.store.charts.length : 0;
+  return n < max;
+}
+
 async function librarySaveCurrent(opts) {
   opts = opts || {};
   // 未登入不寫 localStorage（Sprint 3.9 P4 補強）：
@@ -364,6 +389,15 @@ async function librarySaveCurrent(opts) {
   const match = Cloud.store.charts.find(c =>
     c.date === S.birthDate && c.time === S.birthTime &&
     c.gender === S.gender && (c.name || '') === (S.name || ''));
+  // Feature 1 quota：改現有命例(match)永遠放行；新增超過上限 → 派事件供 UI 顯示升級提示，不寫入。
+  if (!match && !canAddRecord()) {
+    try {
+      window.dispatchEvent(new CustomEvent('aethnous-quota-exceeded', {
+        detail: { tier: Cloud.entitlement?.tier || 'free', maxRecords: Cloud.entitlement?.maxRecords ?? 1 },
+      }));
+    } catch { /* noop */ }
+    return;
+  }
   if (match) {
     match.city = S.city || '';
     if (opts.categoryId !== undefined) match.categoryId = opts.categoryId || null;
@@ -593,5 +627,7 @@ if (typeof window !== 'undefined') {
   Cloud.loadCategories = loadCategories;
   Cloud.saveCategories = saveCategories;
   Cloud.librarySaveCurrent = librarySaveCurrent;
+  Cloud.canAddRecord = canAddRecord;        // Feature 1：UI 判定是否可新增命例
+  Cloud.loadEntitlement = loadEntitlement;  // Feature 1：手動重拉方案層級
   window.Cloud = Cloud;
 }

@@ -47,6 +47,18 @@ if [ ! -d "$TMP_DIR/public/ext" ]; then
 fi
 
 cp -R "$TMP_DIR/public/ext/." "$EXT_DST/"
-rm -rf "$TMP_DIR"
-echo "[pull-owner-ext] copied ext bundle:"
+echo "[pull-owner-ext] copied client ext bundle:"
 ls -la "$EXT_DST"
+
+# 伺服端私有 bundle：lib/_private/（api/daily-fortune.js require 用，CommonJS）
+# 公開 repo .gitignore 已擋 lib/_private/，build 時實體存在但永不入 git（防 IP 洩漏，Rule 5）
+if [ -d "$TMP_DIR/lib/_private" ]; then
+  mkdir -p lib/_private
+  cp -R "$TMP_DIR/lib/_private/." lib/_private/
+  echo "[pull-owner-ext] copied server-side lib/_private/:"
+  ls -la lib/_private
+else
+  echo "[pull-owner-ext] private repo has no lib/_private/ — skipping server bundle"
+fi
+
+rm -rf "$TMP_DIR"
