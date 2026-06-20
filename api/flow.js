@@ -5,6 +5,7 @@
 const { generateChart } = require("../chart-api.js");
 const { validateBirthData, validateQueryYear } = require("../lib/validate.js");
 const L = require("../lib/liushi.js");
+const { computeSeverity: computeLuJiSeverity } = require("../lib/lujiSeverity.js");
 
 const HEAVENLY_STEMS    = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const EARTHLY_BRANCHES  = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
@@ -228,15 +229,21 @@ function detectLuJiConflict({
     // 5. 偵測衝突
     for (const [star, { lu, ji }] of Object.entries(starMutMap)) {
       if (lu.length > 0 && ji.length > 0) {
-        const total = lu.length + ji.length;
-        const severity = total >= 4 ? 'critical' : total >= 3 ? 'high' : 'medium';
-        conflicts.push({
+        const baseConflict = {
           palace:    palace.name,
           star,
           luSources: lu,
           jiSources: ji,
-          severity,
           note:      `${star}在${palace.name}：${lu.length}祿 vs ${ji.length}忌`,
+        };
+        // Sprint 4 v4.1：6 級 severity + 纏戰 pattern flag
+        const sev = computeLuJiSeverity(baseConflict, palace, palaces);
+        conflicts.push({
+          ...baseConflict,
+          severity:      sev.legacySeverity,  // 1-sprint 向下相容
+          severityLevel: sev.level,
+          levelLabel:    sev.label,
+          pattern:       sev.pattern,
         });
       }
     }
@@ -464,10 +471,13 @@ module.exports = function handler(req, res) {
       luJiConflicts,
       hasLuJiConflict: luJiConflicts.length > 0,
       luJiConflictSummary: luJiConflicts.map(c => ({
-        palace:   c.palace,
-        star:     c.star,
-        severity: c.severity,
-        note:     c.note,
+        palace:        c.palace,
+        star:          c.star,
+        severity:      c.severity,
+        severityLevel: c.severityLevel,
+        levelLabel:    c.levelLabel,
+        pattern:       c.pattern,
+        note:          c.note,
       })),
 
       birthYearMutagens: chart.yearMutagens,

@@ -42,6 +42,8 @@ CASSIAN_HANDOFF_*.md
 Cassian_Test_*.md
 SPEC_AgentWrite_*.md
 docs/handoff/
+*Cassian*.md
+*_Sprint*_Severity*.md
 
 # macOS Icon resource forks
 Icon?

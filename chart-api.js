@@ -5,6 +5,7 @@
 const pkg = require("iztro");
 const { astro, util } = pkg;
 const { timeToIndex, SHICHEN_NAMES } = require("./utils.js");
+const { computeSeverity: computeLuJiSeverity } = require("./lib/lujiSeverity.js");
 // lunar-typescript（iztro 已將其拉為相依），用於八字起運節氣計算
 let _lunarLib = null;
 try { _lunarLib = require("lunar-typescript"); } catch(_) { /* graceful fallback */ }
@@ -821,15 +822,21 @@ function detectLuJiConflict({
     // 5. 偵測衝突
     for (const [star, { lu, ji }] of Object.entries(starMutMap)) {
       if (lu.length > 0 && ji.length > 0) {
-        const total = lu.length + ji.length;
-        const severity = total >= 4 ? 'critical' : total >= 3 ? 'high' : 'medium';
-        conflicts.push({
+        const baseConflict = {
           palace:    palace.name,
           star,
           luSources: lu,
           jiSources: ji,
-          severity,
           note:      `${star}在${palace.name}：${lu.length}祿 vs ${ji.length}忌`,
+        };
+        // Sprint 4 v4.1：6 級 severity + 纏戰 pattern flag
+        const sev = computeLuJiSeverity(baseConflict, palace, palaces);
+        conflicts.push({
+          ...baseConflict,
+          severity:      sev.legacySeverity,  // 1-sprint 向下相容
+          severityLevel: sev.level,
+          levelLabel:    sev.label,
+          pattern:       sev.pattern,
         });
       }
     }
