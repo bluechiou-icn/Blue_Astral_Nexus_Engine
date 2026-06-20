@@ -790,3 +790,44 @@ body > div > a[href*="aethnous"]:hover {
   left: 0;
   color: var(--accent);
 }
+
+/* ── 祿忌交戰金色閃爍徽章（Sprint 4 v4.1 F2/F5）────────────────── */
+@keyframes luji-flash {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+.luji-badge {
+  background: #d4af37;
+  border: 1.5px solid #b8941f;
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  animation: luji-flash 1.5s ease-in-out infinite;
+  user-select: none;
+}
+.luji-badge:hover { filter: brightness(1.08); }
+
+/* 祿忌交戰完整提示訊息框（Sprint 4 v4.1 F3）*/
+.luji-tooltip-box {
+  position: fixed;
+  display: none;
+  z-index: 9999;
+  max-width: 320px;
+  background: rgba(40, 20, 15, 0.96);
+  color: #fdf6e8;
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 10px 13px;
+  border: 1px solid #b8941f;
+  border-radius: 5px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+  white-space: pre-wrap;
+  pointer-events: none;
+}
