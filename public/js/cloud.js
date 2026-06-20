@@ -509,6 +509,38 @@ function renderLibrary() {
     return;
   }
 
+  // 預設不列全部命例（Blue 2026-06-20）：登入後若未選分類，render placeholder + 內建分類選單，
+  // 避免命例混雜呈現；user 必須先挑分類才看到清單。owner-ext bundle 整合（Q2）後 ext chip row 也會
+  // 走同一個 setCategoryFilter，兩個入口共用 state，不會互相打架。
+  const actionsHtml = `
+    <div class="lib-actions">
+      <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
+      <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
+      <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
+      <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
+      <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
+    </div>`;
+
+  if (!filterCat) {
+    const cats = Cloud.categories || [];
+    const chipRow = cats.length
+      ? `<div class="lib-cat-chips">${cats.map(c => {
+          const label = libEscape(c.displayName || c.slug);
+          const slug = libEscape(c.slug || '');
+          return `<button class="ext-chip lib-cat-chip" onclick="Cloud.setCategoryFilter('${slug}')">${label}</button>`;
+        }).join('')}</div>`
+      : '';
+    panel.innerHTML = `
+      <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>${t('lib_title')}</span><span>${authBtn}</span>
+      </div>
+      <div class="lib-status">${t('lib_status_cloud')}</div>
+      <div class="lib-empty">${t('lib_pick_category')}</div>
+      ${chipRow}
+      ${actionsHtml}`;
+    return;
+  }
+
   const list = charts.length
     ? charts.map(c => `
         <div class="lib-row">
@@ -518,21 +550,27 @@ function renderLibrary() {
           </div>
           <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
         </div>`).join('')
-    : `<div class="lib-empty">${t('lib_empty')}</div>`;
+    : `<div class="lib-empty">${t('lib_empty_category')}</div>`;
+
+  // 已選分類 chip row（與「清除分類」回到 placeholder 入口）
+  const activeCats = (Cloud.categories || []);
+  const activeChipRow = activeCats.length
+    ? `<div class="lib-cat-chips">${activeCats.map(c => {
+        const label = libEscape(c.displayName || c.slug);
+        const slug = libEscape(c.slug || '');
+        const isActive = c.slug === filterCat ? ' active' : '';
+        return `<button class="ext-chip lib-cat-chip${isActive}" onclick="Cloud.setCategoryFilter('${slug}')">${label}</button>`;
+      }).join('')}<button class="ext-chip lib-cat-clear" onclick="Cloud.setCategoryFilter(null)">${t('lib_clear_filter')}</button></div>`
+    : '';
 
   panel.innerHTML = `
     <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
       <span>${t('lib_title')}</span><span>${authBtn}</span>
     </div>
     <div class="lib-status">${t('lib_status_cloud')}</div>
+    ${activeChipRow}
     <div class="lib-list">${list}</div>
-    <div class="lib-actions">
-      <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
-      <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
-      <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
-      <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
-      <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
-    </div>`;
+    ${actionsHtml}`;
 }
 
 // boot：載入本機命例 + 嘗試初始化 GIS（gsi script 的 onload 也會再呼叫一次）

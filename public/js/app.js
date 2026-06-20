@@ -13,7 +13,40 @@ function updateMetaBar() {
     [t('meta_origin'),  tPalaceName(d.originalPalace?.name)||'—'],
   ].map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
    .join('<span class="msep">·</span>');
+  updatePartnerBanner();
   updateFormationBadges();
+}
+
+// Sprint 3.9 P8（Blue 2026-06-20）：partner 關聯 banner
+//   登入 + 當前命主在 store 內有 partnerIds → 顯示「主命主 X — 配偶 Y」單行 banner，
+//   點配偶名 → libraryLoad(partnerId) 切換命盤。其餘情境（未登入 / 找不到自己 / 無 partner）一律隱藏。
+function updatePartnerBanner() {
+  const banner = document.getElementById('partner-link-banner');
+  if (!banner) return;
+  const hide = () => { banner.style.display = 'none'; banner.innerHTML = ''; };
+  if (!window.Cloud || !Cloud.signedIn) return hide();
+  if (!S || !S.birthDate || !S.birthTime || !S.gender) return hide();
+  const store = Cloud.store;
+  if (!store || !Array.isArray(store.charts)) return hide();
+  const me = store.charts.find(c =>
+    c.date === S.birthDate && c.time === S.birthTime &&
+    c.gender === S.gender && (c.name || '') === (S.name || ''));
+  const partnerIds = Array.isArray(me?.partnerIds) ? me.partnerIds : [];
+  if (!partnerIds.length) return hide();
+  const partners = partnerIds
+    .map(id => store.charts.find(c => c.id === id))
+    .filter(Boolean);
+  if (!partners.length) return hide();
+  const selfName = escapeHtml(me.name || S.name || '—');
+  const partnerLinks = partners.map(p =>
+    `<span class="plb-partner" onclick="libraryLoad('${escapeHtml(p.id)}')">${escapeHtml(p.name || '—')}</span>`
+  ).join('、');
+  banner.innerHTML =
+    `<span class="plb-self">${escapeHtml(t('partner_banner_self'))} ${selfName}</span>` +
+    `<span class="plb-sep">${escapeHtml(t('partner_banner_separator'))}</span>` +
+    partnerLinks +
+    `<span class="plb-hint">${escapeHtml(t('partner_banner_switch_hint'))}</span>`;
+  banner.style.display = '';
 }
 
 // Sprint 4 P3 — 格局徽章
@@ -260,7 +293,11 @@ async function saveCurrentToCategory() {
 if (typeof window !== 'undefined') {
   window.saveCurrentToCategory = saveCurrentToCategory;
   window.updateSaveCategoryBar  = updateSaveCategoryBar;
-  window.addEventListener('aethnous-categories-updated', () => updateSaveCategoryBar());
+  window.updatePartnerBanner    = updatePartnerBanner;
+  window.addEventListener('aethnous-categories-updated', () => {
+    updateSaveCategoryBar();
+    updatePartnerBanner();
+  });
 }
 
 // ════════════════════════════════════════════════════════

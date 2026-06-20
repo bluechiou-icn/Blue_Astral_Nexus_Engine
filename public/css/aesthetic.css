@@ -78,9 +78,10 @@
   letter-spacing: 0.04em;
 }
 
-/* category chips bar — Sprint 3.9 hotfix H1：
-   - vertical padding 從 10px 收緊到 4px，避免 panel 過高（spec：「跟上下區塊一樣的比例」）
-   - 重複「分類」label 隱藏（panel title 已寫「分類」，row 內 label 為冗餘）*/
+/* category chips bar — Sprint 3.9 hotfix H1 (v2)：
+   - chip row 自身 padding 收緊
+   - 重複「分類」label 隱藏（panel title 已寫「分類」，row 內 label 為冗餘）
+   - 含 .ext-cat-row 的 .panel 整體 padding 縮減：chip-only 內容不該跟「命主資料」表單同高 */
 .ext-cat-row {
   display: flex;
   flex-wrap: wrap;
@@ -90,6 +91,15 @@
 }
 .ext-cat-row .label {
   display: none;
+}
+.panel:has(> .ext-cat-row),
+.panel:has(.ext-cat-row:only-child) {
+  padding: 8px 18px;
+}
+.panel:has(> .ext-cat-row) .panel-title,
+.panel:has(.ext-cat-row:only-child) .panel-title {
+  margin-bottom: 6px;
+  padding-bottom: 4px;
 }
 .ext-chip {
   display: inline-flex;
@@ -624,6 +634,45 @@ body > div > a[href*="aethnous"]:hover {
 .lib-del  { color: var(--text-tertiary); }
 .lib-del:hover { color: var(--danger); }
 .lib-empty { color: var(--text-tertiary); }
+
+/* Sprint 3.9 P8：lib-list 內建分類 chip row（user 必須先挑分類才看清單）*/
+.lib-cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0;
+  margin-bottom: 4px;
+  align-items: center;
+}
+.lib-cat-clear { border-style: dashed; }
+
+/* Sprint 3.9 P8：命盤上方 partner 關聯 banner（meta-bar 下、formation-badges 上）*/
+.partner-link-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 6px 14px;
+  margin: 6px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--gradient-soft);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-input);
+}
+.partner-link-banner .plb-self { color: var(--text-primary); }
+.partner-link-banner .plb-partner {
+  color: var(--text-warm);
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.partner-link-banner .plb-partner:hover { color: var(--text-primary); }
+.partner-link-banner .plb-hint {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
 .lib-locked {
   color: var(--text-secondary);
   padding: 14px 16px;
