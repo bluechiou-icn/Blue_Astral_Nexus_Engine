@@ -673,17 +673,6 @@ body > div > a[href*="aethnous"]:hover {
   letter-spacing: 0.04em;
 }
 
-.lib-locked {
-  color: var(--text-secondary);
-  padding: 14px 16px;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-card);
-  background: var(--gradient-soft);
-  font-size: 13px;
-  line-height: 1.5;
-  text-align: center;
-}
-
 /* Sprint 3.9 H4：result-page 儲存到分類列 */
 .save-category-bar {
   display: flex;
