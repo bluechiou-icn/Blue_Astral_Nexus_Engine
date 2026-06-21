@@ -133,7 +133,7 @@ function updateFormationBadges() {
     const palText = (f.palaces || []).map(tPalaceName).join('、') || '—';
     const starText = (f.stars || []).join('、') || '—';
     return `<b>${f.name}</b><span class="fb-conf">${t('formation_confidence')} ${f.confidence}%</span><br>` +
-           `<span style="color:#888;">${palText}　·　${starText}</span><br>` +
+           `<span style="color:#6a4e30;">${palText}　·　${starText}</span><br>` +
            `${f.note}`;
   };
 
@@ -844,6 +844,10 @@ function resetChart() {
   S.chartData=null; S.flowData=null; S.flowDataByYear={}; S.yearBlocks=[];
   document.getElementById('chart-area').style.display  = 'none';
   document.getElementById('input-panel').style.display = 'block';
+  // 切換命盤時清 fortune cache，確保新命主重新拉取（不沿用前一人的快取內容）
+  _dfFetchKey = null;
+  const dfBox = document.getElementById('daily-fortune');
+  if (dfBox) { dfBox.innerHTML = ''; dfBox.style.display = 'none'; dfBox.dataset.rendered = ''; }
 }
 
 // Recompute extra years list whenever main flow year input changes

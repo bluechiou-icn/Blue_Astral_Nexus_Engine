@@ -559,7 +559,7 @@ function renderLibrary() {
     const cats = Cloud.categories || [];
     const chipRow = cats.length
       ? `<div class="lib-cat-chips">${cats.map(c => {
-          const label = libEscape(c.displayName || c.slug);
+          const label = libEscape((c.icon ? c.icon + ' ' : '') + (c.displayName || c.slug));
           const slug = libEscape(c.slug || '');
           return `<button class="ext-chip lib-cat-chip" onclick="Cloud.setCategoryFilter('${slug}')">${label}</button>`;
         }).join('')}</div>`
@@ -590,7 +590,7 @@ function renderLibrary() {
   const activeCats = (Cloud.categories || []);
   const activeChipRow = activeCats.length
     ? `<div class="lib-cat-chips">${activeCats.map(c => {
-        const label = libEscape(c.displayName || c.slug);
+        const label = libEscape((c.icon ? c.icon + ' ' : '') + (c.displayName || c.slug));
         const slug = libEscape(c.slug || '');
         const isActive = c.slug === filterCat ? ' active' : '';
         return `<button class="ext-chip lib-cat-chip${isActive}" onclick="Cloud.setCategoryFilter('${slug}')">${label}</button>`;

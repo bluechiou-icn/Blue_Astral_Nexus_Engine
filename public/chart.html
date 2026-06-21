@@ -204,24 +204,24 @@ h1.page-title {
 .fb-chip:active { transform: translateY(0); }
 
 /* ── 本日基本運勢 (Feature 2, 2026-06-20) ────────────────── */
-/* 白卡 + ÆTHNOUS 米金 accent，與 meta-bar / formation-badges 同語彙 */
+/* 淺藍底色——比 --bg-elevated 稍淺，與整體深海藍 UI 和諧、視覺上突出此功能區塊 */
 .daily-fortune {
-  background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
-  padding: 12px 14px; margin-bottom: 8px; color: #333;
+  background: #1d3a58; border: 1px solid rgba(100, 170, 230, 0.22); border-radius: 4px;
+  padding: 12px 14px; margin-bottom: 8px; color: var(--text-primary);
 }
 .daily-fortune .df-head {
   display: flex; align-items: baseline; justify-content: space-between;
-  border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid rgba(232, 226, 211, 0.1); padding-bottom: 8px; margin-bottom: 10px;
 }
-.daily-fortune .df-title { font-size: 14px; font-weight: 500; color: #1a1a1a; }
-.daily-fortune .df-date  { font-size: 11px; color: #888; }
-.daily-fortune .df-body  { font-size: 13px; line-height: 1.75; color: #333; }
+.daily-fortune .df-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.daily-fortune .df-date  { font-size: 11px; color: var(--text-secondary); }
+.daily-fortune .df-body  { font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .daily-fortune .df-note  {
-  margin-top: 9px; padding-top: 7px; border-top: 1px dashed #ddd;
-  font-size: 10.5px; color: #aaa; line-height: 1.5;
+  margin-top: 9px; padding-top: 7px; border-top: 1px dashed rgba(232, 226, 211, 0.12);
+  font-size: 10.5px; color: var(--text-warm-dim); line-height: 1.5;
 }
 .daily-fortune .df-debug {
-  margin-top: 8px; background: #2c2c2a; border-radius: 4px;
+  margin-top: 8px; background: #0d1c2e; border-radius: 4px;
   padding: 6px 9px; font-family: ui-monospace, Menlo, monospace;
   font-size: 10.5px; color: #d4af37; line-height: 1.5; word-break: break-all;
 }
@@ -236,7 +236,7 @@ h1.page-title {
 }
 .fb-detail.open { display: block; }
 .fb-detail b { color: #1a1a1a; }
-.fb-detail .fb-conf { color: #888; font-size: 11px; margin-left: 6px; }
+.fb-detail .fb-conf { color: #7a5a3a; font-size: 11px; margin-left: 6px; }
 
 /* ── 雙軸切換（大限/流年）+ 檢視模式 ─────────────────── */
 /* 統一深色 UI 系（與 .lib-row / .panel 對齊）；active 狀態保留綠/金/青語意色但用透明深底 */
