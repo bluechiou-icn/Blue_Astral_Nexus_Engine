@@ -124,6 +124,7 @@ const CELL = 250;
 const BASE = 1000;
 const PAD  = 10;
 const BOT  = 68;  // bottom reserve (流年資訊 + 大限年範圍 + 宮位名)
+const LJ_MARGIN = 36;  // outer margin for 祿忌交戰 badges (outside chart grid)
 const DPR  = window.devicePixelRatio || 1;
 const FONT = '"PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif';
 const FONT_EN = '"Inter","Helvetica Neue",Arial,sans-serif';  // EN 模式幾何無襯線

@@ -3,16 +3,19 @@
 // ════════════════════════════════════════════════════════
 
 function setupCanvas(canvas) {
-  canvas.width  = BASE * DPR;
-  canvas.height = BASE * DPR;
+  const FULL = BASE + 2 * LJ_MARGIN;
+  canvas.width  = FULL * DPR;
+  canvas.height = FULL * DPR;
   // 使用實際父容器 (canvas-wrap) 寬度，避免被 body / chart-block padding 推出邊界
   const wrap   = canvas.parentElement;
   const wrapW  = wrap ? wrap.clientWidth : (window.innerWidth - 32);
-  const disp   = Math.min(BASE, wrapW);
+  const disp   = Math.min(FULL, wrapW);
   canvas.style.width  = disp + 'px';
   canvas.style.height = disp + 'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(DPR, DPR);
+  // Shift origin so all grid/palace drawing code (0..BASE) remains unchanged
+  ctx.translate(LJ_MARGIN, LJ_MARGIN);
   return ctx;
 }
 
@@ -21,9 +24,9 @@ function setupCanvas(canvas) {
 // ════════════════════════════════════════════════════════
 
 function drawGrid(ctx) {
-  // White background
+  // White background — fill full canvas including outer badge margins
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, BASE, BASE);
+  ctx.fillRect(-LJ_MARGIN, -LJ_MARGIN, BASE + 2*LJ_MARGIN, BASE + 2*LJ_MARGIN);
 
   // Outer border
   ctx.strokeStyle = '#b0aea8'; ctx.lineWidth = 1.5;
@@ -307,7 +310,7 @@ function drawTransientRow(ctx, cx, cy, palace, decadeMu, flowTrans, yTop, rowH) 
 function drawPalace(ctx, palace, row, col, opts) {
   const { muMap, decadeMing, flowMing, monthMing, minorLimPalace,
           origPalace, bodyPalace, birthYear,
-          flowYearStr, flowYearGZ, luJiSeverity } = opts;
+          flowYearStr, flowYearGZ } = opts;
   const cx = col * CELL, cy = row * CELL;
   const hasFlow = !!(flowMing);
   // 疊盤標記層：流年或大限其一存在即顯示（檢視模式「本命＋大限」只有 decadeMing）
@@ -321,24 +324,6 @@ function drawPalace(ctx, palace, row, col, opts) {
   // ── Background ──
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(cx+1, cy+1, CELL-2, CELL-2);
-
-  // ── 祿忌交戰外框（Sprint 4 P2，Cassian 回饋）──
-  //   critical → 紅雙線；high → 紅單線粗；medium → 橘單線
-  //   畫在 bg 之後、flowMing/decadeMing 高亮之前 → 流限金/綠雙線會疊在上方
-  if (luJiSeverity) {
-    if (luJiSeverity === 'critical') {
-      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.5;
-      ctx.strokeRect(cx+1, cy+1, CELL-2, CELL-2);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(cx+4, cy+4, CELL-8, CELL-8);
-    } else if (luJiSeverity === 'high') {
-      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.5;
-      ctx.strokeRect(cx+1, cy+1, CELL-2, CELL-2);
-    } else if (luJiSeverity === 'medium') {
-      ctx.strokeStyle = '#ea7c1c'; ctx.lineWidth = 1;
-      ctx.strokeRect(cx+1, cy+1, CELL-2, CELL-2);
-    }
-  }
 
   // ── 流年命宮：整個宮格金色雙線高亮邊框 ──
   if (isFlowMing) {
@@ -1059,6 +1044,105 @@ function drawCrystibeeLogo(ctx, cx, cy, size, color) {
 }
 
 // ════════════════════════════════════════════════════════
+// 祿忌交戰 OUTER BADGES  (Sprint 4 P8/P9/P10 v4.1)
+// ════════════════════════════════════════════════════════
+
+// Draw a rounded rect path without filling/stroking (caller does that).
+function _rrPath(ctx, x, y, w, h, r) {
+  if (ctx.roundRect) {
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+    ctx.lineTo(x + w, y + h - r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+    ctx.lineTo(x + r, y + h); ctx.arcTo(x, y+h, x, y+h-r, r);
+    ctx.lineTo(x, y + r); ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+  }
+}
+
+// Return palace name if (x, y) — in chart-grid coordinates — falls in a badge margin area.
+function _badgeAreaPalace(x, y, palaces) {
+  const col = Math.floor(x / CELL);
+  const row = Math.floor(y / CELL);
+  let tRow = null, tCol = null;
+  if (y < 0 && y >= -LJ_MARGIN && col >= 0 && col <= 3)         { tRow = 0; tCol = col; }
+  else if (y >= BASE && y < BASE+LJ_MARGIN && col >= 0 && col <= 3) { tRow = 3; tCol = col; }
+  else if (x < 0 && x >= -LJ_MARGIN && row >= 1 && row <= 2)    { tRow = row; tCol = 0; }
+  else if (x >= BASE && x < BASE+LJ_MARGIN && row >= 1 && row <= 2) { tRow = row; tCol = 3; }
+  else return null;
+  for (const b of Object.keys(BRANCH_POS)) {
+    const [r, c] = BRANCH_POS[b];
+    if (r === tRow && c === tCol) return palaces.find(p => p.branch === b)?.name || null;
+  }
+  return null;
+}
+
+// Draw gold 祿忌交戰 badges in the LJ_MARGIN area outside the chart grid.
+function drawLuJiBadges(ctx, luJiByPalace, palaces) {
+  if (!luJiByPalace || !Object.keys(luJiByPalace).length) return;
+
+  const PAD = 5;        // inner gap from grid edge
+  const BH  = LJ_MARGIN - 8;   // badge height (fits in the margin)
+
+  for (const [palaceName, slot] of Object.entries(luJiByPalace)) {
+    if (!slot || !slot.conflicts.length) continue;
+    const palace = palaces.find(p => p.name === palaceName);
+    if (!palace) continue;
+    const pos = BRANCH_POS[palace.branch];
+    if (!pos) continue;
+    const [row, col] = pos;
+    const cx = col * CELL, cy = row * CELL;
+
+    // Level label: prefer 6-tier (slot.level), fall back to legacy severity
+    const lvl = slot.level || 0;
+    const label = lvl > 0 ? `祿忌 Lv.${lvl}` : '祿忌交戰';
+
+    let bx, by, bw, bh, horiz;
+    if (row === 0) {
+      // Top badge: above the palace
+      bx = cx + PAD; by = -LJ_MARGIN + 4; bw = CELL - 2*PAD; bh = BH; horiz = true;
+    } else if (row === 3) {
+      // Bottom badge: below the palace
+      bx = cx + PAD; by = BASE + 4; bw = CELL - 2*PAD; bh = BH; horiz = true;
+    } else if (col === 0) {
+      // Left badge: to the left of the palace (vertical text)
+      bx = -LJ_MARGIN + 4; by = cy + PAD; bw = BH; bh = CELL - 2*PAD; horiz = false;
+    } else if (col === 3) {
+      // Right badge: to the right of the palace (vertical text)
+      bx = BASE + 4; by = cy + PAD; bw = BH; bh = CELL - 2*PAD; horiz = false;
+    } else {
+      continue;
+    }
+
+    // Gold fill + darker gold stroke
+    _rrPath(ctx, bx, by, bw, bh, 3);
+    ctx.fillStyle = '#d4af37'; ctx.fill();
+    _rrPath(ctx, bx + 0.5, by + 0.5, bw - 1, bh - 1, 3);
+    ctx.strokeStyle = '#b8941f'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Red text
+    ctx.fillStyle = '#dc2626';
+    ctx.font = `bold 12px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (horiz) {
+      ctx.fillText(label, bx + bw/2, by + bh/2);
+    } else {
+      ctx.save();
+      ctx.translate(bx + bw/2, by + bh/2);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    }
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    ctx.setLineDash([]);
+  }
+}
+
+// ════════════════════════════════════════════════════════
 // MAIN RENDER
 // ════════════════════════════════════════════════════════
 
@@ -1109,12 +1193,13 @@ function renderChartTo(canvas, fdRaw) {
   const SEVERITY_RANK = { critical: 3, high: 2, medium: 1 };
   const luJiByPalace = {};
   for (const c of (fd?.luJiConflicts || [])) {
-    if (!luJiByPalace[c.palace]) luJiByPalace[c.palace] = { severity: null, conflicts: [] };
+    if (!luJiByPalace[c.palace]) luJiByPalace[c.palace] = { severity: null, level: 0, conflicts: [] };
     const slot = luJiByPalace[c.palace];
     slot.conflicts.push(c);
     if (!slot.severity || (SEVERITY_RANK[c.severity] || 0) > (SEVERITY_RANK[slot.severity] || 0)) {
       slot.severity = c.severity;
     }
+    if ((c.severityLevel || 0) > slot.level) slot.level = c.severityLevel || 0;
   }
 
   drawGrid(ctx);
@@ -1125,10 +1210,10 @@ function renderChartTo(canvas, fdRaw) {
       origPalace, bodyPalace, birthYear,
       flowYearVal, flowYearBranch, flowYearGZ,
       flowTransByBranch, decadeMu,
-      luJiSeverity: luJiByPalace[palace.name]?.severity || null,
     });
   }
   drawCenterTo(ctx, fd);
+  drawLuJiBadges(ctx, luJiByPalace, d.palaces);
 
   // 三方四正動態高亮（點擊宮位後）。
   // 顏色：一般宮位 → 銀灰；若點選的正是本流年命宮 → 維持金色（與流年高亮一致）
@@ -1236,13 +1321,14 @@ function bindLuJiHover(canvas, luJiByPalace) {
   const tip = _ensureLuJiTipEl();
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
-    const scale = BASE / rect.width;
-    const x = (e.clientX - rect.left) * scale;
-    const y = (e.clientY - rect.top)  * scale;
+    const scale = (BASE + 2*LJ_MARGIN) / rect.width;
+    const x = (e.clientX - rect.left) * scale - LJ_MARGIN;
+    const y = (e.clientY - rect.top)  * scale - LJ_MARGIN;
     const col = Math.floor(x / CELL);
     const row = Math.floor(y / CELL);
     const d = S.chartData;
     if (!d) { tip.style.display = 'none'; return; }
+    // Check palace cell area (0..3 row/col)
     let palaceName = null;
     for (const b of Object.keys(BRANCH_POS)) {
       const [r, c] = BRANCH_POS[b];
@@ -1251,6 +1337,8 @@ function bindLuJiHover(canvas, luJiByPalace) {
         break;
       }
     }
+    // If hovering outer badge margin, resolve which palace's badge it is
+    if (!palaceName) palaceName = _badgeAreaPalace(x, y, d.palaces);
     const slot = palaceName ? canvas._luJiByPalace?.[palaceName] : null;
     if (!slot || !slot.conflicts.length) { tip.style.display = 'none'; return; }
 
@@ -1287,9 +1375,9 @@ function bindPalaceClick(canvas) {
     // 剛完成滑動手勢 → 忽略本次 click（避免誤觸宮位選取）
     if (Date.now() - S.lastSwipeTs < 500) return;
     const rect = canvas.getBoundingClientRect();
-    const scale = BASE / rect.width;
-    const x = (e.clientX - rect.left) * scale;
-    const y = (e.clientY - rect.top)  * scale;
+    const scale = (BASE + 2*LJ_MARGIN) / rect.width;
+    const x = (e.clientX - rect.left) * scale - LJ_MARGIN;
+    const y = (e.clientY - rect.top)  * scale - LJ_MARGIN;
     const col = Math.floor(x / CELL);
     const row = Math.floor(y / CELL);
     let branch = null;
