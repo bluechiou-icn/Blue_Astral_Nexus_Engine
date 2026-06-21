@@ -556,25 +556,27 @@ function renderLibrary() {
     </div>`;
 
   if (!filterCat) {
-    const cats = Cloud.categories || [];
-    const chipRow = cats.length
-      ? `<div class="lib-cat-chips">${cats.map(c => {
-          const label = libEscape((c.icon ? c.icon + ' ' : '') + (c.displayName || c.slug));
-          const slug = libEscape(c.slug || '');
-          return `<button class="ext-chip lib-cat-chip" onclick="Cloud.setCategoryFilter('${slug}')">${label}</button>`;
-        }).join('')}</div>`
-      : '';
+    // Drive 分類 chip row 已移除；分類篩選由 ext bundle 分類 section 操作（Q2 整合後共用 setCategoryFilter）
+    // 未選分類時直接顯示全部命例，不再需要 Drive 分類入口
+    const allList = charts.length
+      ? charts.map(c => `
+          <div class="lib-row">
+            <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
+              <span class="lib-name">${libEscape(c.name) || '—'}</span>
+              <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
+            </div>
+            <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
+          </div>`).join('')
+      : `<div class="lib-empty">${t('lib_empty')}</div>`;
     panel.innerHTML = `
       <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
         <span>${t('lib_title')}</span><span>${authBtn}</span>
       </div>
       <div class="lib-status">${t('lib_status_cloud')}</div>
-      <div class="lib-empty">${t('lib_pick_category')}</div>
-      ${chipRow}
+      <div class="lib-list">${allList}</div>
       ${actionsHtml}`;
     return;
   }
-
   const list = charts.length
     ? charts.map(c => `
         <div class="lib-row">

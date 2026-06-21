@@ -39,8 +39,10 @@ async function updateDailyFortune() {
   _dfFetchKey = key;
   try {
     const r = await apiDailyFortune(S.birthDate, S.birthTime, S.gender, today);
+    if (_dfFetchKey !== key) return; // 已切換命主（競態），丟棄此舊回應
     renderDailyFortune(box, r, today);
   } catch (_) {
+    if (_dfFetchKey !== key) return;
     hide();
   }
 }
@@ -133,8 +135,8 @@ function updateFormationBadges() {
     const palText = (f.palaces || []).map(tPalaceName).join('、') || '—';
     const starText = (f.stars || []).join('、') || '—';
     return `<b>${f.name}</b><span class="fb-conf">${t('formation_confidence')} ${f.confidence}%</span><br>` +
-           `<span style="color:#6a4e30;">${palText}　·　${starText}</span><br>` +
-           `${f.note}`;
+           `<span style="color:#3a1f05;">${palText}　·　${starText}</span><br>` +
+           `${f.note || ''}`;
   };
 
   const render = () => {
@@ -292,23 +294,26 @@ function escapeHtml(s) {
 function updateSaveCategoryBar() {
   const bar = document.getElementById('save-category-bar');
   if (!bar) return;
-  if (!window.Cloud || !Cloud.signedIn || !Array.isArray(Cloud.categories) || Cloud.categories.length === 0) {
-    bar.style.display = 'none';
-    bar.innerHTML = '';
-    return;
+  // 優先用 ext bundle 中文分類（cat_1..cat_8）；無 ext 時才降用 Drive 分類
+  const extCats = window.CloudExt?.DEFAULT_CATEGORIES || [];
+  const driveCats = (window.Cloud && Array.isArray(Cloud.categories)) ? Cloud.categories : [];
+  if (!window.Cloud || !Cloud.signedIn || (!extCats.length && !driveCats.length)) {
+    bar.style.display = 'none'; bar.innerHTML = ''; return;
   }
   if (!S || !S.birthDate || !S.birthTime || !S.gender) {
-    bar.style.display = 'none';
-    return;
+    bar.style.display = 'none'; return;
   }
   const current = (Cloud.store?.charts || []).find(c =>
     c.date === S.birthDate && c.time === S.birthTime &&
     c.gender === S.gender && (c.name || '') === (S.name || ''));
   const currentCatId = current?.categoryId || '';
-  const options = Cloud.categories.map(c =>
-    `<option value="${escapeHtml(c.id)}"${c.id === currentCatId ? ' selected' : ''}>` +
-    `${escapeHtml(c.icon ? c.icon + ' ' : '')}${escapeHtml(c.displayName)}</option>`
-  ).join('');
+  const options = extCats.length
+    ? extCats.map(c =>
+        `<option value="${escapeHtml(c.id)}"${c.id === currentCatId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`
+      ).join('')
+    : driveCats.map(c =>
+        `<option value="${escapeHtml(c.id)}"${c.id === currentCatId ? ' selected' : ''}>${escapeHtml((c.icon ? c.icon + ' ' : '') + (c.displayName || ''))}</option>`
+      ).join('');
   bar.innerHTML =
     `<span class="scb-label">${t('save_cat_label')}</span>` +
     `<select id="scb-select" class="scb-select">` +
