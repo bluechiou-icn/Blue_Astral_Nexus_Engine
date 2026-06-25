@@ -15,6 +15,25 @@ const SYN_MUT_COLOR = {
   '化忌': '#dc2626',
 };
 
+// ── 飛化線篩選 state（Blue 2026-06-25 #5）─────────────────
+//   預設兩集合皆空 → 不畫任何線。user 勾選 direction × mutagen 才畫對應線。
+//   direction 集合：'ab' | 'ba' | 'same' | 'rev'
+//   mutagen 集合：'化祿' | '化權' | '化科' | '化忌'
+window.SYN_FILTER = window.SYN_FILTER || {
+  directions: new Set(),
+  mutagens:   new Set(),
+};
+
+// 「祿/權/科 ↔ 忌」相生相剋：用於反向偵測（Blue 2026-06-25 #5）
+const SYN_OPPOSITE_TYPE = {
+  '化祿': '化忌', '化權': '化忌', '化科': '化忌', '化忌': '化祿',
+};
+
+const SYN_SOURCE_LABEL = {
+  birthYear:     '生年',
+  currentDecade: '大限',
+};
+
 // 取得 canvas 內某宮位中心點相對於 SVG 容器的座標
 //   canvas 是被 max-width CSS 縮放過的，所以要用 getBoundingClientRect()
 //   再扣掉 svg container 的 rect 起點。
@@ -65,13 +84,17 @@ function _buildPath(from, to, color, dashed, markerId, tooltipText) {
   `;
 }
 
-// 主入口：renderSynastryMatrix(payload, chartA, chartB)
-window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, chartB) {
+// 主入口：renderSynastryMatrix(payload, chartA, chartB, nameA?, nameB?)
+window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, chartB, nameA, nameB) {
   const svg = document.getElementById('syn-matrix-svg');
   if (!svg || !payload) return;
   const canvasA = document.getElementById('syn-canvas-a');
   const canvasB = document.getElementById('syn-canvas-b');
   if (!canvasA || !canvasB) return;
+
+  // 真名 fallback（無提供姓名時用 A / B）
+  nameA = nameA || 'A';
+  nameB = nameB || 'B';
 
   // SVG 容器要覆蓋整頁雙盤 → 用 absolute 定位於 body，跟著 scroll
   //   座標系：document 全域 pixel；箭頭起終點用 getBoundingClientRect + scroll offset
@@ -102,58 +125,72 @@ window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, cha
   // 偽 viewport reference rect（不扣 offset，因為 svg 已是 fullscreen fixed）
   // svgRect 已不使用（_palaceCenterRelative 直接用 document 全域座標）
 
+  // ── 1. 全部 entries 平攤成統一物件（含 dir/source/srcChart/tgtChart/真名）─────
+  const entries = [];
+  const pushEntry = (raw, dir, source) => {
+    if (!raw?.targetPalaceName || !raw?.star) return;
+    entries.push({
+      dir, source, type: raw.type, star: raw.star,
+      srcChart:  dir === 'ab' ? chartA  : chartB,
+      tgtChart:  dir === 'ab' ? chartB  : chartA,
+      srcCanvas: dir === 'ab' ? canvasA : canvasB,
+      tgtCanvas: dir === 'ab' ? canvasB : canvasA,
+      srcName:   dir === 'ab' ? nameA   : nameB,
+      tgtName:   dir === 'ab' ? nameB   : nameA,
+      targetPalaceName: raw.targetPalaceName,
+      rawNote: raw.note || '',
+    });
+  };
+  (payload.chart1BirthYearToChart2     || []).forEach(e => pushEntry(e, 'ab', 'birthYear'));
+  (payload.chart1CurrentDecadeToChart2 || []).forEach(e => pushEntry(e, 'ab', 'currentDecade'));
+  (payload.chart2BirthYearToChart1     || []).forEach(e => pushEntry(e, 'ba', 'birthYear'));
+  (payload.chart2CurrentDecadeToChart1 || []).forEach(e => pushEntry(e, 'ba', 'currentDecade'));
+
+  // ── 2. 同向 / 反向偵測（per-type, cross-direction）─────────────
+  //   同向 = 同一個 mutagen type 在 A→B 跟 B→A 都出現過（資源/壓力雙向呼應）
+  //   反向 = 一邊送 祿/權/科，另一邊回送 忌（或反之）— 不對稱關係
+  const typesAB = new Set(entries.filter(e => e.dir === 'ab').map(e => e.type));
+  const typesBA = new Set(entries.filter(e => e.dir === 'ba').map(e => e.type));
+  for (const e of entries) {
+    const otherSet = e.dir === 'ab' ? typesBA : typesAB;
+    e.same = otherSet.has(e.type);
+    const opp = SYN_OPPOSITE_TYPE[e.type];
+    e.rev = !!(opp && otherSet.has(opp));
+  }
+
+  // ── 3. 套用 filter（預設兩集合皆空 → 0 條線）─────────────────
+  const F = window.SYN_FILTER || { directions: new Set(), mutagens: new Set() };
+  const filtered = entries.filter(e => {
+    if (!F.mutagens.has(e.type)) return false;
+    for (const d of F.directions) {
+      if (d === 'ab'   && e.dir === 'ab') return true;
+      if (d === 'ba'   && e.dir === 'ba') return true;
+      if (d === 'same' && e.same)         return true;
+      if (d === 'rev'  && e.rev)          return true;
+    }
+    return false;
+  });
+
+  // ── 4. 畫每條飛化線 + 組真名 tooltip ─────────────────────────
   const pathHTMLs = [];
-
-  // ── A→B: chartA 的生年化X + 大限化X → B 的 targetPalace ─────
-  for (const entry of (payload.chart1BirthYearToChart2 || [])) {
-    if (!entry.targetPalaceName || !entry.star) continue;
-    const srcPal = _findSourcePalace(chartA, entry.star);
+  for (const e of filtered) {
+    const srcPal = _findSourcePalace(e.srcChart, e.star);
     if (!srcPal) continue;
-    const from = _palaceCenterRelative(canvasA, srcPal.branch);
-    const tgtPal = chartB.palaces.find(p => p.name === entry.targetPalaceName);
+    const from = _palaceCenterRelative(e.srcCanvas, srcPal.branch);
+    const tgtPal = e.tgtChart.palaces.find(p => p.name === e.targetPalaceName);
     if (!tgtPal) continue;
-    const to = _palaceCenterRelative(canvasB, tgtPal.branch);
+    const to = _palaceCenterRelative(e.tgtCanvas, tgtPal.branch);
     if (!from || !to) continue;
-    const color = SYN_MUT_COLOR[entry.type] || '#888';
-    pathHTMLs.push(_buildPath(from, to, color, false, 'syn-arrow-' + entry.type, entry.note));
-  }
-  for (const entry of (payload.chart1CurrentDecadeToChart2 || [])) {
-    if (!entry.targetPalaceName || !entry.star) continue;
-    const srcPal = _findSourcePalace(chartA, entry.star);
-    if (!srcPal) continue;
-    const from = _palaceCenterRelative(canvasA, srcPal.branch);
-    const tgtPal = chartB.palaces.find(p => p.name === entry.targetPalaceName);
-    if (!tgtPal) continue;
-    const to = _palaceCenterRelative(canvasB, tgtPal.branch);
-    if (!from || !to) continue;
-    const color = SYN_MUT_COLOR[entry.type] || '#888';
-    pathHTMLs.push(_buildPath(from, to, color, false, 'syn-arrow-' + entry.type, entry.note));
-  }
-
-  // ── B→A: chartB 的生年化X + 大限化X → A 的 targetPalace ─────
-  for (const entry of (payload.chart2BirthYearToChart1 || [])) {
-    if (!entry.targetPalaceName || !entry.star) continue;
-    const srcPal = _findSourcePalace(chartB, entry.star);
-    if (!srcPal) continue;
-    const from = _palaceCenterRelative(canvasB, srcPal.branch);
-    const tgtPal = chartA.palaces.find(p => p.name === entry.targetPalaceName);
-    if (!tgtPal) continue;
-    const to = _palaceCenterRelative(canvasA, tgtPal.branch);
-    if (!from || !to) continue;
-    const color = SYN_MUT_COLOR[entry.type] || '#888';
-    pathHTMLs.push(_buildPath(from, to, color, true, 'syn-arrow-' + entry.type, entry.note));
-  }
-  for (const entry of (payload.chart2CurrentDecadeToChart1 || [])) {
-    if (!entry.targetPalaceName || !entry.star) continue;
-    const srcPal = _findSourcePalace(chartB, entry.star);
-    if (!srcPal) continue;
-    const from = _palaceCenterRelative(canvasB, srcPal.branch);
-    const tgtPal = chartA.palaces.find(p => p.name === entry.targetPalaceName);
-    if (!tgtPal) continue;
-    const to = _palaceCenterRelative(canvasA, tgtPal.branch);
-    if (!from || !to) continue;
-    const color = SYN_MUT_COLOR[entry.type] || '#888';
-    pathHTMLs.push(_buildPath(from, to, color, true, 'syn-arrow-' + entry.type, entry.note));
+    const color  = SYN_MUT_COLOR[e.type] || '#888';
+    const dashed = e.dir === 'ba';
+    const srcLabel = SYN_SOURCE_LABEL[e.source] || e.source;
+    // Blue 2026-06-25 #5：tooltip 用真名 + 明確標示「生年/大限」、星曜全名、雙邊宮位
+    const tooltip =
+      `${e.srcName}（${srcLabel}）　${e.star}${e.type}\n` +
+      `　源：${e.srcName} ${srcPal.name}（${srcPal.branch || ''}）\n` +
+      `　→ 入 ${e.tgtName} ${e.targetPalaceName}（本命宮位）` +
+      (e.rawNote ? `\n　備註：${e.rawNote}` : '');
+    pathHTMLs.push(_buildPath(from, to, color, dashed, 'syn-arrow-' + e.type, tooltip));
   }
 
   svg.innerHTML = `<defs>${markers}</defs>${pathHTMLs.join('')}`;

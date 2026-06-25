@@ -211,12 +211,87 @@ function synastryRerender() {
   applyI18n();
   renderToolbar();
   renderResonanceBar();
+  renderFilterBar();
   renderBothCharts();
   if (typeof window.renderSynastryMatrix === 'function') {
-    window.renderSynastryMatrix(SYN.payload, SYN.chartA, SYN.chartB);
+    window.renderSynastryMatrix(
+      SYN.payload, SYN.chartA, SYN.chartB,
+      SYN.metaA?.name || 'A',
+      SYN.metaB?.name || 'B',
+    );
   }
 }
 window.synastryRerender = synastryRerender;
+
+// ── 飛化線 filter bar（Blue 2026-06-25 #5）──────────────────
+//   方向 chip × 四化 chip 兩維 multi-select；「全部」chip 切換所有方向 +
+//   所有四化的開/關狀態。每次 toggle 後 re-render SVG（不重畫 canvas）。
+function renderFilterBar() {
+  const bar = document.getElementById('syn-filter-bar');
+  if (!bar) return;
+  bar.style.display = 'flex';
+
+  // 把方向 chip 「A → B」「B → A」改寫成真實人名
+  const nameA = SYN.metaA?.name || 'A';
+  const nameB = SYN.metaB?.name || 'B';
+  const ab = document.getElementById('syn-filter-ab');
+  const ba = document.getElementById('syn-filter-ba');
+  if (ab) ab.textContent = `${nameA} → ${nameB}`;
+  if (ba) ba.textContent = `${nameB} → ${nameA}`;
+
+  syncFilterChipUI();
+}
+
+function syncFilterChipUI() {
+  const F = window.SYN_FILTER;
+  const allOn = F.directions.size === 4 && F.mutagens.size === 4;
+  document.querySelectorAll('.syn-filter-chip[data-dir]').forEach(chip => {
+    const d = chip.dataset.dir;
+    if (d === 'all') chip.classList.toggle('active', allOn);
+    else             chip.classList.toggle('active', F.directions.has(d));
+  });
+  document.querySelectorAll('.syn-filter-chip[data-mut]').forEach(chip => {
+    chip.classList.toggle('active', F.mutagens.has(chip.dataset.mut));
+  });
+}
+
+function rerenderMatrixOnly() {
+  if (!SYN.chartA || !SYN.chartB || typeof window.renderSynastryMatrix !== 'function') return;
+  window.renderSynastryMatrix(
+    SYN.payload, SYN.chartA, SYN.chartB,
+    SYN.metaA?.name || 'A',
+    SYN.metaB?.name || 'B',
+  );
+}
+
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.syn-filter-chip');
+  if (!chip) return;
+  const F = window.SYN_FILTER;
+  if (chip.dataset.dir) {
+    const d = chip.dataset.dir;
+    if (d === 'all') {
+      const allOn = F.directions.size === 4 && F.mutagens.size === 4;
+      if (allOn) { F.directions.clear(); F.mutagens.clear(); }
+      else       { ['ab','ba','same','rev'].forEach(x => F.directions.add(x));
+                   ['化祿','化權','化科','化忌'].forEach(x => F.mutagens.add(x)); }
+    } else {
+      F.directions.has(d) ? F.directions.delete(d) : F.directions.add(d);
+    }
+  } else if (chip.dataset.mut) {
+    const m = chip.dataset.mut;
+    F.mutagens.has(m) ? F.mutagens.delete(m) : F.mutagens.add(m);
+  } else return;
+  syncFilterChipUI();
+  rerenderMatrixOnly();
+});
+
+window.clearSynFilters = function clearSynFilters() {
+  window.SYN_FILTER.directions.clear();
+  window.SYN_FILTER.mutagens.clear();
+  syncFilterChipUI();
+  rerenderMatrixOnly();
+};
 
 // ── 啟動流程 ──────────────────────────────────────────────
 async function startSynastry() {

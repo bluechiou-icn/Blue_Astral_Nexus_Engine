@@ -109,6 +109,37 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   white-space: pre-wrap;
 }
 
+/* 飛化線篩選 bar（Blue 2026-06-25 #5：預設不顯示線，user 勾選方向 × 四化才畫對應線） */
+.syn-filter-bar {
+  background: #fff; border: 1px solid #d8d6d0; border-radius: 4px;
+  padding: 8px 12px; margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+}
+.syn-filter-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.syn-filter-label {
+  font-size: 10px; letter-spacing: 0.12em; color: #999; margin-right: 4px;
+  text-transform: uppercase;
+}
+.syn-filter-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 12px; border-radius: 13px; font-size: 12px;
+  font-weight: 500; cursor: pointer; user-select: none;
+  background: #f5f4f0; color: #555; border: 1px solid #e0ddd5;
+  transition: all 0.15s;
+}
+.syn-filter-chip:hover { border-color: #888; }
+.syn-filter-chip.active { background: #1a1a1a; color: #fdf6e8; border-color: #1a1a1a; }
+.syn-filter-chip.mut-lu.active   { background: #16a34a; border-color: #16a34a; color: #fff; }
+.syn-filter-chip.mut-quan.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.syn-filter-chip.mut-ke.active   { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.syn-filter-chip.mut-ji.active   { background: #dc2626; border-color: #dc2626; color: #fff; }
+.syn-filter-clear {
+  font-size: 11px; color: #666; background: transparent;
+  border: 1px dashed #bbb; padding: 4px 10px; border-radius: 3px;
+  cursor: pointer; margin-left: auto; font-family: inherit;
+}
+.syn-filter-clear:hover { color: #1a1a1a; border-color: #1a1a1a; }
+
 .syn-loading { text-align: center; padding: 60px 20px; font-size: 13px; color: #888; }
 .syn-err {
   background: #fdf0ef; border: 1px solid #f3c5c0; color: #9f1f1f;
@@ -155,6 +186,25 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     <div class="syn-meta" id="syn-meta-a">—</div>
     <div class="syn-meta" id="syn-meta-b">—</div>
     <button class="syn-btn" onclick="window.location.href='/chart.html'" data-i18n="syn_back">← 回主畫面</button>
+  </div>
+
+  <div class="syn-filter-bar" id="syn-filter-bar" style="display:none;">
+    <div class="syn-filter-group">
+      <span class="syn-filter-label" data-i18n="syn_filter_direction">方向</span>
+      <span class="syn-filter-chip" data-dir="all" data-i18n="syn_filter_all">全部</span>
+      <span class="syn-filter-chip" data-dir="ab" id="syn-filter-ab">A → B</span>
+      <span class="syn-filter-chip" data-dir="ba" id="syn-filter-ba">B → A</span>
+      <span class="syn-filter-chip" data-dir="same" data-i18n="syn_filter_same">同向</span>
+      <span class="syn-filter-chip" data-dir="rev"  data-i18n="syn_filter_reverse">反向</span>
+    </div>
+    <div class="syn-filter-group">
+      <span class="syn-filter-label" data-i18n="syn_filter_mutagen">四化</span>
+      <span class="syn-filter-chip mut-lu"   data-mut="化祿" data-i18n="syn_mut_lu">化祿</span>
+      <span class="syn-filter-chip mut-quan" data-mut="化權" data-i18n="syn_mut_quan">化權</span>
+      <span class="syn-filter-chip mut-ke"   data-mut="化科" data-i18n="syn_mut_ke">化科</span>
+      <span class="syn-filter-chip mut-ji"   data-mut="化忌" data-i18n="syn_mut_ji">化忌</span>
+    </div>
+    <button class="syn-filter-clear" onclick="window.clearSynFilters()" data-i18n="syn_filter_clear">清除全部</button>
   </div>
 
   <div class="syn-resonance-bar" id="syn-resonance-bar" style="display:none;">

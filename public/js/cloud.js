@@ -556,24 +556,14 @@ function renderLibrary() {
     </div>`;
 
   if (!filterCat) {
-    // Drive 分類 chip row 已移除；分類篩選由 ext bundle 分類 section 操作（Q2 整合後共用 setCategoryFilter）
-    // 未選分類時直接顯示全部命例，不再需要 Drive 分類入口
-    const allList = charts.length
-      ? charts.map(c => `
-          <div class="lib-row">
-            <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
-              <span class="lib-name">${libEscape(c.name) || '—'}</span>
-              <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
-            </div>
-            <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
-          </div>`).join('')
-      : `<div class="lib-empty">${t('lib_empty')}</div>`;
+    // 未選分類時不列任何命例：Blue 2026-06-25 confirmed
+    // 命例混雜呈現是反需求；user 必須先從上方 ext 分類 chips 挑分類才看到清單
     panel.innerHTML = `
       <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
         <span>${t('lib_title')}</span><span>${authBtn}</span>
       </div>
       <div class="lib-status">${t('lib_status_cloud')}</div>
-      <div class="lib-list">${allList}</div>
+      <div class="lib-empty">${t('lib_pick_category')}</div>
       ${actionsHtml}`;
     return;
   }

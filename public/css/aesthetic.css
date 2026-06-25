@@ -95,6 +95,8 @@
 .panel:has(> .ext-cat-row),
 .panel:has(.ext-cat-row:only-child) {
   padding: 8px 18px;
+  width: fit-content;
+  max-width: 100%;
 }
 .panel:has(> .ext-cat-row) .panel-title,
 .panel:has(.ext-cat-row:only-child) .panel-title {

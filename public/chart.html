@@ -238,6 +238,20 @@ h1.page-title {
 .fb-detail b { color: #0a0500; font-weight: 700; }
 .fb-detail .fb-conf { color: #5a3a10; font-size: 11px; margin-left: 6px; font-weight: 500; }
 
+/* CSS specificity guardrail（Blue 2026-06-25 #4 fix）：
+   米色 bg 區塊（.formation-badges / .fb-detail / .triple-banner.double）若被任何全域
+   `.ext-scope *` / dark theme inherit 規則蓋過 color，就會變成米色字 + 米色底＝看不見。
+   用 ID selector (specificity 1,0,0) 強搶 color 回深棕系，確保視覺對比 ≥ 7:1。 */
+#formation-badges, #formation-badges .fb-label { color: #5a4530; }
+#formation-badges .fb-label { color: #7a4515; }
+#formation-badges .fb-detail,
+#formation-badges .fb-detail span { color: #1a0a00; }
+#formation-badges .fb-detail b { color: #0a0500; }
+#formation-badges .fb-detail .fb-conf { color: #5a3a10; }
+#triple-stem-banner.double { color: #7a4515; }
+#triple-stem-banner.triple { color: #5a4530; }
+#triple-stem-banner .tsb-chip { color: inherit; }
+
 /* ── 雙軸切換（大限/流年）+ 檢視模式 ─────────────────── */
 /* 統一深色 UI 系（與 .lib-row / .panel 對齊）；active 狀態保留綠/金/青語意色但用透明深底 */
 .axis-bar {

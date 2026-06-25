@@ -126,9 +126,9 @@ function updateFormationBadges() {
     :                       t('formation_type_neutral');
 
   const chipHTML = (f, idx) => {
-    const short = (f.name || '').slice(0, 2);
-    const tipText = `${typeLabel(f.type)} · ${f.name} · ${t('formation_confidence')} ${f.confidence}%\n${f.note}`;
-    return `<span class="fb-chip ${f.type || 'neutral'}" data-idx="${idx}" title="${tipText.replace(/"/g,'&quot;')}">${short}</span>`;
+    const fullName = f.name || '';
+    const tipText = `${typeLabel(f.type)} · ${fullName} · ${t('formation_confidence')} ${f.confidence}%\n${f.note}`;
+    return `<span class="fb-chip ${f.type || 'neutral'}" data-idx="${idx}" title="${tipText.replace(/"/g,'&quot;')}">${fullName}</span>`;
   };
 
   const detailHTML = (f) => {
