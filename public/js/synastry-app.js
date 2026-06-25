@@ -148,6 +148,24 @@ function renderToolbar() {
   document.getElementById('syn-matrix-mode').textContent = modeText;
 }
 
+// 引擎生成的 resonance.note / cross-flying.note 直接寫 "A" / "B"。
+// 前端用真名 regex 替換，符合 Blue 2026-06-25 #5「字句要用命主姓名」需求。
+//   注意：A/B 可能出現在任何位置（"A 生年化祿入 B 子女宮"），用 word-boundary 不可靠（中文無 boundary）。
+//   保守策略：替換「A 」「B 」（後接空白 or 中文）及「→A」「→B」（箭頭後）。
+function _rewriteABtoNames(text) {
+  if (!text) return text;
+  const nameA = SYN.metaA?.name || 'A';
+  const nameB = SYN.metaB?.name || 'B';
+  // 直接全域替換獨立字元（含後接空白、中文標點、頓號、＞箭頭）
+  return text
+    .replace(/A→/g, `${nameA}→`).replace(/B→/g, `${nameB}→`)
+    .replace(/→A\b/g, `→${nameA}`).replace(/→B\b/g, `→${nameB}`)
+    .replace(/([一-鿿\s（(、，,。.])A([一-鿿\s（(、，,。.])/g, `$1${nameA}$2`)
+    .replace(/([一-鿿\s（(、，,。.])B([一-鿿\s（(、，,。.])/g, `$1${nameB}$2`)
+    .replace(/^A([一-鿿\s])/g, `${nameA}$1`)
+    .replace(/^B([一-鿿\s])/g, `${nameB}$1`);
+}
+
 function renderResonanceBar() {
   const bar = document.getElementById('syn-resonance-bar');
   const resonances = SYN.payload?.resonances || [];
@@ -156,7 +174,8 @@ function renderResonanceBar() {
   const chips = resonances.map((r, i) => {
     const dirClass = r.direction === 'A→B' ? 'dir-a-b'
                    : r.direction === 'B→A' ? 'dir-b-a' : '';
-    const title = (r.note || '').replace(/"/g, '&quot;');
+    const note = _rewriteABtoNames(r.note || '');
+    const title = note.replace(/"/g, '&quot;');
     return `<span class="res-chip ${dirClass}" data-idx="${i}" title="${title}">${r.type}</span>`;
   }).join('');
   bar.innerHTML = label + chips;
@@ -166,13 +185,21 @@ function renderResonanceBar() {
     if (!chip) return;
     const r = resonances[parseInt(chip.dataset.idx, 10)];
     if (!r) return;
-    // 若 resonance 帶 branch → 在雙盤對應宮格閃金色 outline
+    // 點 chip 同時：閃宮格 + 在中央 tooltip panel 顯示 detail
     if (r.branch && typeof flashSynPalaceByBranch === 'function') {
       flashSynPalaceByBranch('A', r.branch, 'auspicious');
       flashSynPalaceByBranch('B', r.branch, 'auspicious');
     }
+    if (typeof window.showCenterDetail === 'function') {
+      window.showCenterDetail(
+        `${t('syn_resonance_section')} · ${r.type}` +
+        (r.direction ? `（${_rewriteABtoNames(r.direction)}）` : ''),
+        _rewriteABtoNames(r.note || '')
+      );
+    }
   };
 }
+window._rewriteABtoNames = _rewriteABtoNames;
 
 // 共振 chip 點擊用：在指定盤 canvas 上閃宮格
 function flashSynPalaceByBranch(side, branch, variant) {

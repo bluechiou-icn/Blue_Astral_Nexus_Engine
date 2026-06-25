@@ -100,14 +100,39 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 .syn-legend-item { display: inline-flex; align-items: center; gap: 4px; }
 .syn-legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
 .syn-matrix-hint { font-size: 11px; color: #888; line-height: 1.5; margin-top: 8px; }
+/* legacy follow-mouse tooltip — 保留為快速 hover preview，但主要 detail 走中央 panel */
 .syn-matrix-tooltip {
   position: fixed; display: none; pointer-events: none;
   background: rgba(40,20,15,0.94); color: #fdf6e8;
-  font-size: 12px; padding: 6px 10px; border-radius: 4px;
-  z-index: 9999; max-width: 260px; line-height: 1.4;
+  font-size: 11px; padding: 4px 8px; border-radius: 3px;
+  z-index: 9999; max-width: 200px; line-height: 1.4;
   box-shadow: 0 2px 10px rgba(0,0,0,0.45);
-  white-space: pre-wrap;
+  white-space: pre-wrap; opacity: 0.85;
 }
+
+/* 中央 detail panel（Blue 2026-06-25 #5）：點飛化線/共振 chip → 顯示詳細解析
+   位置：matrix svg 下方、syn-matrix-hint 上方。 跟整體 UI 米色 accent 一致。 */
+.syn-center-detail {
+  margin-top: 10px;
+  background: #fdf6e8;
+  border: 1px solid #e0d4b0;
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 56px;
+  font-size: 12px; line-height: 1.6;
+  color: #5a4530;
+}
+.syn-cd-empty { color: #8a7755; font-style: italic; font-size: 11px; line-height: 1.5; }
+.syn-cd-title {
+  font-weight: 600; color: #2c1a05; font-size: 12.5px;
+  margin-bottom: 6px; padding-bottom: 5px;
+  border-bottom: 1px dashed #c0a870;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.syn-cd-body {
+  color: #1a0a00; white-space: pre-wrap; word-break: break-word;
+}
+.syn-cd-body b { color: #0a0500; font-weight: 700; }
 
 /* 飛化線篩選 bar（Blue 2026-06-25 #5：預設不顯示線，user 勾選方向 × 四化才畫對應線） */
 .syn-filter-bar {
@@ -239,7 +264,17 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
       </div>
       <svg class="syn-matrix-svg" id="syn-matrix-svg" preserveAspectRatio="none"></svg>
       <div class="syn-matrix-hint" data-i18n="syn_matrix_hint">
-        箭頭從 A／B 的生年（或當前大限）四化星，連到落入對方命盤的對應宮位；hover 箭頭顯示細節。
+        箭頭從 A／B 的生年（或當前大限）四化星，連到落入對方命盤的對應宮位；點擊箭頭顯示細節。
+      </div>
+      <!-- Blue 2026-06-25 #5：中央 detail panel，取代 follow-mouse tooltip -->
+      <div class="syn-center-detail" id="syn-center-detail">
+        <div class="syn-cd-empty" id="syn-cd-empty" data-i18n="syn_cd_empty">
+          上方按鈕勾選方向 × 四化以顯示飛化線；點擊任一條線或共振 chip 看詳細解析。
+        </div>
+        <div class="syn-cd-content" id="syn-cd-content" style="display:none;">
+          <div class="syn-cd-title" id="syn-cd-title"></div>
+          <div class="syn-cd-body"  id="syn-cd-body"></div>
+        </div>
       </div>
     </div>
 

@@ -158,10 +158,15 @@ window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, cha
     e.rev = !!(opp && otherSet.has(opp));
   }
 
-  // ── 3. 套用 filter（預設兩集合皆空 → 0 條線）─────────────────
+  // ── 3. 套用 filter ─────────────────────────────────────────
+  //   Blue 2026-06-25 修：mutagen 是主篩；direction 空集合視為「全方向」
+  //   （單選 化祿 應顯示所有 化祿 線，不用再勾方向才出現）
+  //   mutagen 空集合 = 0 條線（沒指定要看哪一化 → 不畫）
   const F = window.SYN_FILTER || { directions: new Set(), mutagens: new Set() };
+  const dirsActive = F.directions.size > 0;
   const filtered = entries.filter(e => {
     if (!F.mutagens.has(e.type)) return false;
+    if (!dirsActive) return true;  // 預設全方向
     for (const d of F.directions) {
       if (d === 'ab'   && e.dir === 'ab') return true;
       if (d === 'ba'   && e.dir === 'ba') return true;
@@ -195,24 +200,77 @@ window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, cha
 
   svg.innerHTML = `<defs>${markers}</defs>${pathHTMLs.join('')}`;
 
-  // hit 區 hover tooltip
-  //   svg 整體 pointer-events:none，個別 .syn-arrow-hit path 用 inline style
-  //   pointer-events:stroke 啟用（透明粗線當 hit box，下方 toolbar 可正常點）
+  // 更新中央 detail panel 的「目前顯示」summary（Blue 2026-06-25 #5）
+  _updateCenterSummary(filtered.length, F);
+
+  // hit 區互動（Blue 2026-06-25 #5）：
+  //   hover → 輕量 floating preview（保留）
+  //   click → 中央 detail panel 顯示完整訊息（主要 UX）
   const tip = document.getElementById('syn-matrix-tooltip');
-  if (!tip) return;
   svg.querySelectorAll('.syn-arrow-hit').forEach(el => {
-    el.addEventListener('mouseenter', (e) => {
-      tip.textContent = el.dataset.tip || '';
-      tip.style.display = 'block';
+    if (tip) {
+      el.addEventListener('mouseenter', () => {
+        tip.textContent = (el.dataset.tip || '').split('\n')[0]; // 只顯示第 1 行
+        tip.style.display = 'block';
+      });
+      el.addEventListener('mousemove', (e) => {
+        const w = 200, h = 30;
+        let x = e.clientX + 14, y = e.clientY + 14;
+        if (x + w > window.innerWidth)  x = e.clientX - w - 14;
+        if (y + h > window.innerHeight) y = e.clientY - h - 14;
+        tip.style.left = Math.max(8, x) + 'px';
+        tip.style.top  = Math.max(8, y) + 'px';
+      });
+      el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    }
+    el.addEventListener('click', () => {
+      const fullText = el.dataset.tip || '';
+      const [titleLine, ...bodyLines] = fullText.split('\n');
+      if (typeof window.showCenterDetail === 'function') {
+        window.showCenterDetail(titleLine, bodyLines.join('\n'));
+      }
     });
-    el.addEventListener('mousemove', (e) => {
-      const w = 270, h = 70;
-      let x = e.clientX + 14, y = e.clientY + 14;
-      if (x + w > window.innerWidth)  x = e.clientX - w - 14;
-      if (y + h > window.innerHeight) y = e.clientY - h - 14;
-      tip.style.left = Math.max(8, x) + 'px';
-      tip.style.top  = Math.max(8, y) + 'px';
-    });
-    el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    el.style.cursor = 'pointer';
   });
 };
+
+// ── 中央 detail panel API（Blue 2026-06-25 #5）────────────────
+//   showCenterDetail(title, body) — 點飛化線 / 共振 chip 時填入
+//   hideCenterDetail() — 重置回 empty state
+//   _updateCenterSummary(count, F) — 內部用，顯示「目前篩選：X 條線」
+window.showCenterDetail = function showCenterDetail(title, body) {
+  const empty   = document.getElementById('syn-cd-empty');
+  const content = document.getElementById('syn-cd-content');
+  const tTitle  = document.getElementById('syn-cd-title');
+  const tBody   = document.getElementById('syn-cd-body');
+  if (!empty || !content || !tTitle || !tBody) return;
+  empty.style.display   = 'none';
+  content.style.display = 'block';
+  tTitle.textContent = title || '';
+  tBody.textContent  = body  || '';
+};
+
+window.hideCenterDetail = function hideCenterDetail() {
+  const empty   = document.getElementById('syn-cd-empty');
+  const content = document.getElementById('syn-cd-content');
+  if (!empty || !content) return;
+  empty.style.display   = 'block';
+  content.style.display = 'none';
+};
+
+function _updateCenterSummary(lineCount, F) {
+  const empty = document.getElementById('syn-cd-empty');
+  if (!empty) return;
+  if (F.mutagens.size === 0) {
+    empty.textContent = '上方按鈕勾選四化（祿/權/科/忌）顯示飛化線；可同時勾多個。' +
+                        '預設顯示雙向；勾方向 chip 可進一步篩選。';
+  } else {
+    const muts = Array.from(F.mutagens).join('、');
+    const dirNote = F.directions.size > 0
+      ? `方向：${Array.from(F.directions).map(d =>
+          d === 'ab' ? 'A→B' : d === 'ba' ? 'B→A' : d === 'same' ? '同向' : '反向'
+        ).join('、')}`
+      : '方向：全部';
+    empty.textContent = `目前顯示：${muts}　|　${dirNote}　|　${lineCount} 條線。點線看詳細。`;
+  }
+}
