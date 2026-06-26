@@ -140,8 +140,15 @@
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-card);
   padding: 16px;
-  margin: 12px 0;
+  margin: 12px auto;
   box-shadow: var(--shadow-soft);
+  /* B2 fix（2026-06-26）：.ext-card（分類卡 #ext-cat-card / Reading Lens #ext-lens-standalone）
+     先前無 max-width → 由私有 bundle 注入後撐滿 viewport，比上下 .panel 寬很多。
+     收成與 .panel 同寬同置中（880px；寬螢幕 1060px 見下方 @media）。 */
+  max-width: 880px;
+}
+@media (min-width: 1200px) {
+  .ext-card { max-width: 1060px; }
 }
 .ext-card .card-title {
   font-size: 11px;
