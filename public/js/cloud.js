@@ -570,23 +570,14 @@ function renderLibrary() {
         </div>`).join('')
     : `<div class="lib-empty">${t('lib_empty_category')}</div>`;
 
-  // 已選分類 chip row（與「清除分類」回到 placeholder 入口）
-  const activeCats = (Cloud.categories || []);
-  const activeChipRow = activeCats.length
-    ? `<div class="lib-cat-chips">${activeCats.map(c => {
-        const label = libEscape((c.icon ? c.icon + ' ' : '') + (c.displayName || c.slug));
-        const slug = libEscape(c.slug || '');
-        const isActive = c.slug === filterCat ? ' active' : '';
-        return `<button class="ext-chip lib-cat-chip${isActive}" onclick="Cloud.setCategoryFilter('${slug}')">${label}</button>`;
-      }).join('')}<button class="ext-chip lib-cat-clear" onclick="Cloud.setCategoryFilter(null)">${t('lib_clear_filter')}</button></div>`
-    : '';
-
+  // B2 收尾（Blue 2026-06-26）：移除命例庫內重複的分類 chip row（我 Self／伴 Partner／
+  // 家 Family／客 Client／例 Case Study／全部）。它與上方私有 bundle 的分類列（家人/姐妹/…）
+  // 功能重複，Blue 指定刪除；篩選交給上方那排即可。
   panel.innerHTML = `
     <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
       <span>${t('lib_title')}</span><span>${authBtn}</span>
     </div>
     <div class="lib-status">${t('lib_status_cloud')}</div>
-    ${activeChipRow}
     <div class="lib-list">${list}</div>
     ${actionsHtml}`;
 }
