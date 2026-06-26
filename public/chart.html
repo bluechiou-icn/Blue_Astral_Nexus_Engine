@@ -248,9 +248,11 @@ h1.page-title {
 #formation-badges .fb-detail span { color: #1a0a00; }
 #formation-badges .fb-detail b { color: #0a0500; }
 #formation-badges .fb-detail .fb-conf { color: #5a3a10; }
-#triple-stem-banner.double { color: #7a4515; }
-#triple-stem-banner.triple { color: #5a4530; }
-#triple-stem-banner .tsb-chip { color: inherit; }
+/* 2026-06-26 B4 fix：原本只搶 banner 本身的 color，子層（內層 div / span /
+   .tsb-chip / b）仍被 .ext-scope * 蓋成米色 → 米色字＋米色底＝看不見（= Blue 回報
+   「格局下方（雙干疊加）文字看不見」）。改為強搶整個子樹的 color。 */
+#triple-stem-banner.double, #triple-stem-banner.double * { color: #7a4515; }
+#triple-stem-banner.triple, #triple-stem-banner.triple * { color: #5a4530; }
 
 /* ── 雙軸切換（大限/流年）+ 檢視模式 ─────────────────── */
 /* 統一深色 UI 系（與 .lib-row / .panel 對齊）；active 狀態保留綠/金/青語意色但用透明深底 */
