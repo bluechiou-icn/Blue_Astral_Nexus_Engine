@@ -555,18 +555,10 @@ function renderLibrary() {
       <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
     </div>`;
 
-  if (!filterCat) {
-    // 未選分類時不列任何命例：Blue 2026-06-25 confirmed
-    // 命例混雜呈現是反需求；user 必須先從上方 ext 分類 chips 挑分類才看到清單
-    panel.innerHTML = `
-      <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
-        <span>${t('lib_title')}</span><span>${authBtn}</span>
-      </div>
-      <div class="lib-status">${t('lib_status_cloud')}</div>
-      <div class="lib-empty">${t('lib_pick_category')}</div>
-      ${actionsHtml}`;
-    return;
-  }
+  // B2「命例消失」修復（Blue 2026-06-26）：先前未選分類時直接 return「請點分類」placeholder，
+  // 會把所有「未分類」的既有命例藏起來看不到（Blue localStorage 實有 12 筆全被藏）＝回報的
+  // 「原本儲存的命例都不見了」。改為：未選分類時列出全部命例；下方分類 chip 仍可點擊篩選，
+  // 「清除分類」回到全部。未登入仍在上面 return（隱私防線不變）。
   const list = charts.length
     ? charts.map(c => `
         <div class="lib-row">
