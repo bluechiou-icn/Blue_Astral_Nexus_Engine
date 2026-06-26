@@ -555,10 +555,21 @@ function renderLibrary() {
       <input type="file" id="lib-import-file" accept="application/json,.json" style="display:none" onchange="libraryImportFile(this)">
     </div>`;
 
-  // B2「命例消失」修復（Blue 2026-06-26）：先前未選分類時直接 return「請點分類」placeholder，
-  // 會把所有「未分類」的既有命例藏起來看不到（Blue localStorage 實有 12 筆全被藏）＝回報的
-  // 「原本儲存的命例都不見了」。改為：未選分類時列出全部命例；下方分類 chip 仍可點擊篩選，
-  // 「清除分類」回到全部。未登入仍在上面 return（隱私防線不變）。
+  // 隱私預設（Blue 2026-06-26 釐清，**重要**）：登入後預設「不顯示任何命例」，必須點分類才顯示
+  // 該分類命例。原因＝Blue 線上諮詢會分享/錄影螢幕；諮詢前先把該命主放進獨立分類，分享時對方
+  // 只會看到自己的資料，不會看到其他命主的生日（隱私）。故未選分類時只渲染 placeholder
+  // （不含任何命主姓名/生日）。先前一度改成「預設列全部」是隱私倒退，已還原。
+  if (!filterCat) {
+    panel.innerHTML = `
+      <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>${t('lib_title')}</span><span>${authBtn}</span>
+      </div>
+      <div class="lib-status">${t('lib_status_cloud')}</div>
+      <div class="lib-empty">${t('lib_pick_category')}</div>
+      ${actionsHtml}`;
+    return;
+  }
+
   const list = charts.length
     ? charts.map(c => `
         <div class="lib-row">
