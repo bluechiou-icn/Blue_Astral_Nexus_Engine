@@ -94,9 +94,10 @@
 }
 .panel:has(> .ext-cat-row),
 .panel:has(.ext-cat-row:only-child) {
+  /* 只收緊 padding；寬度沿用 base .panel（max-width 880/1060px, margin:0 auto），
+     與上下其他 panel 同寬同對齊。先前 width:fit-content + max-width:100% 會讓
+     9 顆分類 chip 把 panel 撐到超過 880px（= Blue 回報的「分類列過寬」）。 */
   padding: 8px 18px;
-  width: fit-content;
-  max-width: 100%;
 }
 .panel:has(> .ext-cat-row) .panel-title,
 .panel:has(.ext-cat-row:only-child) .panel-title {
