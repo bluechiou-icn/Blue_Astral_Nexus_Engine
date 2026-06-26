@@ -507,11 +507,18 @@ function renderLibrary() {
   // Sprint 3.9 H4：若 activeCategoryFilter 已設，先以 categoryId 篩 charts。
   // self / partner 在篩選後若不屬於該分類則不強行置頂，避免分類視角下出現「不該在這裡」的命例。
   const filterCat = Cloud.activeCategoryFilter || null;
+  // 分類解析（Blue 2026-06-26 修，真因）：命例的 categoryId 指向 store.categories
+  // （{id:'cat_1', name:'家人'}，私有 bundle 維護），但舊邏輯去 Cloud.categories 找 .slug
+  // → 兩套陣列＋兩種欄位對不上 → 永遠篩不到（= Blue 點分類全空）。
+  // 改為：把 activeCategoryFilter（可能是 id / name / slug）解析到實際 category 的 id，
+  // 再比對 chart.categoryId。解析不到就退回原值（容錯）。
+  const allCats = [ ...((Cloud.store && Cloud.store.categories) || []), ...(Cloud.categories || []) ];
+  const matchCat = filterCat
+    ? allCats.find(c => c && (c.id === filterCat || c.name === filterCat || c.slug === filterCat || c.displayName === filterCat))
+    : null;
+  const filterId = matchCat ? matchCat.id : filterCat;
   const filteredAll = filterCat
-    ? (Cloud.store.charts || []).filter(c => {
-        const cat = Cloud.categories.find(x => x.id === c.categoryId);
-        return cat && cat.slug === filterCat;
-      })
+    ? (Cloud.store.charts || []).filter(c => c.categoryId === filterId)
     : (Cloud.store.charts || []);
   const all = filteredAll;
   const selfId = Cloud.store.selfChartId || null;
