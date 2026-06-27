@@ -535,10 +535,24 @@ function renderLibrary() {
   // → 兩套陣列＋兩種欄位對不上 → 永遠篩不到（= Blue 點分類全空）。
   // 改為：把 activeCategoryFilter（可能是 id / name / slug）解析到實際 category 的 id，
   // 再比對 chart.categoryId。解析不到就退回原值（容錯）。
-  const allCats = [ ...((Cloud.store && Cloud.store.categories) || []), ...(Cloud.categories || []) ];
+  // B1（Blue 2026-06-27）：production 點家人仍空，真因是 ext bundle chip 傳的字串既不在
+  // store.categories 也不在 Cloud.categories 任一欄位（ext bundle 內可能用 slug 或自家 id）。
+  // 補上 window.CloudExt.DEFAULT_CATEGORIES 作為第三個別名來源，覆蓋私有 bundle hardcoded 清單。
+  // 失敗時 owner 模式 console.warn 印 diagnostic（非 owner 靜默，避免一般訪客看到雜訊）。
+  const extCats = (typeof window !== 'undefined' && window.CloudExt && Array.isArray(window.CloudExt.DEFAULT_CATEGORIES))
+    ? window.CloudExt.DEFAULT_CATEGORIES : [];
+  const allCats = [
+    ...((Cloud.store && Cloud.store.categories) || []),
+    ...(Cloud.categories || []),
+    ...extCats,
+  ];
   const matchCat = filterCat
     ? allCats.find(c => c && (c.id === filterCat || c.name === filterCat || c.slug === filterCat || c.displayName === filterCat))
     : null;
+  if (filterCat && !matchCat && Cloud.entitlement?.tier === 'owner' && typeof console !== 'undefined') {
+    console.warn('[lib] category lookup miss for filter:', filterCat,
+      '| sources(store/Cloud/ext):', (Cloud.store?.categories||[]).length, (Cloud.categories||[]).length, extCats.length);
+  }
   const filterId = matchCat ? matchCat.id : filterCat;
   const filteredAll = filterCat
     ? (Cloud.store.charts || []).filter(c => c.categoryId === filterId)
