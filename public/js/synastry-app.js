@@ -307,11 +307,28 @@ document.addEventListener('click', (e) => {
     }
   } else if (chip.dataset.mut) {
     const m = chip.dataset.mut;
+    const wasOff = !F.mutagens.has(m);
     F.mutagens.has(m) ? F.mutagens.delete(m) : F.mutagens.add(m);
+    // B6 Fix 4（Blue 2026-06-27）：剛打開此四化 → 中央 panel 預設展開該四化的能量說明（避免空白等使用者點線）
+    if (wasOff) _showMutagenIntro(m);
   } else return;
   syncFilterChipUI();
   rerenderMatrixOnly();
 });
+
+// B6 Fix 4（Blue 2026-06-27）：四化能量類型簡介，點 chip 開啟時填入 centerDetail。
+//   用語為公開層通則（不含汎天派判訣 IP），具體象意請點飛化線。
+function _showMutagenIntro(mut) {
+  const intros = {
+    化祿: '財祿、人緣、順緣的能量流入。主得、主成、易聚資源。',
+    化權: '掌控、權威、執行的能量加強。主衝、主擴、適合主導。',
+    化科: '聲譽、學業、文書、貴人扶助的能量。主柔、主名、宜清譽。',
+    化忌: '阻滯、執著、考驗的能量積壓。主困、主守、需化解轉化。',
+  };
+  if (typeof window.showCenterDetail !== 'function') return;
+  const body = (intros[mut] || '') + '\n（點任一條飛化線看具體象意）';
+  window.showCenterDetail(`${mut} 說明`, body);
+}
 
 window.clearSynFilters = function clearSynFilters() {
   window.SYN_FILTER.directions.clear();

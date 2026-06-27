@@ -110,9 +110,10 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
   white-space: pre-wrap; opacity: 0.85;
 }
 
-/* 中央 detail panel（Blue 2026-06-25 #5）：點飛化線/共振 chip → 顯示詳細解析
-   位置：matrix svg 下方、syn-matrix-hint 上方。 跟整體 UI 米色 accent 一致。 */
+/* 中央 detail panel — B6 Fix 2（Blue 2026-06-27）：移到 syn-layout 三欄之下 span 全寬，
+   避免位於 matrix svg 內被飛化線箭頭/虛線視覺遮擋。grid-column: 1/-1 撐滿三欄。 */
 .syn-center-detail {
+  grid-column: 1 / -1;
   margin-top: 10px;
   background: #fdf6e8;
   border: 1px solid #e0d4b0;
@@ -266,16 +267,6 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
       <div class="syn-matrix-hint" data-i18n="syn_matrix_hint">
         箭頭從 A／B 的生年（或當前大限）四化星，連到落入對方命盤的對應宮位；點擊箭頭顯示細節。
       </div>
-      <!-- Blue 2026-06-25 #5：中央 detail panel，取代 follow-mouse tooltip -->
-      <div class="syn-center-detail" id="syn-center-detail">
-        <div class="syn-cd-empty" id="syn-cd-empty" data-i18n="syn_cd_empty">
-          上方按鈕勾選方向 × 四化以顯示飛化線；點擊任一條線或共振 chip 看詳細解析。
-        </div>
-        <div class="syn-cd-content" id="syn-cd-content" style="display:none;">
-          <div class="syn-cd-title" id="syn-cd-title"></div>
-          <div class="syn-cd-body"  id="syn-cd-body"></div>
-        </div>
-      </div>
     </div>
 
     <div class="syn-panel syn-right">
@@ -285,6 +276,17 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
       </div>
       <div class="syn-canvas-wrap">
         <canvas id="syn-canvas-b" width="1000" height="1000" style="max-width:520px;"></canvas>
+      </div>
+    </div>
+
+    <!-- B6 Fix 2（Blue 2026-06-27）：中央 detail panel 移到 syn-layout 最底，span 全寬，不被飛化線擋。 -->
+    <div class="syn-center-detail" id="syn-center-detail">
+      <div class="syn-cd-empty" id="syn-cd-empty" data-i18n="syn_cd_empty">
+        上方按鈕勾選方向 × 四化以顯示飛化線；點擊任一條線或共振 chip 看詳細解析。
+      </div>
+      <div class="syn-cd-content" id="syn-cd-content" style="display:none;">
+        <div class="syn-cd-title" id="syn-cd-title"></div>
+        <div class="syn-cd-body"  id="syn-cd-body"></div>
       </div>
     </div>
   </div>

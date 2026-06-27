@@ -189,12 +189,13 @@ window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, cha
     const color  = SYN_MUT_COLOR[e.type] || '#888';
     const dashed = e.dir === 'ba';
     const srcLabel = SYN_SOURCE_LABEL[e.source] || e.source;
-    // Blue 2026-06-25 #5：tooltip 用真名 + 明確標示「生年/大限」、星曜全名、雙邊宮位
+    // B6 Fix 1（Blue 2026-06-27）：依 spec 改寫 tooltip 文案。標題格式「{命主}'s {來源}：{星}{化}」，
+    // 內文「能量源點 ... → 飛化進入 ...」。源宮帶身宮標記 + 地支「位」。刪掉「備註」行。
+    const bodyMarker = srcPal.isBodyPalace ? '、身宮' : '';
     const tooltip =
-      `${e.srcName}（${srcLabel}）　${e.star}${e.type}\n` +
-      `　源：${e.srcName} ${srcPal.name}（${srcPal.branch || ''}）\n` +
-      `　→ 入 ${e.tgtName} ${e.targetPalaceName}（本命宮位）` +
-      (e.rawNote ? `\n　備註：${e.rawNote}` : '');
+      `${e.srcName}'s ${srcLabel}：${e.star}${e.type}\n` +
+      `能量源點 ${e.srcName}'s ${srcPal.name}${bodyMarker}（${srcPal.branch || ''}位）${srcLabel}「${e.star}星${e.type}」\n` +
+      `→ 飛化進入 ${e.tgtName}'s ${e.targetPalaceName}（本命宮位）`;
     pathHTMLs.push(_buildPath(from, to, color, dashed, 'syn-arrow-' + e.type, tooltip));
   }
 

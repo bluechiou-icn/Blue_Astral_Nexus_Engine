@@ -139,7 +139,7 @@ const I18N = {
     syn_mut_ke:          '化科',
     syn_mut_ji:          '化忌',
     syn_legend_line:     '實線 A→B　虛線 B→A',
-    syn_matrix_hint:     '箭頭從命主的生年（或當前大限）四化星，連到落入對方命盤的對應宮位；點擊箭頭看詳細解析（顯示於下方中央 panel）。',
+    syn_matrix_hint:     '箭頭從命主的生年（或當前大限）四化星，連到落入對方命盤的對應宮位；點擊箭頭看詳細解析。',
     syn_cd_empty:        '上方按鈕勾選四化（祿/權/科/忌）顯示飛化線；可同時勾多個。預設顯示雙向；勾方向 chip 可進一步篩選。',
     syn_err_no_params:   '缺少合盤參數。請先在主畫面綁定配偶後再開啟合盤頁。',
     syn_err_failed:      '合盤計算失敗：',
