@@ -252,6 +252,106 @@ function detectLuJiConflict({
   return conflicts;
 }
 
+// ── 三盤疊宮 detector（A1, Blue 2026-06-27 / V1.1 step 3 缺口）─────────
+// 汎天派 V1.1：「生年／大限／流年（天地人）三盤四化或忌星重疊於同一宮（流忌迭見），
+// 大凶，重疊越多越凶；凡流祿飛入諸命宮其福加倍，流忌飛入諸命宮其凶加倍。」
+//
+// 輸出（公開層 math 骨架，象意判訣留 Tier 2 私有）：
+//   sandipanOverlap: {
+//     hasTripleOverlap: bool,                          // 三盤同宮 存在
+//     overlaps: [                                      // 凡 ≥2 層共宮即列入
+//       { palace, layerCount, layers:['生年','大限','流年'],
+//         mutations:[{layer, star, type}], luCount, jiCount,
+//         isJiAccumulated, isMingPalace, isFlowLifePalace }
+//     ],
+//     jiAccumulatedPalaces: [palace, ...],             // 流忌迭見（jiCount ≥ 2）
+//     fortuneBoosts: [palace, ...],                    // 祿入諸命宮加倍
+//     calamityBoosts: [palace, ...],                   // 忌入諸命宮加倍
+//   }
+function detectSandipanOverlap({
+  palaces,
+  yearMutagens = [],         // 生年四化（天盤）— item: { star, type, palace }
+  currentMajorLimit = null,  // 大限四化（地盤）— mutagens item: { star, type, targetPalace }
+  flowYearMutagens = [],     // 流年四化（人盤）— item: { star, type, targetPalace }
+  flowYearLifePalaceName = null, // 流年命宮名（祿入諸命宮加倍判定用）
+}) {
+  // 1. 每宮收集三盤 mutations
+  const perPalace = {};
+  const ensure = (palName) => {
+    if (!perPalace[palName]) perPalace[palName] = {
+      palace: palName, mutations: [], layers: new Set(), luCount: 0, jiCount: 0,
+    };
+    return perPalace[palName];
+  };
+
+  for (const ym of yearMutagens) {
+    if (!ym?.palace || !ym?.type) continue;
+    const slot = ensure(ym.palace);
+    slot.mutations.push({ layer: '生年', star: ym.star, type: ym.type });
+    slot.layers.add('生年');
+    if (ym.type === '化祿') slot.luCount++;
+    if (ym.type === '化忌') slot.jiCount++;
+  }
+  for (const dm of (currentMajorLimit?.mutagens || [])) {
+    if (!dm?.targetPalace || !dm?.type) continue;
+    const slot = ensure(dm.targetPalace);
+    slot.mutations.push({ layer: '大限', star: dm.star, type: dm.type });
+    slot.layers.add('大限');
+    if (dm.type === '化祿') slot.luCount++;
+    if (dm.type === '化忌') slot.jiCount++;
+  }
+  for (const fm of flowYearMutagens) {
+    if (!fm?.targetPalace || !fm?.type) continue;
+    const slot = ensure(fm.targetPalace);
+    slot.mutations.push({ layer: '流年', star: fm.star, type: fm.type });
+    slot.layers.add('流年');
+    if (fm.type === '化祿') slot.luCount++;
+    if (fm.type === '化忌') slot.jiCount++;
+  }
+
+  // 2. 過濾 ≥2 層共宮的 entry + 加旗標
+  const overlaps = [];
+  const jiAccumulatedPalaces = [];
+  const fortuneBoosts = [];   // 祿入諸命宮（本命/流年）
+  const calamityBoosts = [];  // 忌入諸命宮（本命/流年）
+
+  for (const palName of Object.keys(perPalace)) {
+    const slot = perPalace[palName];
+    const layerCount = slot.layers.size;
+    const isJiAccumulated = slot.jiCount >= 2;
+    const isMingPalace = palName === '命宮';
+    const isFlowLifePalace = !!flowYearLifePalaceName && palName === flowYearLifePalaceName;
+
+    if (layerCount >= 2) {
+      overlaps.push({
+        palace:           palName,
+        layerCount,
+        layers:           Array.from(slot.layers),
+        mutations:        slot.mutations,
+        luCount:          slot.luCount,
+        jiCount:          slot.jiCount,
+        isJiAccumulated,
+        isMingPalace,
+        isFlowLifePalace,
+      });
+    }
+    if (isJiAccumulated) jiAccumulatedPalaces.push(palName);
+    if ((isMingPalace || isFlowLifePalace) && slot.luCount > 0) fortuneBoosts.push(palName);
+    if ((isMingPalace || isFlowLifePalace) && slot.jiCount > 0) calamityBoosts.push(palName);
+  }
+
+  // 3. 依嚴重度排序（layerCount desc, jiCount desc）
+  overlaps.sort((a, b) => (b.layerCount - a.layerCount) || (b.jiCount - a.jiCount));
+
+  return {
+    hasTripleOverlap: overlaps.some(o => o.layerCount >= 3),
+    overlaps,
+    jiAccumulatedPalaces,
+    fortuneBoosts,
+    calamityBoosts,
+  };
+}
+
 // ── /api/flow?level=hour：本日吉凶時辰盤（汎天派流月/流日/流時順數）──────
 const HOUR_BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 
@@ -412,6 +512,14 @@ module.exports = function handler(req, res) {
       birthYearStem,
       flowYearStem:      flowStem,
     });
+    // A1（Blue 2026-06-27）：三盤疊宮 detector — 生年/大限/流年共宮 + 流忌迭見 + 祿/忌入命宮加倍
+    const sandipanOverlap = detectSandipanOverlap({
+      palaces:                chart.palaces,
+      yearMutagens:           chart.yearMutagens || [],
+      currentMajorLimit,
+      flowYearMutagens,
+      flowYearLifePalaceName: flowLifePalace?.name || null,
+    });
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Surrogate-Control', 'no-store');
@@ -468,6 +576,7 @@ module.exports = function handler(req, res) {
       } : null,
 
       tripleStemOverlap,
+      sandipanOverlap,
       luJiConflicts,
       hasLuJiConflict: luJiConflicts.length > 0,
       luJiConflictSummary: luJiConflicts.map(c => ({
