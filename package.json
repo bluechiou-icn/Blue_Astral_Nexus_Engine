@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "iztro": "^2.5.8"
+    "iztro": "^2.5.8",
+    "lunar-typescript": "^1.8.6"
   }
 }
