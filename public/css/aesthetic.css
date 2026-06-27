@@ -641,8 +641,12 @@ body > div > a[href*="aethnous"]:hover {
 .lib-row:hover { border-color: var(--border-accent); background: var(--gradient-soft); }
 .lib-name { color: var(--text-primary); }
 .lib-meta { color: var(--text-secondary); }
+.lib-edit { color: var(--text-tertiary); }
+.lib-edit:hover { color: var(--border-accent); }
 .lib-del  { color: var(--text-tertiary); }
 .lib-del:hover { color: var(--danger); }
+/* E1 命例「修改中」label hint（save-category-bar 內），低調語意 */
+.scb-editing { color: var(--text-tertiary); font-size: 0.9em; margin-left: 4px; }
 .lib-empty { color: var(--text-tertiary); }
 
 /* Sprint 3.9 P8：lib-list 內建分類 chip row（user 必須先挑分類才看清單）*/

@@ -37,6 +37,10 @@ const Cloud = {
   categoriesFileId: null,
   activeCategoryFilter: null,  // slug | null；renderLibrary 套用後只顯示該分類命例
   entitlement: null,           // Feature 1（2026-06-20）：{ tier, maxRecords, dailyFortune, owner }；登入後由 /api/entitlement 填
+  // E1（Blue 2026-06-27）：命例「修改模式」
+  // libraryEdit(id) 設定 → librarySaveCurrent 改走 id 比對，允許 date/time/gender/name 變更覆寫同一筆，
+  // 避免改關鍵 4 欄產生重複。卡片本體點擊（view mode）保持 null，走原本 4-key match。
+  editingId: null,
 };
 
 function libEscape(s) {
@@ -386,9 +390,13 @@ async function librarySaveCurrent(opts) {
   if (!Cloud.store) Cloud.store = loadLocalStore();
   if (typeof S === 'undefined' || !S.birthDate || !S.birthTime || !S.gender) return;
   const now = new Date().toISOString();
-  const match = Cloud.store.charts.find(c =>
-    c.date === S.birthDate && c.time === S.birthTime &&
-    c.gender === S.gender && (c.name || '') === (S.name || ''));
+  // E1（Blue 2026-06-27）：修改模式（editingId 設）→ 一律按 id 找現有筆，允許 4 個關鍵欄位變更覆寫同一筆，
+  // 避免改 date/time/gender/name 之一就產生重複命例。view 模式（editingId=null）走原本 4-key match。
+  const match = Cloud.editingId
+    ? Cloud.store.charts.find(c => c.id === Cloud.editingId)
+    : Cloud.store.charts.find(c =>
+        c.date === S.birthDate && c.time === S.birthTime &&
+        c.gender === S.gender && (c.name || '') === (S.name || ''));
   // Feature 1 quota：改現有命例(match)永遠放行；新增超過上限 → 派事件供 UI 顯示升級提示，不寫入。
   if (!match && !canAddRecord()) {
     try {
@@ -399,7 +407,12 @@ async function librarySaveCurrent(opts) {
     return;
   }
   if (match) {
-    match.city = S.city || '';
+    // E1：修改模式可改 4 個關鍵欄位（view 模式下這 4 欄本就同值，寫回為 no-op）
+    match.name   = S.name || '';
+    match.date   = S.birthDate;
+    match.time   = S.birthTime;
+    match.gender = S.gender;
+    match.city   = S.city || '';
     if (opts.categoryId !== undefined) match.categoryId = opts.categoryId || null;
     match.updatedAt = now;
   } else {
@@ -416,7 +429,7 @@ async function librarySaveCurrent(opts) {
   try { await persistStore(); } catch (e) { console.error('Library save error:', e); }
 }
 
-function libraryLoad(id) {
+function libraryLoad(id, editMode = false) {
   const c = Cloud.store?.charts.find(x => x.id === id);
   if (!c) return;
   if (typeof S !== 'undefined' && S.chartData && typeof resetChart === 'function') resetChart();
@@ -430,7 +443,17 @@ function libraryLoad(id) {
   // 還原已定盤狀態（v3 後加入；舊資料無此欄位視同 true，保持向後相容）
   const fcs = document.getElementById('f-chartset');
   if (fcs) fcs.checked = c.chartSet !== false;
-  handleSubmit();
+  // E1（Blue 2026-06-27）：editMode=true（從 ✎ 鈕進入）→ 設 editingId，librarySaveCurrent 走 id 路徑覆寫同一筆。
+  // editMode=false（卡片本體點擊，view 語意）→ 清 editingId，走原本 4-key match。
+  // _loadingFromLibrary 旗標讓 handleSubmit 不要在 libraryLoad 觸發的呼叫裡清掉剛設好的 editingId。
+  Cloud.editingId = editMode ? id : null;
+  Cloud._loadingFromLibrary = true;
+  try { handleSubmit(); } finally { Cloud._loadingFromLibrary = false; }
+}
+
+// E1：從 ✎ 鈕進入修改模式 — 等同 libraryLoad(id, true)。
+function libraryEdit(id) {
+  return libraryLoad(id, true);
 }
 
 async function libraryDelete(id) {
@@ -584,6 +607,7 @@ function renderLibrary() {
             <span class="lib-name">${libEscape(c.name) || '—'}</span>
             <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
           </div>
+          <button class="lib-edit" onclick="libraryEdit('${libEscape(c.id)}')" title="${t('lib_edit')}">✎</button>
           <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
         </div>`).join('')
     : `<div class="lib-empty">${t('lib_empty_category')}</div>`;
@@ -620,7 +644,9 @@ if (typeof window !== 'undefined') {
   Cloud.loadCategories = loadCategories;
   Cloud.saveCategories = saveCategories;
   Cloud.librarySaveCurrent = librarySaveCurrent;
+  Cloud.libraryEdit = libraryEdit;           // E1：對外暴露修改模式入口（inline onclick 也用 global window.libraryEdit）
   Cloud.canAddRecord = canAddRecord;        // Feature 1：UI 判定是否可新增命例
   Cloud.loadEntitlement = loadEntitlement;  // Feature 1：手動重拉方案層級
+  window.libraryEdit = libraryEdit;          // inline HTML onclick 需要 global function
   window.Cloud = Cloud;
 }

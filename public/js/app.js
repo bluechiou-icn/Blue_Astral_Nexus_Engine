@@ -303,7 +303,12 @@ function updateSaveCategoryBar() {
   if (!S || !S.birthDate || !S.birthTime || !S.gender) {
     bar.style.display = 'none'; return;
   }
-  const current = (Cloud.store?.charts || []).find(c =>
+  // E1（Blue 2026-06-27）：修改模式下優先按 editingId 找命例（讓 dropdown 反映「正在改的這筆」目前分類，
+  // 即使 user 把 name/date/time/gender 改了，仍能準確指回原命例）。view 模式維持 4-key match。
+  const current = (Cloud.editingId
+    ? (Cloud.store?.charts || []).find(c => c.id === Cloud.editingId)
+    : null
+  ) || (Cloud.store?.charts || []).find(c =>
     c.date === S.birthDate && c.time === S.birthTime &&
     c.gender === S.gender && (c.name || '') === (S.name || ''));
   const currentCatId = current?.categoryId || '';
@@ -314,11 +319,15 @@ function updateSaveCategoryBar() {
     : driveCats.map(c =>
         `<option value="${escapeHtml(c.id)}"${c.id === currentCatId ? ' selected' : ''}>${escapeHtml((c.icon ? c.icon + ' ' : '') + (c.displayName || ''))}</option>`
       ).join('');
+  // E1（Blue 2026-06-27）：修改模式下顯示「更新此命例」標記，明確告訴使用者按下儲存會覆寫同一筆而非新增。
+  const isEditing = !!(window.Cloud && Cloud.editingId);
+  const btnLabel = isEditing ? t('save_cat_update_btn') : t('save_cat_btn');
+  const editHint = isEditing ? ` <span class="scb-editing">${t('save_cat_editing_hint')}</span>` : '';
   bar.innerHTML =
-    `<span class="scb-label">${t('save_cat_label')}</span>` +
+    `<span class="scb-label">${t('save_cat_label')}</span>${editHint}` +
     `<select id="scb-select" class="scb-select">` +
     `<option value="">${t('save_cat_unassigned')}</option>${options}</select>` +
-    `<button class="scb-btn" onclick="saveCurrentToCategory()">${t('save_cat_btn')}</button>` +
+    `<button class="scb-btn" onclick="saveCurrentToCategory()">${btnLabel}</button>` +
     `<span class="scb-status" id="scb-status"></span>`;
   bar.style.display = '';
 }
@@ -616,6 +625,9 @@ function updateYearHint() {
 }
 
 async function handleSubmit() {
+  // E1（Blue 2026-06-27）：若不是從命例載入觸發（_loadingFromLibrary 旗標）→ 清 editingId。
+  // 防止使用者修改完 A 命例後，未明確結束就直接打新生辰 → autosave 把新資料蓋回 A。
+  if (typeof Cloud !== 'undefined' && !Cloud._loadingFromLibrary) Cloud.editingId = null;
   const date   = document.getElementById('f-date').value;
   const time   = document.getElementById('f-time').value;
   const gender = document.querySelector('input[name=g]:checked')?.value;
