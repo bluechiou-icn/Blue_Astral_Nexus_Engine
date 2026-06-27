@@ -295,6 +295,7 @@ document.addEventListener('click', (e) => {
   const chip = e.target.closest('.syn-filter-chip');
   if (!chip) return;
   const F = window.SYN_FILTER;
+  let pendingIntro = null; // B2/B3（Blue 2026-06-27）：rerender 完成後再展 intro，才抓得到最新 filtered arrows
   if (chip.dataset.dir) {
     const d = chip.dataset.dir;
     if (d === 'all') {
@@ -303,21 +304,28 @@ document.addEventListener('click', (e) => {
       else       { ['ab','ba','same','rev'].forEach(x => F.directions.add(x));
                    ['化祿','化權','化科','化忌'].forEach(x => F.mutagens.add(x)); }
     } else {
+      const wasOff = !F.directions.has(d);
       F.directions.has(d) ? F.directions.delete(d) : F.directions.add(d);
+      // B3（Blue 2026-06-27）：方向 chip 剛打開 → 中央 panel 展開該方向的篩選說明 + 第一條符合條件的飛化線。
+      if (wasOff) pendingIntro = { kind: 'dir', dir: d };
     }
   } else if (chip.dataset.mut) {
     const m = chip.dataset.mut;
     const wasOff = !F.mutagens.has(m);
     F.mutagens.has(m) ? F.mutagens.delete(m) : F.mutagens.add(m);
-    // B6 Fix 4（Blue 2026-06-27）：剛打開此四化 → 中央 panel 預設展開該四化的能量說明（避免空白等使用者點線）
-    if (wasOff) _showMutagenIntro(m);
+    // B6 Fix 4 / B2（Blue 2026-06-27）：剛打開此四化 → panel 展開該四化說明 + 整合第一條飛化線完整 detail
+    if (wasOff) pendingIntro = { kind: 'mut', mut: m };
   } else return;
   syncFilterChipUI();
   rerenderMatrixOnly();
+  // rerender 完成後再展 intro，這樣 DOM 上的 .syn-arrow-hit dataset.tip 已是最新一輪 filtered 結果
+  if (pendingIntro?.kind === 'mut') _showMutagenIntro(pendingIntro.mut);
+  else if (pendingIntro?.kind === 'dir') _showDirectionIntro(pendingIntro.dir);
 });
 
-// B6 Fix 4（Blue 2026-06-27）：四化能量類型簡介，點 chip 開啟時填入 centerDetail。
-//   用語為公開層通則（不含汎天派判訣 IP），具體象意請點飛化線。
+// B6 Fix 4 / B2（Blue 2026-06-27）：四化能量類型簡介 + 整合第一條飛化線完整 detail。
+//   說明用公開層通則（不含汎天派判訣 IP）。第一條飛化線從 DOM 上 .syn-arrow-hit 拿
+//   （renderSynastryMatrix 已把 tooltip 字串寫到 dataset.tip），匹配當前 mut 類型。
 function _showMutagenIntro(mut) {
   const intros = {
     化祿: '財祿、人緣、順緣的能量流入。主得、主成、易聚資源。',
@@ -326,8 +334,40 @@ function _showMutagenIntro(mut) {
     化忌: '阻滯、執著、考驗的能量積壓。主困、主守、需化解轉化。',
   };
   if (typeof window.showCenterDetail !== 'function') return;
-  const body = (intros[mut] || '') + '\n（點任一條飛化線看具體象意）';
+  // 找第一條符合此四化類型的飛化線（tooltip 第一行含「：xxx{mut}」）
+  const arrows = [...document.querySelectorAll('.syn-arrow-hit')];
+  const firstTip = arrows.map(a => a.dataset.tip || '')
+                         .find(t => t.split('\n')[0]?.includes(mut));
+  const body = firstTip
+    ? `${intros[mut] || ''}\n\n${firstTip}`
+    : `${intros[mut] || ''}\n（點任一條飛化線看具體象意）`;
   window.showCenterDetail(`${mut} 說明`, body);
+}
+
+// B3（Blue 2026-06-27）：方向 chip intro。方向 chip 點開時也展開 panel：說明該方向的篩選邏輯 +
+// 第一條符合該方向的飛化線（如有）；沒有則提示「需同時勾四化才會畫線」。
+function _showDirectionIntro(dir) {
+  if (typeof window.showCenterDetail !== 'function') return;
+  const nameA = SYN.metaA?.name || 'A';
+  const nameB = SYN.metaB?.name || 'B';
+  const intros = {
+    ab:   { title: `${nameA} → ${nameB} 方向`, body: `只顯示能量從 ${nameA} 流入 ${nameB} 命盤的飛化線（實線）。` },
+    ba:   { title: `${nameB} → ${nameA} 方向`, body: `只顯示能量從 ${nameB} 流入 ${nameA} 命盤的飛化線（虛線）。` },
+    same: { title: '同向飛化',                 body: `雙方的同一星曜以同一四化類型互相飛入對方對應宮位（雙向同象重疊）。能量共振強。` },
+    rev:  { title: '反向飛化',                 body: `雙方的同一星曜以相反四化（祿↔忌、權↔科）互相飛入對方對應宮位。張力大。` },
+  };
+  const info = intros[dir];
+  if (!info) return;
+  // 抓第一條符合此方向的飛化線（如有）
+  const arrows = [...document.querySelectorAll('.syn-arrow-hit')];
+  const firstTip = arrows.length > 0 ? (arrows[0].dataset.tip || '') : '';
+  const F = window.SYN_FILTER;
+  const tail = firstTip
+    ? `\n\n${firstTip}`
+    : (F.mutagens.size === 0
+        ? '\n\n（尚未勾選四化，無飛化線可顯示。請同時勾「祿/權/科/忌」其一以上以看具體飛化）'
+        : '\n\n（此方向 × 已選四化 暫無符合條件的飛化線）');
+  window.showCenterDetail(info.title, info.body + tail);
 }
 
 window.clearSynFilters = function clearSynFilters() {

@@ -191,11 +191,13 @@ window.renderSynastryMatrix = function renderSynastryMatrix(payload, chartA, cha
     const srcLabel = SYN_SOURCE_LABEL[e.source] || e.source;
     // B6 Fix 1（Blue 2026-06-27）：依 spec 改寫 tooltip 文案。標題格式「{命主}'s {來源}：{星}{化}」，
     // 內文「能量源點 ... → 飛化進入 ...」。源宮帶身宮標記 + 地支「位」。刪掉「備註」行。
+    // B2（Blue 2026-06-27 二次精修）：宮位名去掉尾「宮」字，Blue 偏好「遷移、身宮」不是「遷移宮、身宮」。
+    const palShort = (s) => String(s || '').replace(/宮$/, '');
     const bodyMarker = srcPal.isBodyPalace ? '、身宮' : '';
     const tooltip =
       `${e.srcName}'s ${srcLabel}：${e.star}${e.type}\n` +
-      `能量源點 ${e.srcName}'s ${srcPal.name}${bodyMarker}（${srcPal.branch || ''}位）${srcLabel}「${e.star}星${e.type}」\n` +
-      `→ 飛化進入 ${e.tgtName}'s ${e.targetPalaceName}（本命宮位）`;
+      `能量源點 ${e.srcName}'s ${palShort(srcPal.name)}${bodyMarker}（${srcPal.branch || ''}位）${srcLabel}「${e.star}星${e.type}」\n` +
+      `→ 飛化進入 ${e.tgtName}'s ${palShort(e.targetPalaceName)}（本命宮位）`;
     pathHTMLs.push(_buildPath(from, to, color, dashed, 'syn-arrow-' + e.type, tooltip));
   }
 
