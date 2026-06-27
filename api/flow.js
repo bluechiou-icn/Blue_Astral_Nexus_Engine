@@ -352,6 +352,77 @@ function detectSandipanOverlap({
   };
 }
 
+// ── 飛星派天地人三易合一 detector（A2, Blue 2026-06-27 / V1.1 step 3）─────
+// 「以大限命宮飛星，看本命盤（天）、大限盤（地）、流年盤（人）三層象意是否重疊。」
+// 本層只做骨架 math：對大限命宮干每顆四化星，分別對齊到本命/大限/流年三盤的對應宮名；
+// 若三層宮名相同 → 三易合一；兩層相同 → 兩易合一。象意關聯 doctrine（婚姻=夫妻+
+// 田宅+福德、事業=官祿+命宮+遷移、etc.）留 Tier 2 私有 bundle，公開層不洩。
+//
+// 宮位排法：紫微斗數十二宮 命→兄→夫→子→財→疾→遷→友→官→田→福→父，逆時針排
+// 列。給定某盤命宮所在地支，可從本命地支反查它在該盤的第 N 宮 → 對應宮名。
+const BRANCH_LIST_FLY = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const PALACES_12_FLY  = ['命宮','兄弟','夫妻','子女','財帛','疾厄','遷移','交友','官祿','田宅','福德','父母'];
+function _branchToPalaceName(mingBranch, targetBranch) {
+  const idxMing = BRANCH_LIST_FLY.indexOf(mingBranch);
+  const idxTgt  = BRANCH_LIST_FLY.indexOf(targetBranch);
+  if (idxMing < 0 || idxTgt < 0) return null;
+  return PALACES_12_FLY[(idxMing - idxTgt + 12) % 12];
+}
+
+function detectFlyingStarTrinityOverlap({
+  chart, currentMajorLimit, flowYearLifePalace,
+}) {
+  if (!currentMajorLimit || !flowYearLifePalace) return null;
+
+  const natalMingBranch  = chart.palaces.find(p => p.name === '命宮')?.branch;
+  const decadeMingBranch = chart.palaces.find(p => p.name === currentMajorLimit.palace)?.branch;
+  const flowMingBranch   = flowYearLifePalace.branch;
+  if (!natalMingBranch || !decadeMingBranch || !flowMingBranch) return null;
+
+  const overlaps = [];
+  for (const mut of (currentMajorLimit.mutagens || [])) {
+    if (!mut?.targetPalace || !mut?.star) continue;
+    const natalPal = chart.palaces.find(p => p.name === mut.targetPalace);
+    if (!natalPal) continue;
+    const tgtBranch = natalPal.branch;
+    const layers = {
+      natal:  mut.targetPalace,                                    // 天盤宮名（本命）
+      decade: _branchToPalaceName(decadeMingBranch, tgtBranch),    // 地盤宮名（大限）
+      flow:   _branchToPalaceName(flowMingBranch,   tgtBranch),    // 人盤宮名（流年）
+    };
+
+    const allThreeSame = layers.natal && layers.natal === layers.decade && layers.natal === layers.flow;
+    const matchedPairs = [
+      layers.natal === layers.decade ? 'natal+decade' : null,
+      layers.natal === layers.flow   ? 'natal+flow'   : null,
+      layers.decade === layers.flow  ? 'decade+flow'  : null,
+    ].filter(Boolean);
+
+    if (allThreeSame || matchedPairs.length > 0) {
+      overlaps.push({
+        star:             mut.star,
+        type:             mut.type,
+        sourceLayer:      '大限命宮干',
+        targetBranch:     tgtBranch,
+        layers,
+        isTrinityUnified: !!allThreeSame,
+        matchedPairs,
+      });
+    }
+  }
+
+  // 排序：三易合一優先，其次兩易合一（pairs 數量）
+  overlaps.sort((a, b) =>
+    (b.isTrinityUnified - a.isTrinityUnified) || (b.matchedPairs.length - a.matchedPairs.length)
+  );
+
+  return {
+    mingBranches: { natal: natalMingBranch, decade: decadeMingBranch, flow: flowMingBranch },
+    hasTrinityUnified: overlaps.some(o => o.isTrinityUnified),
+    overlaps,
+  };
+}
+
 // ── /api/flow?level=hour：本日吉凶時辰盤（汎天派流月/流日/流時順數）──────
 const HOUR_BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 
@@ -520,6 +591,12 @@ module.exports = function handler(req, res) {
       flowYearMutagens,
       flowYearLifePalaceName: flowLifePalace?.name || null,
     });
+    // A2（Blue 2026-06-27）：飛星派天地人三易合一 — 大限命宮干飛化於本命/大限/流年三層宮名對齊
+    const trinityOverlap = detectFlyingStarTrinityOverlap({
+      chart,
+      currentMajorLimit,
+      flowYearLifePalace: flowLifePalace,
+    });
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Surrogate-Control', 'no-store');
@@ -577,6 +654,7 @@ module.exports = function handler(req, res) {
 
       tripleStemOverlap,
       sandipanOverlap,
+      trinityOverlap,
       luJiConflicts,
       hasLuJiConflict: luJiConflicts.length > 0,
       luJiConflictSummary: luJiConflicts.map(c => ({
