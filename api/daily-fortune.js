@@ -89,7 +89,7 @@ function ownerDebug(flow) {
   return (
     `流年命宮 ${fy.mingPalaceName || "—"}(${fy.mingPalaceBranch || "—"}) · ` +
     `流月 ${fm.mingPalaceName || "—"}(${fm.mingPalaceBranch || "—"}/${fm.stem || "—"}) · ` +
-    `流日 ${fd.mingPalaceName || "—"}(${fd.mingPalaceBranch || "—"}/${fd.ganZhi || "—"}) · ` +
+    `流日命宮 ${fd.mingPalaceName || "—"}(${fd.mingPalaceBranch || "—"})・日柱 ${fd.ganZhi || "—"} · ` +
     `best=${sm.bestHour || "—"} worst=${sm.worstHour || "—"}`
   );
 }
