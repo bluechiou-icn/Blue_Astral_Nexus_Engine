@@ -20,6 +20,7 @@ const LOCAL_KEY      = 'aethnous_charts_v1';
 // 非敏感旗標：上次曾成功登入過。token 仍只在記憶體（CLAUDE.md Rule 2 不變），
 // 此旗標僅供 silent re-auth 判斷是否值得嘗試無 UI 取 token。
 const SIGNIN_HINT_KEY = 'aethnous_signin_hint';
+const ACTIVE_CAT_KEY = 'aethnous_active_cat';   // Blue 2026-06-29：記住上次選的分類，reload/重登後自動套用
 
 const Cloud = {
   // Blue 於 GCP Console 建立 OAuth Client ID（Web）後，
@@ -179,6 +180,11 @@ async function onCloudToken(resp) {
   try { await loadCategories(); } catch (e) { console.warn('loadCategories failed:', e); }
   // Feature 1：拉方案層級（命例 quota）。失敗不阻斷 — 保守降級為 free。
   try { await loadEntitlement(); } catch (e) { console.warn('loadEntitlement failed:', e); }
+  // Blue 2026-06-29：還原上次選的分類 filter，省去每次登入都要重點一次
+  try {
+    const saved = localStorage.getItem(ACTIVE_CAT_KEY);
+    if (saved) Cloud.activeCategoryFilter = saved;
+  } catch { /* private mode */ }
   renderLibrary();
   // 通知 owner-ext 重新渲染 chip row（categories 已就緒）
   try { window.dispatchEvent(new CustomEvent('aethnous-categories-updated')); } catch { /* noop */ }
@@ -339,6 +345,11 @@ async function saveCategories() {
 // Public API for owner-ext bundle / chart.html save button
 function setCategoryFilter(slugOrNull) {
   Cloud.activeCategoryFilter = slugOrNull || null;
+  // Blue 2026-06-29：寫入 localStorage，reload / 重登後自動套回
+  try {
+    if (Cloud.activeCategoryFilter) localStorage.setItem(ACTIVE_CAT_KEY, Cloud.activeCategoryFilter);
+    else localStorage.removeItem(ACTIVE_CAT_KEY);
+  } catch { /* private mode */ }
   renderLibrary();
 }
 
