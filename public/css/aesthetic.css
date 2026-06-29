@@ -133,6 +133,20 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* 分類 chip 內的命例計數（Blue 2026-06-29 易讀性升級） */
+.ext-chip-count {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.10);
+  color: inherit;
+  opacity: 0.7;
+}
+.ext-chip.active .ext-chip-count { background: rgba(255,255,255,0.22); opacity: 0.95; }
 
 /* card / panel */
 .ext-card {
