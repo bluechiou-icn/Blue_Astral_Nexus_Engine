@@ -628,16 +628,38 @@ function renderLibrary() {
     return;
   }
 
+  // Sprint F (Blue 2026-06-29)：重複命例偵測。
+  // 規則：同名（非空）+ 同性別 + 生日相近（≤90 天）即視為可疑重複。
+  // 旨在抓「同一個人但生日誤打」型的重複，避免誤殺真實的同名雙胞胎／不同人。
+  // 全部命例兩兩比對在 N 小時可接受（Blue 個人庫 < 100 筆）。
+  const dupSet = new Set();
+  const all2 = Cloud.store.charts || [];
+  for (let i = 0; i < all2.length; i++) {
+    const a = all2[i];
+    if (!a.name) continue;
+    for (let j = i + 1; j < all2.length; j++) {
+      const b = all2[j];
+      if (a.name !== b.name) continue;
+      if (a.gender !== b.gender) continue;
+      const da = Date.parse(a.date), db = Date.parse(b.date);
+      if (!da || !db) continue;
+      if (Math.abs(da - db) / 86400000 > 90) continue;
+      dupSet.add(a.id); dupSet.add(b.id);
+    }
+  }
   const list = charts.length
-    ? charts.map(c => `
-        <div class="lib-row">
+    ? charts.map(c => {
+        const dupBadge = dupSet.has(c.id) ? ` <span class="lib-dup" title="${t('lib_dup_hint')}">⚠</span>` : '';
+        return `
+        <div class="lib-row${dupSet.has(c.id) ? ' lib-row-dup' : ''}">
           <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
-            <span class="lib-name">${libEscape(c.name) || '—'}</span>
+            <span class="lib-name">${libEscape(c.name) || '—'}${dupBadge}</span>
             <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
           </div>
           <button class="lib-edit" onclick="libraryEdit('${libEscape(c.id)}')" title="${t('lib_edit')}">✎</button>
           <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
-        </div>`).join('')
+        </div>`;
+      }).join('')
     : `<div class="lib-empty">${t('lib_empty_category')}</div>`;
 
   // B2 收尾（Blue 2026-06-26）：移除命例庫內重複的分類 chip row（我 Self／伴 Partner／

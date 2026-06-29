@@ -659,6 +659,15 @@ body > div > a[href*="aethnous"]:hover {
 .lib-edit:hover { color: var(--border-accent); }
 .lib-del  { color: var(--text-tertiary); }
 .lib-del:hover { color: var(--danger); }
+/* Sprint F（Blue 2026-06-29）：疑似重複命例 badge */
+.lib-row-dup { border-color: rgba(217,164,65,0.55); }
+.lib-dup {
+  display: inline-block;
+  margin-left: 6px;
+  color: #d9a441;
+  font-size: 0.9em;
+  cursor: help;
+}
 /* E1 命例「修改中」label hint（save-category-bar 內），低調語意 */
 .scb-editing { color: var(--text-tertiary); font-size: 0.9em; margin-left: 4px; }
 .lib-empty { color: var(--text-tertiary); }
@@ -701,17 +710,22 @@ body > div > a[href*="aethnous"]:hover {
   letter-spacing: 0.04em;
 }
 
-/* Sprint 3.9 H4：result-page 儲存到分類列 */
+/* Sprint 3.9 H4：result-page 儲存到分類列
+   Sprint G（Blue 2026-06-29）：sticky 在視窗底部，避免使用者滑動命盤時找不到 */
 .save-category-bar {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 8px 14px;
+  padding: 10px 16px;
   margin-bottom: 8px;
   background: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
-  border-radius: 4px;
+  border: 1px solid var(--border-accent);
+  border-radius: 6px;
+  position: sticky;
+  bottom: 8px;
+  z-index: 50;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.32);
 }
 .save-category-bar .scb-label {
   font-size: 11px;
