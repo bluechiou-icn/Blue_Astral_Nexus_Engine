@@ -565,9 +565,12 @@ function renderLibrary() {
       '| sources(store/Cloud/ext):', (Cloud.store?.categories||[]).length, (Cloud.categories||[]).length, extCats.length);
   }
   const filterId = matchCat ? matchCat.id : filterCat;
-  const filteredAll = filterCat
-    ? (Cloud.store.charts || []).filter(c => c.categoryId === filterId)
-    : (Cloud.store.charts || []);
+  // Blue 2026-06-29：支援「未分類」虛擬 chip（filterCat === '__uncat__'）→ 列出 categoryId 為 null 的命例
+  const filteredAll = filterCat === '__uncat__'
+    ? (Cloud.store.charts || []).filter(c => !c.categoryId)
+    : filterCat
+      ? (Cloud.store.charts || []).filter(c => c.categoryId === filterId)
+      : (Cloud.store.charts || []);
   const all = filteredAll;
   const selfId = Cloud.store.selfChartId || null;
   const selfChart = selfId ? all.find(c => c.id === selfId) : null;
