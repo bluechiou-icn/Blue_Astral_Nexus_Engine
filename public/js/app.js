@@ -294,8 +294,13 @@ function escapeHtml(s) {
 function updateSaveCategoryBar() {
   const bar = document.getElementById('save-category-bar');
   if (!bar) return;
-  // 優先用 ext bundle 中文分類（cat_1..cat_8）；無 ext 時才降用 Drive 分類
-  const extCats = window.CloudExt?.DEFAULT_CATEGORIES || [];
+  // Bug 2（Blue 2026-06-29）：dropdown 必須讀「使用者實際 live 的分類清單」，
+  // 順序：store.categories（user 改過的）→ CloudExt.DEFAULT_CATEGORIES（fallback）→ Drive。
+  // 原本只讀 DEFAULT_CATEGORIES → user 在「管理」改名/加分類後 dropdown 仍顯示舊清單。
+  const storeCats = (window.Cloud && window.Cloud.store && Array.isArray(window.Cloud.store.categories))
+    ? window.Cloud.store.categories
+    : [];
+  const extCats = storeCats.length ? storeCats : (window.CloudExt?.DEFAULT_CATEGORIES || []);
   const driveCats = (window.Cloud && Array.isArray(Cloud.categories)) ? Cloud.categories : [];
   if (!window.Cloud || !Cloud.signedIn || (!extCats.length && !driveCats.length)) {
     bar.style.display = 'none'; bar.innerHTML = ''; return;
@@ -341,6 +346,12 @@ async function saveCurrentToCategory() {
   if (status) { status.textContent = '…'; status.style.color = 'var(--text-secondary)'; }
   try {
     await Cloud.librarySaveCurrent({ categoryId, skipAutoSaveCheck: true });
+    // Bug 1（Blue 2026-06-29）：存完後自動切 filter 到新分類，避免使用者以為「資料不見了」。
+    // 場景：user 在「未分類」view，把某筆設為「家人」→ 從未分類 list 消失 → user 困惑。
+    // 改完自動切到「家人」view 並讓該筆出現於眼前。空分類（categoryId=null）則維持當前 filter。
+    if (categoryId && typeof Cloud.setCategoryFilter === 'function') {
+      Cloud.setCategoryFilter(categoryId);
+    }
     if (status) {
       status.textContent = '✓ ' + t('save_cat_done');
       status.style.color = 'var(--positive)';
