@@ -668,6 +668,13 @@ body > div > a[href*="aethnous"]:hover {
   font-size: 0.9em;
   cursor: help;
 }
+/* Sprint L（Blue 2026-06-29）：備份按鈕略微強調，提示這是「資料保險」入口 */
+.lib-btn-backup {
+  background: var(--gradient-accent);
+  color: var(--bg-base);
+  border-color: var(--border-accent);
+}
+.lib-btn-backup:hover { filter: brightness(1.08); }
 /* E1 命例「修改中」label hint（save-category-bar 內），低調語意 */
 .scb-editing { color: var(--text-tertiary); font-size: 0.9em; margin-left: 4px; }
 .lib-empty { color: var(--text-tertiary); }

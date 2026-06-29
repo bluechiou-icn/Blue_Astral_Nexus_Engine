@@ -13,7 +13,10 @@
 
 // drive.appdata 用於命例庫加密儲存；userinfo.email 用於 owner 身分驗證
 // （Sprint 3.5 加入；只看 email，不存任何個資）。
-const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email';
+// drive.file（Sprint L Blue 2026-06-29）：使用者主 Drive 內由本 app 建立的可見備份檔。
+// drive.file 只能存取本 app 建立的檔，不會看到使用者 Drive 其他資料 — 安全範圍最小化。
+const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+const BACKUP_FOLDER_NAME = 'ÆTHNOUS Backups';
 const CLOUD_FILENAME = 'aethnous-charts.json';
 const CATEGORIES_FILENAME = 'aethnous-categories.json';
 const LOCAL_KEY      = 'aethnous_charts_v1';
@@ -504,6 +507,112 @@ function libraryExportCSV() {
   downloadBlob('\uFEFF' + rows.join('\r\n'), 'aethnous-charts.csv', 'text/csv;charset=utf-8');
 }
 
+// ════════════════════════════════════════════════════════
+// Sprint L（Blue 2026-06-29）— 一鍵備份／還原到使用者主 Drive
+//
+// drive.appdata 是隱藏 folder（user 看不見）；備份要可見、可手動下載、
+// 可離本 app 之外仍能取用 → 用 drive.file scope 寫入主 Drive 內的可見
+// folder「ÆTHNOUS Backups」。app 後續仍只能存取自己建立的檔，安全。
+//
+// 觸發路徑：
+//   user 點「備份到 Drive」→ libraryBackupToDrive() →
+//     建 folder（若不存在）→ multipart upload 帶時間戳 JSON →
+//     showCloudToast 成功 / 失敗
+//   user 點「從 Drive 還原」→ libraryListBackups() 顯示清單 →
+//     user 選一份 → confirm（毀滅性）→ libraryRestoreFromBackup(id) →
+//     replace Cloud.store + persist + renderLibrary
+// ════════════════════════════════════════════════════════
+
+async function ensureBackupFolder() {
+  if (Cloud.backupFolderId) return Cloud.backupFolderId;
+  const q = encodeURIComponent(
+    `name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const r = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+  const j = await r.json();
+  if (j.files?.[0]?.id) { Cloud.backupFolderId = j.files[0].id; return Cloud.backupFolderId; }
+  const r2 = await driveFetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: BACKUP_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  const j2 = await r2.json();
+  Cloud.backupFolderId = j2.id;
+  return Cloud.backupFolderId;
+}
+
+function backupFilename() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `aethnous-backup-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+}
+
+async function libraryBackupToDrive() {
+  if (!Cloud.signedIn) { alert(t('lib_backup_need_signin')); return; }
+  if (!Cloud.store) { alert(t('lib_backup_empty')); return; }
+  try {
+    const folderId = await ensureBackupFolder();
+    const name = backupFilename();
+    const body = JSON.stringify(Cloud.store, null, 2);
+    const boundary = 'aethnousbackup' + Date.now();
+    const meta = { name, parents: [folderId], mimeType: 'application/json' };
+    const multipart =
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
+      `--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
+    await driveFetch(
+      `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`,
+      { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body: multipart });
+    showCloudToast('☁ ' + t('lib_backup_done').replace('{n}', (Cloud.store.charts || []).length));
+  } catch (e) {
+    console.error('libraryBackupToDrive failed', e);
+    alert(t('lib_backup_failed'));
+  }
+}
+
+async function libraryListBackups() {
+  if (!Cloud.signedIn) return [];
+  const folderId = await ensureBackupFolder();
+  const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+  const r = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=createdTime desc&fields=files(id,name,createdTime,size)&pageSize=50`);
+  const j = await r.json();
+  return j.files || [];
+}
+
+async function libraryRestoreFromBackup(fileId) {
+  if (!Cloud.signedIn) { alert(t('lib_backup_need_signin')); return; }
+  const r = await driveFetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+  const j = await r.json();
+  if (!validStore(j)) { alert(t('lib_import_bad')); return; }
+  // 還原語意 = 取代（destructive），故需明確 confirm（區別於匯入＝合併）
+  const n = (j.charts || []).length;
+  if (!confirm(t('lib_restore_confirm').replace('{n}', n))) return;
+  Cloud.store = j;
+  await persistStore();
+  // 還原後重渲染 + 通知分類列重整
+  Cloud.activeCategoryFilter = null;
+  try { localStorage.removeItem(ACTIVE_CAT_KEY); } catch { /* private mode */ }
+  renderLibrary();
+  try { window.dispatchEvent(new CustomEvent('aethnous-categories-updated')); } catch { /* noop */ }
+  showCloudToast('☁ ' + t('lib_restore_done').replace('{n}', n));
+}
+
+async function openRestoreModal() {
+  if (!Cloud.signedIn) { alert(t('lib_backup_need_signin')); return; }
+  let files;
+  try { files = await libraryListBackups(); }
+  catch (e) { console.error(e); alert(t('lib_backup_failed')); return; }
+  if (!files.length) { alert(t('lib_restore_none')); return; }
+  // 簡易 modal：textarea-style 清單 + native prompt 選編號
+  const lines = files.map((f, i) =>
+    `${i + 1}. ${f.name}  (${new Date(f.createdTime).toLocaleString()})  ${Math.round((f.size||0)/1024)} KB`);
+  const pick = prompt(`${t('lib_restore_pick')}\n\n${lines.join('\n')}\n\n${t('lib_restore_enter_number')}`);
+  const idx = parseInt(pick, 10) - 1;
+  if (!Number.isInteger(idx) || idx < 0 || idx >= files.length) return;
+  await libraryRestoreFromBackup(files[idx].id);
+}
+
 function libraryImportFile(input) {
   const file = input.files?.[0];
   if (!file) return;
@@ -607,6 +716,8 @@ function renderLibrary() {
   const actionsHtml = `
     <div class="lib-actions">
       <label class="lib-auto"><input type="checkbox" ${Cloud.autoSave ? 'checked' : ''} onchange="Cloud.autoSave=this.checked"> ${t('lib_autosave')}</label>
+      <button class="lib-btn lib-btn-backup" onclick="libraryBackupToDrive()" title="${t('lib_backup_hint')}">${t('lib_backup_drive')}</button>
+      <button class="lib-btn" onclick="openRestoreModal()" title="${t('lib_restore_hint')}">${t('lib_restore_drive')}</button>
       <button class="lib-btn" onclick="libraryExportJSON()">${t('lib_export_json')}</button>
       <button class="lib-btn" onclick="libraryExportCSV()">${t('lib_export_csv')}</button>
       <button class="lib-btn" onclick="document.getElementById('lib-import-file').click()">${t('lib_import')}</button>
@@ -698,5 +809,11 @@ if (typeof window !== 'undefined') {
   Cloud.canAddRecord = canAddRecord;        // Feature 1：UI 判定是否可新增命例
   Cloud.loadEntitlement = loadEntitlement;  // Feature 1：手動重拉方案層級
   window.libraryEdit = libraryEdit;          // inline HTML onclick 需要 global function
+  // Sprint L（Blue 2026-06-29）：備份／還原入口 — inline onclick 需要 global function
+  window.libraryBackupToDrive = libraryBackupToDrive;
+  window.openRestoreModal = openRestoreModal;
+  Cloud.libraryBackupToDrive = libraryBackupToDrive;
+  Cloud.libraryListBackups = libraryListBackups;
+  Cloud.libraryRestoreFromBackup = libraryRestoreFromBackup;
   window.Cloud = Cloud;
 }
