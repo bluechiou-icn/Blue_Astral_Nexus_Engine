@@ -2,17 +2,45 @@
 // UI — meta / flow bars
 // ════════════════════════════════════════════════════════
 
-function updateMetaBar() {
-  const d = S.chartData; if (!d) return;
-  const mingPal = d.palaces.find(p=>p.name==='命宮');
-  document.getElementById('meta-bar').innerHTML = [
+// T3（Blue 2026-06-30）：命宮主星文字。有主星 → 列星名；空宮 → 「空宮借對宮 借星」。
+// 資料皆來自引擎 palace 物件（majorStars / isEmpty / borrowedStars），非使用者輸入。
+function mingMajorStarsText(d) {
+  const ming = d.palaces.find(p => p.name === '命宮');
+  if (!ming) return '—';
+  if (ming.majorStars && ming.majorStars.length) {
+    return ming.majorStars.map(s => tStar(s.name)).join('、');
+  }
+  if (ming.isEmpty && ming.borrowedStars && ming.borrowedStars.length) {
+    return t('meta_empty_borrow') + ming.borrowedStars.map(s => tStar(s)).join('、');
+  }
+  return t('cv_empty');
+}
+
+// T3 + T4 共用：命盤核心摘要 cells（五行局 · 陰陽 · 命宮 · 主星 · 身宮 · 來因宮）。
+// updateMetaBar 渲染成 HTML；chartCoreSummaryText 攤平成純文字帶回命例庫列。
+function chartCoreCells(d) {
+  const mingPal = d.palaces.find(p => p.name === '命宮');
+  return [
     [t('meta_wuxing'),  tWuXingJu(d.fiveElementsClass)],
     [t('meta_yinyang'), tYinYang(d.yinYang)],
-    [t('meta_ming'),    tGZ(mingPal?.stemBranch)||'—'],
-    [t('meta_body'),    tPalaceName(d.bodyPalace?.name)||'—'],
-    [t('meta_origin'),  tPalaceName(d.originalPalace?.name)||'—'],
-  ].map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
-   .join('<span class="msep">·</span>');
+    [t('meta_ming'),    tGZ(mingPal?.stemBranch) || '—'],
+    [t('meta_zhuxing'), mingMajorStarsText(d)],
+    [t('meta_body'),    tPalaceName(d.bodyPalace?.name) || '—'],
+    [t('meta_origin'),  tPalaceName(d.originalPalace?.name) || '—'],
+  ];
+}
+
+// T4：攤平成單行純文字，存入命例 entry.core，供命例庫列免起盤即可見核心資料。
+function chartCoreSummaryText(d) {
+  if (!d || !Array.isArray(d.palaces)) return '';
+  return chartCoreCells(d).map(([l, v]) => `${l}${v}`).join('・');
+}
+
+function updateMetaBar() {
+  const d = S.chartData; if (!d) return;
+  document.getElementById('meta-bar').innerHTML = chartCoreCells(d)
+    .map(([l,v])=>`<div class="mi"><span class="ml">${l}</span><span class="mv">${v}</span></div>`)
+    .join('<span class="msep">·</span>');
   updatePartnerBanner();
   updateFormationBadges();
   updateDailyFortune();
@@ -1007,6 +1035,10 @@ function renderDropdownInto(dropdownEl, items, ctx) {
   });
 }
 
+// T2（Blue 2026-06-30）：城市欄預設「台灣」為佔位字 — 聚焦即清空，避免輸入接在預設後面
+// （台灣ICN）；留空 blur 時還原。「台灣」不在 CITY_LONGITUDES，留作預設＝不做真太陽時校正。
+const DEFAULT_CITY = '台灣';
+
 // 通用 autocomplete 綁定：套用主命主 + 配偶 sub-form
 function bindCityAutocomplete(inputId, dropdownId) {
   const inp = document.getElementById(inputId);
@@ -1048,12 +1080,17 @@ function bindCityAutocomplete(inputId, dropdownId) {
   });
 
   inp.addEventListener('blur', () => {
-    setTimeout(() => dd.classList.remove('open'), 150);
+    setTimeout(() => {
+      dd.classList.remove('open');
+      if (inp.value.trim() === '') inp.value = DEFAULT_CITY;  // T2：留空還原預設
+    }, 150);
   });
 
   inp.addEventListener('focus', () => {
+    // T2：聚焦時若仍是預設「台灣」佔位字 → 清空，讓輸入直接取代（不再前綴殘留）
+    if (inp.value.trim() === DEFAULT_CITY) { inp.value = ''; return; }
     const q = inp.value.trim();
-    if (q && q !== '台北' && q !== '台北市') {
+    if (q) {
       ctx.items = searchCities(q);
       renderDropdownInto(dd, ctx.items, ctx);
     }
