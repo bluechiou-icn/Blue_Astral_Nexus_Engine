@@ -15,7 +15,7 @@ This engine wraps and significantly extends the foundational calculations of `iz
 - **Multi-Chart Analysis:** Synastry (合盤) and flow year (流年) engines.
 
 👉 **For a complete list of algorithm corrections and original domain contributions
-Please see [ORIGINAL_CONTRIBUTIONS.md](./ORIGINAL_CONTRIBUTIONS.md).**
+Please see [ORIGINAL_CONTRIBUTIONS.md](./docs/ORIGINAL_CONTRIBUTIONS.md).**
 
 ## Stack
 
