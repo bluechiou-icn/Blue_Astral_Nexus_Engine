@@ -423,6 +423,12 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
     <label for="f-chartset" data-i18n="chartset_label" style="margin-bottom:0;cursor:pointer;"
            title="勾選＝過去已校正過真太陽時，引擎不再二次校正；未勾＝引擎依出生城市再校正一次">已定盤（輸入時間以此為主，不再做真太陽時校正）</label>
   </div>
+  <!-- #4（Blue 2026-06-30）：不確定時辰 → 直接以午時(12:00)起盤，起盤後標示僅供參考 -->
+  <div class="field" style="display:flex;align-items:center;gap:8px;">
+    <input type="checkbox" id="f-unknown-time" style="width:auto;accent-color:var(--accent);"
+           onchange="var ft=document.getElementById('f-time'); if(ft){ft.disabled=this.checked;}">
+    <label for="f-unknown-time" data-i18n="unknown_time_label" style="margin-bottom:0;cursor:pointer;">不確定時辰（以午時起盤，僅供參考）</label>
+  </div>
 
   <!-- 關係狀態 + 配偶 sub-form（auto-展開）: Blue 2026-06-17 規格 (rev 2 同性婚) -->
   <div class="row-2">
@@ -556,6 +562,8 @@ canvas { display: block; border-radius: 2px; box-shadow: 0 2px 12px rgba(0,0,0,0
 
 <div id="chart-area">
   <div class="meta-bar" id="meta-bar"></div>
+  <!-- #4：不確定時辰時的「僅供參考＋定盤服務」提示（內容由 app.js updateUncertainTimeNotice 填） -->
+  <div id="uncertain-time-notice" style="display:none;margin:8px 0;padding:9px 12px;border:1px solid #8a4a1a;border-radius:4px;color:#e0a060;font-size:13px;line-height:1.6;"></div>
   <!-- Sprint 3.9 P8：partner 關聯 banner（內容由 updatePartnerBanner 動態填） -->
   <div id="partner-link-banner" class="partner-link-banner" style="display:none;"></div>
   <!-- Feature 2（2026-06-20）：本日基本運勢（內容由 updateDailyFortune 動態填；登入後顯示） -->
