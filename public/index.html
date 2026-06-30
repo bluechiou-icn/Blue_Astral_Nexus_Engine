@@ -317,7 +317,9 @@
 
   <div class="field">
     <label data-i18n="city_label">出生城市 <span class="optional" data-i18n="optional">選填</span></label>
-    <input type="text" id="f-city" value="台北" data-i18n-ph="city_ph">
+    <input type="text" id="f-city" value="台灣" data-i18n-ph="city_ph"
+      onfocus="if(this.value.trim()==='台灣')this.value='';"
+      onblur="if(this.value.trim()==='')this.value='台灣';">
   </div>
 
   <div class="field">

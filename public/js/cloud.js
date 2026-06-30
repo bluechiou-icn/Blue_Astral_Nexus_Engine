@@ -23,6 +23,10 @@ const LOCAL_KEY      = 'aethnous_charts_v1';
 // 非敏感旗標：上次曾成功登入過。token 仍只在記憶體（CLAUDE.md Rule 2 不變），
 // 此旗標僅供 silent re-auth 判斷是否值得嘗試無 UI 取 token。
 const SIGNIN_HINT_KEY = 'aethnous_signin_hint';
+// T1（Blue 2026-06-30）：上次登入帳號 email，作為 silent re-auth 的 account hint。
+// 這是 OAuth login_hint 用途的「非密」識別字，不是 token（Rule 2 只禁存 token）。
+// 多 Google 帳號（Blue / Sean 各有數個）時，沒帶 hint 的 prompt:'' 無法無 UI 選對帳號 → reload 被迫重登。
+const SIGNIN_EMAIL_KEY = 'aethnous_signin_email';
 const ACTIVE_CAT_KEY = 'aethnous_active_cat';   // Blue 2026-06-29：記住上次選的分類，reload/重登後自動套用
 
 const Cloud = {
@@ -31,6 +35,7 @@ const Cloud = {
   // 留空 = 不顯示登入按鈕，純 localStorage 模式。
   clientId: (typeof window !== 'undefined' && window.AETHNOUS_GOOGLE_CLIENT_ID) || '',
   token: null,           // access token（記憶體 only）
+  email: null,           // T1：登入帳號 email（記憶體；localStorage 另存一份作 silent re-auth hint）
   tokenClient: null,
   fileId: null,
   signedIn: false,
@@ -153,8 +158,12 @@ function trySilentReauth() {
   let hint = null;
   try { hint = localStorage.getItem(SIGNIN_HINT_KEY); } catch { /* private mode */ }
   if (hint !== '1') return;
+  let email = null;
+  try { email = localStorage.getItem(SIGNIN_EMAIL_KEY); } catch { /* private mode */ }
   try {
-    Cloud.tokenClient.requestAccessToken({ prompt: '' });
+    // T1：帶上次登入 email 當 hint → 多帳號時 silent re-auth 才能無 UI 直接選對帳號，
+    // 不帶 hint 時 Google 遇多重 session 會放棄 silent，使用者就得每次 reload 重點登入。
+    Cloud.tokenClient.requestAccessToken(email ? { prompt: '', hint: email } : { prompt: '' });
   } catch { /* GIS not ready; will retry on user click */ }
 }
 
@@ -168,6 +177,20 @@ async function onCloudToken(resp) {
   Cloud.token = resp.access_token;   // 記憶體 only，不落任何儲存
   Cloud.signedIn = true;
   try { localStorage.setItem(SIGNIN_HINT_KEY, '1'); } catch { /* private mode */ }
+  // T1：記住登入帳號 email 當 silent re-auth 的 account hint（非 token；scope 已含 userinfo.email）。
+  // 失敗不阻斷登入；下次 reload 退化為不帶 hint 的 silent（單帳號仍可成功）。
+  try {
+    const ui = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${Cloud.token}` },
+    });
+    if (ui.ok) {
+      const info = await ui.json();
+      if (info && info.email) {
+        Cloud.email = info.email;
+        try { localStorage.setItem(SIGNIN_EMAIL_KEY, info.email); } catch { /* private mode */ }
+      }
+    }
+  } catch { /* userinfo 失敗忽略 */ }
   try {
     const cloudStore = await loadCloudStore();
     const localStore = loadLocalStore();
@@ -205,7 +228,9 @@ function cloudSignOut() {
   Cloud.categoriesFileId = null;
   Cloud.activeCategoryFilter = null;
   Cloud.entitlement = null;
+  Cloud.email = null;
   try { localStorage.removeItem(SIGNIN_HINT_KEY); } catch { /* private mode */ }
+  try { localStorage.removeItem(SIGNIN_EMAIL_KEY); } catch { /* private mode */ }  // T1：登出清掉帳號 hint
   Cloud.store = loadLocalStore();    // 優雅降級回 localStorage 模式
   renderLibrary();
   try { window.dispatchEvent(new CustomEvent('aethnous-categories-updated')); } catch { /* noop */ }
@@ -420,6 +445,15 @@ async function librarySaveCurrent(opts) {
     } catch { /* noop */ }
     return;
   }
+  // T4（Blue 2026-06-30）：存命盤核心摘要（五行局・陰陽・命宮・主星・身宮・來因宮），
+  // 命例庫列免起盤即可直接看到命主核心資料。摘要由 app.js 依當前 S.chartData 產生（純引擎資料，
+  // 非使用者輸入）。synastry 頁無 app.js → 函式不存在時 core 留空，不影響既有流程。
+  let core = '';
+  try {
+    if (typeof S !== 'undefined' && S.chartData && typeof chartCoreSummaryText === 'function') {
+      core = chartCoreSummaryText(S.chartData);
+    }
+  } catch { /* noop */ }
   if (match) {
     // E1：修改模式可改 4 個關鍵欄位（view 模式下這 4 欄本就同值，寫回為 no-op）
     match.name   = S.name || '';
@@ -427,6 +461,7 @@ async function librarySaveCurrent(opts) {
     match.time   = S.birthTime;
     match.gender = S.gender;
     match.city   = S.city || '';
+    if (core) match.core = core;   // T4：僅在取得新摘要時覆寫，舊資料不被空字串清掉
     if (opts.categoryId !== undefined) match.categoryId = opts.categoryId || null;
     match.updatedAt = now;
   } else {
@@ -434,7 +469,7 @@ async function librarySaveCurrent(opts) {
       id: newId(),
       name: S.name || '',
       date: S.birthDate, time: S.birthTime, gender: S.gender,
-      city: S.city || '', tags: [], notes: '',
+      city: S.city || '', core, tags: [], notes: '',
       categoryId: opts.categoryId || null,
       createdAt: now, updatedAt: now,
     });
@@ -765,7 +800,7 @@ function renderLibrary() {
         <div class="lib-row${dupSet.has(c.id) ? ' lib-row-dup' : ''}">
           <div class="lib-info" onclick="libraryLoad('${libEscape(c.id)}')">
             <span class="lib-name">${libEscape(c.name) || '—'}${dupBadge}</span>
-            <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}</span>
+            <span class="lib-meta">${libEscape(c.date)}　${libEscape(c.time)}　${tGenderShort(c.gender)}${c.city ? '　' + libEscape(c.city) : ''}${c.core ? '　' + libEscape(c.core) : ''}</span>
           </div>
           <button class="lib-edit" onclick="libraryEdit('${libEscape(c.id)}')" title="${t('lib_edit')}">✎</button>
           <button class="lib-del" onclick="libraryDelete('${libEscape(c.id)}')" title="${t('lib_delete')}">✕</button>
