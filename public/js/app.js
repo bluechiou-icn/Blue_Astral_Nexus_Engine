@@ -46,6 +46,19 @@ function updateMetaBar() {
   updateDailyFortune();
 }
 
+// #4（Blue 2026-06-30）：不確定時辰時，於命盤上方顯示「僅供參考＋定盤服務」提示；否則隱藏。
+function updateUncertainTimeNotice() {
+  const box = document.getElementById('uncertain-time-notice');
+  if (!box) return;
+  if (S.unknownTime) {
+    box.textContent = '⚠ ' + t('uncertain_time_notice');
+    box.style.display = '';
+  } else {
+    box.style.display = 'none';
+    box.textContent = '';
+  }
+}
+
 // Feature 2（Blue 2026-06-20）：本日基本運勢 section
 //   顯示條件：登入 + store 內有命例（≥1 筆，近似「回訪用戶」；loginCount 嚴格門檻待後續）。
 //   抓 /api/daily-fortune（對外只回 fortuneText；owner 多回 debug）。
@@ -120,9 +133,13 @@ function updatePartnerBanner() {
     .filter(Boolean);
   if (!partners.length) return hide();
   const selfName = escapeHtml(me.name || S.name || '—');
-  const partnerLinks = partners.map(p =>
-    `<span class="plb-partner" onclick="libraryLoad('${escapeHtml(p.id)}')">${escapeHtml(p.name || '—')}</span>`
-  ).join('、');
+  // #10（Blue 2026-06-30）：輸入生辰命中命例庫且該命例有綁定配偶時，直接帶出配偶姓名＋生辰資料
+  //（date/time/性別），免再點開即可看到關聯對象核心資料；點名字仍可切換到該配偶命盤。
+  const partnerLinks = partners.map(p => {
+    const meta = [p.date, p.time, tGenderShort(p.gender)].filter(Boolean).join(' ');
+    const metaHtml = meta ? `<span class="plb-pmeta" style="opacity:0.72;font-size:0.9em;margin-left:4px;">（${escapeHtml(meta)}）</span>` : '';
+    return `<span class="plb-partner" onclick="libraryLoad('${escapeHtml(p.id)}')">${escapeHtml(p.name || '—')}${metaHtml}</span>`;
+  }).join('、');
   banner.innerHTML =
     `<span class="plb-self">${escapeHtml(t('partner_banner_self'))} ${selfName}</span>` +
     `<span class="plb-sep">${escapeHtml(t('partner_banner_separator'))}</span>` +
@@ -664,19 +681,31 @@ function updateYearHint() {
 }
 
 async function handleSubmit() {
+  const err = document.getElementById('form-err');
+  // #7a（Blue 2026-06-30）：Chart 頁需登入才能起盤（雲端命例庫＋隱私一致）。
+  // clientId 為空＝登入功能未啟用（純本機模式）時不擋，避免本地開發卡死。
+  if (typeof Cloud !== 'undefined' && Cloud.clientId && !Cloud.signedIn) {
+    if (err) { err.textContent = t('login_required_cast'); err.style.display = 'block'; }
+    if (typeof cloudSignIn === 'function') cloudSignIn();
+    return;
+  }
   // E1（Blue 2026-06-27）：若不是從命例載入觸發（_loadingFromLibrary 旗標）→ 清 editingId。
   // 防止使用者修改完 A 命例後，未明確結束就直接打新生辰 → autosave 把新資料蓋回 A。
   if (typeof Cloud !== 'undefined' && !Cloud._loadingFromLibrary) Cloud.editingId = null;
   const date   = document.getElementById('f-date').value;
-  const time   = document.getElementById('f-time').value;
+  let   time   = document.getElementById('f-time').value;
   const gender = document.querySelector('input[name=g]:checked')?.value;
   const name   = document.getElementById('f-name').value.trim();
   const city   = document.getElementById('f-city')?.value.trim() || '';
   const yv     = document.getElementById('f-year').value.trim();
-  const err    = document.getElementById('form-err');
+
+  // #4（Blue 2026-06-30）：不確定時辰 → 直接以午時(12:00)起盤，起盤後標示僅供參考。
+  const unknownTime = document.getElementById('f-unknown-time')?.checked === true;
+  if (unknownTime) time = '12:00';
+  S.unknownTime = unknownTime;
 
   err.style.display = 'none';
-  if (!date||!time||!gender) {
+  if (!date || !gender || (!unknownTime && !time)) {
     err.textContent = t('err_required');
     err.style.display = 'block'; return;
   }
@@ -711,6 +740,7 @@ async function handleSubmit() {
     });
 
     updateMetaBar(); updateFlowBar();
+    updateUncertainTimeNotice();
     renderViewModeBar(); renderAxes();
     buildChartBlocks();
     renderAllCharts();
