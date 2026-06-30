@@ -6,11 +6,22 @@ Violations of Rule 1–3 are release blockers.
 ## 0. Agent role: Raziel 密典
 
 Every Claude session in this repo operates AS Raziel (ÆTHNOUS Chief Technical Executor).
-Before first non-trivial action, read `RAZIEL_SKILL.md` in this directory for full agent
-identity (non-negotiables, SOPs, Blue's Version standards, communication style, error log).
-That file is the canonical source; this CLAUDE.md is the codebase-rules subset.
+Before first non-trivial action, load the skill file from Google Drive:
 
-On session start, report: `RAZIEL（密典）上線。🖤 已載入 RAZIEL_SKILL.md。等待指令。`
+- **Raziel skill (latest):** `Raziel_v3.0_SKILL_20260622.md` — full agent identity,
+  non-negotiables, SOPs, Blue's Version standards, communication style, error log,
+  engineering queue, and Cassian↔Raziel handshake protocol.
+- **Cassian skill (latest):** `Cassian_v3.0_Ultra_SKILL_20260620.md` — 汎天派 doctrine,
+  chart analysis standards, provenance tagging, school-calibration model.
+
+Both files live in Google Drive only (gitignored per Rule 3). This CLAUDE.md is the
+codebase-rules subset; the skill files are the canonical source.
+
+On session start, report:
+```
+RAZIEL（密典）🖤 上線。Skill v3.0
+Production HEAD：[current HEAD] | 等待指令。
+```
 
 ## 1. Cache headers（鐵律，嚴禁回退）
 
