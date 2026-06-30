@@ -994,6 +994,181 @@ function detectClassicalFormations(palaces, bodyPalName, origPalName, yearMutage
     }
   }
 
+  // ── 公開古典格局目錄（T5，Blue 2026-06-30 授權）───────────────────────────
+  // 來源：Blue Library《紫微斗數格局通則》之「成立條件 / 古典成格規範」（公開古籍：
+  // 《紫微斗數全書》《斗數骨髓賦》《太微賦》等，Blue 標記 Public）。
+  // 嚴守 IP 邊界（Rule 5 + 通則 §五）：此處只放可由引擎判定的「星曜位置 / 宮位 / 亮度 /
+  // 化星 / 煞星」結構條件與古籍經云；「格局屬性與心理分析、Blue's 個人哲學詮釋（榮格層面）」
+  // 屬 Private，僅存 Blue Library，永不寫入引擎。note 一律只引古籍經云或結構描述。
+  const BR = BRANCH_SEQUENCE;
+  const bidx = b => BR.indexOf(b);
+  const wrap = n => ((n % 12) + 12) % 12;
+  const byBranch = b => palaces.find(p => p.branch === b) ?? null;
+  const SHA6 = ['擎羊', '陀羅', '火星', '鈴星', '地空', '地劫'];
+  const FOUR_SHA = ['擎羊', '陀羅', '火星', '鈴星'];
+  const majBright = (pal, name) => (pal?.majorStars || []).find(s => s.name === name)?.brightness || null;
+  const isMiaoWang = b => (BRIGHTNESS_RANK[b] ?? 9) <= 2;        // 廟/旺
+  const mingBranch = mingPal?.branch || null;
+  const mIdx = mingBranch ? bidx(mingBranch) : -1;
+  const guanPal = byName('官祿');
+  const sanFangPals = ['命宮', '財帛', '官祿', '遷移'].map(byName).filter(Boolean);
+  const sfHasStar = name => sanFangPals.some(p => hasStar(p, name));
+  const sfHasMut  = mut  => sanFangPals.some(p => (p.majorStars || []).some(s => s.yearMutagen === mut));
+  const sfNoSha   = ()   => !SHA6.some(s => sfHasStar(s));
+  const mingNoSha = ()   => !!mingPal && !SHA6.some(s => hasStar(mingPal, s));
+  const palShaCount = pal => SHA6.filter(s => hasStar(pal, s)).length;
+  // 夾命：命宮地支前後相鄰兩宮
+  const jiaPals = () => (mIdx >= 0)
+    ? [byBranch(BR[wrap(mIdx - 1)]), byBranch(BR[wrap(mIdx + 1)])].filter(Boolean) : [];
+  const jiaHasPair = (a, b) => {
+    const j = jiaPals();
+    return j.length === 2 &&
+      ((hasStar(j[0], a) && hasStar(j[1], b)) || (hasStar(j[0], b) && hasStar(j[1], a)));
+  };
+  // 任一宮同時坐齊指定星（major 或 minor）
+  const palWithAll = (...names) => palaces.find(p => names.every(n => hasStar(p, n))) || null;
+
+  // 每筆 detector 回傳 formation 物件或 null。confidence 為「典型成格吻合度」粗估，非吉凶強度。
+  const catalog = [
+    // 紫微天府星系
+    () => (hasMaj(mingPal, '紫微') && hasMaj(mingPal, '天府') && ['寅', '申'].includes(mingBranch))
+      ? { name: '紫府同宮格', type: 'auspicious', palaces: ['命宮'], stars: ['紫微', '天府'],
+          note: '紫微天府同坐寅申命宮。經云「紫府同宮，終身福厚」（《斗數骨髓賦》），喜三方吉拱無煞', confidence: 88 } : null,
+    () => (hasMaj(mingPal, '紫微') && mingBranch === '午' && mingNoSha())
+      ? { name: '極向離明格', type: 'auspicious', palaces: ['命宮'], stars: ['紫微'],
+          note: '紫微居午宮坐命無煞。經云「紫微居午無煞湊，位至公卿」', confidence: 87 } : null,
+    () => ((hasMaj(mingPal, '紫微') || hasMaj(mingPal, '天府')) &&
+           ['左輔', '右弼', '天魁', '天鉞'].filter(s => sfHasStar(s)).length >= 3 && sfNoSha())
+      ? { name: '君臣慶會格', type: 'auspicious', palaces: ['命宮'], stars: ['紫微', '左輔', '右弼', '天魁', '天鉞'],
+          note: '紫府坐命，府相左右昌曲魁鉞三方會合無煞。經云「君臣慶會，才學經邦」', confidence: 86 } : null,
+    () => ((hasMaj(byName('財帛'), '天府') && hasMaj(guanPal, '天相')) ||
+           (hasMaj(byName('財帛'), '天相') && hasMaj(guanPal, '天府')))
+      ? { name: '府相朝垣格', type: 'auspicious', palaces: ['財帛', '官祿'], stars: ['天府', '天相'],
+          note: '天府天相分居財官夾照命宮。經云「府相朝垣，出仕為官大吉昌」（逢四煞劫空忌則破格）', confidence: 84 } : null,
+    // 機月同梁星系
+    () => (['天機', '太陰', '天同', '天梁'].every(s => sfHasStar(s)))
+      ? { name: '機月同梁格', type: 'auspicious', palaces: ['命宮', '財帛', '官祿', '遷移'],
+          stars: ['天機', '太陰', '天同', '天梁'],
+          note: '機月同梁四星交會命宮三方四正。語出《斗數骨髓賦》「機月同梁作吏人」，見煞則破格', confidence: 82 } : null,
+    () => (hasMaj(mingPal, '巨門') && ['子', '午'].includes(mingBranch) &&
+           ['化祿', '化權', '化科'].some(m => sfHasMut(m)) && mingNoSha())
+      ? { name: '石中隱玉格', type: 'auspicious', palaces: ['命宮'], stars: ['巨門'],
+          note: '巨門入子午坐命，會照祿權科無六煞。經云「子午巨門，石中隱玉福興隆」', confidence: 85 } : null,
+    // 日月雙星系
+    () => (hasMaj(mingPal, '太陽') && mingBranch === '午' && mingNoSha())
+      ? { name: '金燦光輝格', type: 'auspicious', palaces: ['命宮'], stars: ['太陽'],
+          note: '太陽居午宮坐命無煞（日麗中天）。經云「太陽居午，有專權之貴、敵國之富」', confidence: 87 } : null,
+    () => (hasMaj(mingPal, '太陰') && mingBranch === '亥' && mingNoSha())
+      ? { name: '月朗天門格', type: 'auspicious', palaces: ['命宮'], stars: ['太陰'],
+          note: '夜生人太陰居亥宮坐命。經云「月朗天門，晉爵封侯」', confidence: 85 } : null,
+    () => (hasMaj(mingPal, '天同') && hasMaj(mingPal, '太陰') && mingBranch === '子')
+      ? { name: '月生滄海格', type: 'auspicious', palaces: ['命宮'], stars: ['天同', '太陰'],
+          note: '天同太陰同坐子宮。經云「太陰居子，號曰水澄桂萼」', confidence: 84 } : null,
+    () => (hasMaj(mingPal, '太陽') && hasMaj(mingPal, '天梁') && mingBranch === '卯')
+      ? { name: '日照雷門格', type: 'auspicious', palaces: ['命宮'], stars: ['太陽', '天梁'],
+          note: '太陽天梁同坐卯宮，晝生人合格。經云「日照雷門，富貴榮華」（加煞破格）', confidence: 84 } : null,
+    () => (hasMaj(mingPal, '巨門') && hasMaj(mingPal, '太陽') && ['寅', '申'].includes(mingBranch))
+      ? { name: '巨日同宮格', type: 'auspicious', palaces: ['命宮'], stars: ['巨門', '太陽'],
+          note: '巨門太陽同坐寅申（寅上格）。經云「巨日同宮，官封三代」', confidence: 83 } : null,
+    () => (sfHasStar('太陽') && sfHasStar('天梁') && sfHasStar('文昌') &&
+           (sfHasStar('祿存') || sfHasMut('化祿')))
+      ? { name: '陽梁昌祿格', type: 'auspicious', palaces: ['命宮', '財帛', '官祿', '遷移'],
+          stars: ['太陽', '天梁', '文昌', '祿存'],
+          note: '太陽天梁文昌祿（祿存/化祿）三方四正會齊。經云「天梁太陽昌祿會，臚傳第一名」，主考運功名', confidence: 83 } : null,
+    () => (mingPal?.isEmpty && mingBranch === '未' &&
+           hasMaj(byBranch('卯'), '太陽') && hasMaj(byBranch('卯'), '天梁') && hasMaj(byBranch('亥'), '太陰'))
+      ? { name: '明珠出海格', type: 'auspicious', palaces: ['命宮'], stars: ['太陽', '天梁', '太陰'],
+          note: '安命未宮無正曜，卯太陽天梁、亥太陰入廟合照。經云「日卯月亥，安命未，蟾宮折桂之榮」', confidence: 82 } : null,
+    () => (hasMaj(mingPal, '太陽') && hasMaj(mingPal, '太陰') && ['丑', '未'].includes(mingBranch))
+      ? { name: '日月同臨格', type: 'auspicious', palaces: ['命宮'], stars: ['太陽', '太陰'],
+          note: '太陽太陰同坐丑未命宮。經云「日月同臨，官居侯伯」（三方逢煞沖破則先勞後成）', confidence: 82 } : null,
+    // 殺破狼與武曲星系
+    () => (['七殺', '破軍', '貪狼'].some(s => hasMaj(mingPal, s)))
+      ? { name: '殺破狼格', type: 'neutral', palaces: ['命宮', '財帛', '官祿'], stars: ['七殺', '破軍', '貪狼'],
+          note: '七殺破軍貪狼三星永三合會照，命坐其一即成。主開創、變動、先破後立之格', confidence: 80 } : null,
+    () => (hasMaj(mingPal, '七殺') && ['子', '午', '寅', '申'].includes(mingBranch))
+      ? { name: ['申', '午'].includes(mingBranch) ? '七殺朝斗格' : '七殺仰斗格',
+          type: 'auspicious', palaces: ['命宮'], stars: ['七殺'],
+          note: '七殺守命子午寅申（申午朝斗、寅子仰斗），會紫微制殺為權。語出《斗數骨髓賦》「七殺朝斗爵祿榮昌」', confidence: 84 } : null,
+    () => (hasMaj(mingPal, '破軍') && ['子', '午'].includes(mingBranch))
+      ? { name: '英星入廟格', type: 'auspicious', palaces: ['命宮'], stars: ['破軍'],
+          note: '破軍守命居子午宮。經云「子午破軍，加官進爵」，宜武職或經商富貴雙全', confidence: 83 } : null,
+    () => (hasMaj(mingPal, '武曲') && hasMaj(mingPal, '貪狼') && ['丑', '未'].includes(mingBranch))
+      ? { name: '武貪同行格', type: 'auspicious', palaces: ['命宮'], stars: ['武曲', '貪狼'],
+          note: '武曲貪狼同坐丑未。武財貪欲相濟，「武貪不發少年人」，多主中年後大發', confidence: 82 } : null,
+    () => (mingBranch === '午' && hasStar(mingPal, '擎羊') &&
+           (hasMaj(mingPal, '貪狼') || (hasMaj(mingPal, '天同') && hasMaj(mingPal, '太陰'))))
+      ? { name: '馬頭帶箭格', type: 'auspicious', palaces: ['命宮'], stars: ['擎羊', '貪狼'],
+          note: '午宮（馬）坐命逢擎羊（箭）。經云「馬頭帶箭，鎮禦邊疆」，須遠走奔波方開運', confidence: 80 } : null,
+    // 火鈴貪、武貪
+    () => { const p = palWithAll('貪狼', '火星'); return p
+      ? { name: '火貪格', type: 'auspicious', palaces: [p.name], stars: ['貪狼', '火星'],
+          note: '貪狼火星同宮（正格）。古云「貪狼遇火必英雄，指日邊庭立大功」，主暴發；逢羊陀則暴起暴落', confidence: 82 } : null; },
+    () => { const p = palWithAll('貪狼', '鈴星'); return p
+      ? { name: '鈴貪格', type: 'auspicious', palaces: [p.name], stars: ['貪狼', '鈴星'],
+          note: '貪狼鈴星同宮（正格）。性質同火貪而較內斂後勁，多先名聲後實利', confidence: 81 } : null; },
+    // 祿馬科權、貴人文星
+    () => (sfHasMut('化祿') && sfHasMut('化權') && sfHasMut('化科'))
+      ? { name: '三奇嘉會格', type: 'auspicious', palaces: ['命宮', '財帛', '官祿', '遷移'],
+          stars: ['化祿', '化權', '化科'],
+          note: '化祿化權化科三化曜會於命宮三方四正。古云「科權祿拱，定為折桂之高人」（逢四煞劫空減等）', confidence: 88 } : null,
+    () => { const cm = hasStar(mingPal, '天魁') || hasStar(mingPal, '天鉞');
+            const cq = hasStar(qianPal, '天魁') || hasStar(qianPal, '天鉞');
+            return (cm && cq && (hasStar(mingPal, '天魁') !== hasStar(qianPal, '天魁')))
+      ? { name: '天乙拱命格', type: 'auspicious', palaces: ['命宮', '遷移'], stars: ['天魁', '天鉞'],
+          note: '天魁天鉞分坐命遷（坐貴向貴）。經云「天魁天鉞，蓋世文章」，主貴人助、逢凶化吉', confidence: 80 } : null; },
+    () => (['丑', '未'].includes(mingBranch) && jiaHasPair('文昌', '文曲'))
+      ? { name: '昌曲夾命格', type: 'auspicious', palaces: ['命宮'], stars: ['文昌', '文曲'],
+          note: '文昌文曲夾命宮（限丑未宮）。古稱文桂文華，主多才多藝', confidence: 78 } : null,
+    () => (hasStar(mingPal, '左輔') && hasStar(mingPal, '右弼'))
+      ? { name: '左右同宮格', type: 'auspicious', palaces: ['命宮'], stars: ['左輔', '右弼'],
+          note: '左輔右弼同坐命宮。主端莊、善助人、有企劃輔佐之能', confidence: 80 }
+      : (jiaHasPair('左輔', '右弼')
+        ? { name: '左右夾命格', type: 'auspicious', palaces: ['命宮'], stars: ['左輔', '右弼'],
+            note: '左輔右弼夾命宮。主人際磁場強，關鍵時得雙向貴人扶助', confidence: 78 } : null),
+    () => (jiaHasPair('天魁', '天鉞'))
+      ? { name: '魁鉞夾命格', type: 'auspicious', palaces: ['命宮'], stars: ['天魁', '天鉞'],
+          note: '天魁天鉞夾命宮。主一生關卡多得貴人相助', confidence: 78 } : null,
+    // 廉貞星
+    () => (hasMaj(mingPal, '廉貞') && ['寅', '申'].includes(mingBranch) && mingNoSha())
+      ? { name: '雄宿朝垣格', type: 'auspicious', palaces: ['命宮'], stars: ['廉貞'],
+          note: '廉貞居寅申得地坐命無煞（雄宿乾元）。廉貞囚星在此反主威權富貴', confidence: 80 } : null,
+
+    // ── 凶格、破格 ──
+    () => { const p = palWithAll('天馬', '地空') || palWithAll('天馬', '地劫'); return p
+      ? { name: '馬落空亡格', type: 'challenge', palaces: [p.name], stars: ['天馬', '地空'],
+          note: '天馬與地空或地劫同宮。行動力遇資源消散，主奔波而難積累', confidence: 80 } : null; },
+    () => (jiaHasPair('火星', '鈴星'))
+      ? { name: '火鈴夾命格', type: 'challenge', palaces: ['命宮'], stars: ['火星', '鈴星'],
+          note: '火星鈴星夾命宮。為敗局，主多小人、遭嫉', confidence: 80 } : null,
+    () => { const p = palaces.find(q => q.branch && ['辰', '戌'].includes(q.branch) &&
+              ['武曲', '文昌', '鈴星', '陀羅'].filter(s => hasStar(q, s)).length >= 3); return p
+      ? { name: '鈴昌陀武格', type: 'challenge', palaces: [p.name], stars: ['武曲', '文昌', '鈴星', '陀羅'],
+          note: '武曲文昌鈴星陀羅聚於辰戌一宮（三顆即成，四顆全更凶）。語出《斗數骨髓賦》「昌鈴陀武，限至投河」', confidence: 88 } : null; },
+    () => { const p = palWithAll('貪狼', '擎羊'); return (p && p.branch === '寅')
+      ? { name: '風流綵杖格', type: 'challenge', palaces: [p.name], stars: ['貪狼', '擎羊'],
+          note: '貪狼擎羊同宮於寅。主因色惹禍、桃花糾紛', confidence: 78 } : null; },
+    () => { const p = palaces.find(q => hasMaj(q, '巨門') && palShaCount(q) >= 2); return p
+      ? { name: '巨逢四煞格', type: 'challenge', palaces: [p.name], stars: ['巨門', '擎羊', '陀羅'],
+          note: '巨門逢擎羊陀羅火星鈴星四煞。主是非、官非、刑傷', confidence: 80 } : null; },
+    () => (hasMaj(mingPal, '紫微') && hasMaj(mingPal, '貪狼') && ['卯', '酉'].includes(mingBranch) && !mingNoSha())
+      ? { name: '極居卯酉格', type: 'challenge', palaces: ['命宮'], stars: ['紫微', '貪狼'],
+          note: '紫微貪狼坐卯酉命宮會煞忌。主為脫俗僧道或多敗', confidence: 78 } : null,
+    () => (hasMaj(mingPal, '貪狼') && mingBranch === '子' && !sfNoSha())
+      ? { name: '泛水桃花格', type: 'challenge', palaces: ['命宮'], stars: ['貪狼'],
+          note: '貪狼居子（水旺）會煞。主好色、易因酒色招損', confidence: 76 } : null,
+  ];
+
+  const existingNames = new Set(result.map(r => r.name));
+  for (const detect of catalog) {
+    let f = null;
+    try { f = detect(); } catch { f = null; }
+    if (f && !existingNames.has(f.name)) {
+      result.push(f);
+      existingNames.add(f.name);
+    }
+  }
+
   result.sort((a, b) =>
     b.confidence - a.confidence ||
     (['auspicious','neutral','challenge'].indexOf(a.type) -
