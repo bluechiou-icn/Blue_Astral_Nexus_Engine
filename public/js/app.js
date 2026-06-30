@@ -133,9 +133,13 @@ function updatePartnerBanner() {
     .filter(Boolean);
   if (!partners.length) return hide();
   const selfName = escapeHtml(me.name || S.name || '—');
-  const partnerLinks = partners.map(p =>
-    `<span class="plb-partner" onclick="libraryLoad('${escapeHtml(p.id)}')">${escapeHtml(p.name || '—')}</span>`
-  ).join('、');
+  // #10（Blue 2026-06-30）：輸入生辰命中命例庫且該命例有綁定配偶時，直接帶出配偶姓名＋生辰資料
+  //（date/time/性別），免再點開即可看到關聯對象核心資料；點名字仍可切換到該配偶命盤。
+  const partnerLinks = partners.map(p => {
+    const meta = [p.date, p.time, tGenderShort(p.gender)].filter(Boolean).join(' ');
+    const metaHtml = meta ? `<span class="plb-pmeta" style="opacity:0.72;font-size:0.9em;margin-left:4px;">（${escapeHtml(meta)}）</span>` : '';
+    return `<span class="plb-partner" onclick="libraryLoad('${escapeHtml(p.id)}')">${escapeHtml(p.name || '—')}${metaHtml}</span>`;
+  }).join('、');
   banner.innerHTML =
     `<span class="plb-self">${escapeHtml(t('partner_banner_self'))} ${selfName}</span>` +
     `<span class="plb-sep">${escapeHtml(t('partner_banner_separator'))}</span>` +
