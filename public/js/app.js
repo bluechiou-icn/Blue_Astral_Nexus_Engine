@@ -680,11 +680,15 @@ function updateYearHint() {
   hint.textContent = isEn() ? `${tGZ(gz)}　${start}〜${end}` : `${gz}年　${start}〜${end}`;
 }
 
-async function handleSubmit() {
+async function handleSubmit(opts) {
   const err = document.getElementById('form-err');
   // #7a（Blue 2026-06-30）：Chart 頁需登入才能起盤（雲端命例庫＋隱私一致）。
   // clientId 為空＝登入功能未啟用（純本機模式）時不擋，避免本地開發卡死。
-  if (typeof Cloud !== 'undefined' && Cloud.clientId && !Cloud.signedIn) {
+  // 例外（Blue 2026-07-01）：從 engine landing 帶生辰參數深連結進來的訪客（opts.fromDeepLink）
+  //   直接看盤、不擋登入 —— 順暢承接 index → chart「輸入生日即看盤」的整合流程。
+  //   此路徑不會自動存命例（cloud 自動存本就需 signedIn），故不觸及任何人的 Drive 隱私。
+  const fromDeepLink = !!(opts && opts.fromDeepLink);
+  if (typeof Cloud !== 'undefined' && Cloud.clientId && !Cloud.signedIn && !fromDeepLink) {
     if (err) { err.textContent = t('login_required_cast'); err.style.display = 'block'; }
     if (typeof cloudSignIn === 'function') cloudSignIn();
     return;
@@ -1153,7 +1157,8 @@ document.addEventListener('DOMContentLoaded', () => {
     fg.checked = true;
     const city = p.get('city');
     if (city && fc) fc.value = city;
-    handleSubmit();
+    // 深連結（engine landing 帶參數）→ 直接起盤看盤，不擋登入（見 handleSubmit #7a 例外）
+    handleSubmit({ fromDeepLink: true });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fill);
