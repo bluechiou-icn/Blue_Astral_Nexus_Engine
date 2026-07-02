@@ -12,8 +12,25 @@ module.exports = function handler(req, res) {
   }
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Surrogate-Control", "no-store");
+
+  // Build / 版本標記（Blue 2026-07-02）：讓任何 agent 一眼確認「正在服務的是哪個 commit、
+  // 私有五維敘事 doctrine 有無載入」，解決「daily report 是否依據最新版 engine」的反覆疑問。
+  // Vercel 於 build 自動注入 VERCEL_GIT_* 環境變數（無需自行設定）。
+  const pkg = require("../package.json");
+  let doctrineBundle = false;
+  try {
+    const gen = require("../lib/_private/dailyFortuneGen.js");
+    doctrineBundle = !!(gen && typeof gen.generate === "function");
+  } catch (_) { /* 私有 bundle 未拉入 → daily-fortune 走 IP-free placeholder */ }
+
   return res.status(200).json({
     engine:  "Blue Astral Nexus Engine",
+    build: {
+      version:        pkg.version,
+      commit:         (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7) || null,
+      ref:            process.env.VERCEL_GIT_COMMIT_REF || null,
+      doctrineBundle, // true=私有五維敘事生成器已載入；false=daily-fortune 目前為 IP-free 結構佔位
+    },
     school:  "汎天派 / 飛星派（紫微斗數・Blue's Version）",
     baseUrl: "https://engine.aethnous.co",
     note:    "append &_t=YYYYMMDD to any call to bypass agent-side caching",
